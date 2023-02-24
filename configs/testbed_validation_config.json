@@ -1,0 +1,47 @@
+{"campaigns": [
+	{
+		"campaign": "Testbed Validation",
+		"purpose": "Validate testbed performance.",
+		"sets": [
+				{
+					"set": "15 Minutes",
+					"purpose": "To exist. For 15 minutes.",
+                    "repetitions": 3,
+					"settings": {
+						"duration": [900],
+                        "datalen_bytes": [100],
+                        "pub_count": [1, 10, 25, 50, 75],
+                        "sub_count": [1, 10, 25, 50, 75],
+                        "reliable": [true],
+                        "use_multicast": [true, false],
+                        "durability": [0],
+						"latency_count": [1000]
+					},
+					"allocation": "shared"
+				},
+				{
+					"set": "6 Hours",
+					"purpose": "To exist. For 6 hours.",
+                    "repetitions": 3,
+					"settings": {
+						"duration": [21600],
+                        "datalen_bytes": [100],
+                        "pub_count": [1, 10, 25, 50, 75],
+                        "sub_count": [1, 10, 25, 50, 75],
+                        "reliable": [true],
+                        "use_multicast": [true, false],
+                        "durability": [0],
+						"latency_count": [1000]
+					},
+					"allocation": "shared"
+				}
+		],
+		"machines": [
+			{"name": "csr1", "username": "acwh025", "host": "csr-dds-app01", "perftest": "$PERFTEST", "ssh_key": "csr1_rsa"},
+			{"name": "csr2", "username": "acwh025", "host": "csr-dds-app02", "perftest": "$PERFTEST", "ssh_key": "csr2_rsa"},
+			{"name": "csr3", "username": "acwh025", "host": "csr-dds-app03", "perftest": "$PERFTEST", "ssh_key": "csr3_rsa"},
+			{"name": "csr4", "username": "acwh025", "host": "csr-dds-app04", "perftest": "$PERFTEST", "ssh_key": "csr4_rsa"}
+		],
+        "domain_per_machine": false
+	}
+]}

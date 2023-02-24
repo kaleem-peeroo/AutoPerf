@@ -1,0 +1,31 @@
+{"campaigns": [
+	{
+		"campaign": "QoS Combination Capture 128KB",
+		"purpose": "Collect data on as many settings as possible while using only one latency count value.",
+		"sets": [
+				{
+					"set": "The Only Set",
+					"purpose": "To exist.",
+                    "repetitions": 1,
+					"settings": {
+						"duration": [600],
+                        "datalen_bytes": [128000],
+                        "pub_count": [1, 10, 25, 50, 75],
+                        "sub_count": [1, 10, 25, 50, 75],
+                        "reliable": [true, false],
+                        "use_multicast": [true, false],
+                        "durability": [0, 1, 2, 3],
+						"latency_count": [100]
+					},
+					"allocation": "shared"
+				}
+		],
+		"machines": [
+			{"name": "csr1", "username": "acwh025", "host": "csr-dds-app01", "perftest": "$PERFTEST", "ssh_key": "csr1_rsa"},
+			{"name": "csr2", "username": "acwh025", "host": "csr-dds-app02", "perftest": "$PERFTEST", "ssh_key": "csr2_rsa"},
+			{"name": "csr3", "username": "acwh025", "host": "csr-dds-app03", "perftest": "$PERFTEST", "ssh_key": "csr3_rsa"},
+			{"name": "csr4", "username": "acwh025", "host": "csr-dds-app04", "perftest": "$PERFTEST", "ssh_key": "csr4_rsa"}
+		],
+        "domain_per_machine": false
+	}
+]}
