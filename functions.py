@@ -131,6 +131,11 @@ def parse_config(config):
         """
         campaigns_scripts.append(parse_sets(camp))
         
+
+    with open("scripts.txt", "w") as f:
+        json.dump(campaigns_scripts, f)
+        console.print(f"All scripts written to scripts.txt", style="bold white")            
+
     return campaigns_scripts
     
 """
