@@ -20,15 +20,16 @@ from rich.markdown import Markdown
 from rich.prompt import Prompt
 from rich.prompt import Confirm
 from rich.progress import track
-from rich.traceback import install
 
-install(show_locals=True)
+# ? Uncomment for rich traceback formatting
+# from rich.traceback import install
+# install(show_locals=True)
 
 console = Console()
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 # ? Don't restart the VM when running the tests - normally used to speed up debugging process.s
-SKIP_RESTARTS = False
+SKIP_RESTARTS = True
 # ? Buffer duration to wait for after expected test duration before skipping the test.
 FAIL_DURATION_S = 300
 IS_TEST_OVER_ELAPSED = False
@@ -691,13 +692,16 @@ def run_tests(scripts):
         # ? Create the campaign folder
         mkdir(safe_camp_name)
         
-        # ? Create progress log
-        if os.path.exists( os.path.join(safe_camp_name, "progress.log") ):
-            with open("progress.log", "w") as f:
-                f.write(None)
-        else:
-            with open("progress.log", "w") as f:
-                pass
+        # ? Delete progress log if it already exists
+        progress_log_path = os.path.join(safe_camp_name, "progress.log")
+        
+        if os.path.exists( progress_log_path ):
+            if DEBUG_MODE:
+                console.print(f"{LOG}: progress.log already exists. Deleting it.", style="bold white")
+            os.remove( progress_log_path )
+
+        with open("progress.log", "w") as f:
+            pass
             
         if DEBUG_MODE:
             console.print(camp_name + ": progress.log created.", style="bold white")
@@ -855,7 +859,7 @@ def get_duration(start_time, end_time):
 """
 def ssh_thread(machine, set_name, camp_name, current_repetition, total_repetitions):
     global IS_TEST_OVER_ELAPSED
-    home_dir = "/home/enterprise.internal.city.ac.uk/acwh025"
+    home_dir = "/home/acwh025"
     test_name = machine["test"]
     host = machine["host"]
     username = machine["username"]

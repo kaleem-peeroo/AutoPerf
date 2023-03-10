@@ -1,0 +1,43 @@
+{"campaigns": [
+	{
+		"campaign": "RPi - Example Test Campaign",
+		"purpose": "Example",
+		"sets": [
+				{
+					"set": "Example Set",
+					"purpose": "Example",
+                    "repetitions": 1,
+					"settings": {
+						"duration": [10],
+                        "datalen_bytes": [100],
+                        "pub_count": [5],
+                        "sub_count": [5],
+                        "reliable": [true, false],
+                        "use_multicast": [true, false],
+                        "durability": [0],
+						"latency_count": [1000]
+					},
+					"allocation": "shared"
+				}
+		],
+		"machines": [
+			{
+                "name": "p1", 
+                "username": "acwh025", 
+                "host": "$p1", 
+                "perftest": "", 
+                "perftest_publisher": "", 
+                "perftest_subscriber": "", 
+                "ssh_key": "id_rsa"
+            },
+			{
+                "name": "p2", 
+                "username": "acwh025", 
+                "host": "$p2", 
+                "perftest": "", 
+                "ssh_key": "id_rsa"
+            }
+		],
+        "domain_per_machine": false
+	}
+]}
