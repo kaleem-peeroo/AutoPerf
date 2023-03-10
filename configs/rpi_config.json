@@ -24,7 +24,7 @@
 			{
                 "name": "p1", 
                 "username": "acwh025", 
-                "host": "$p1", 
+                "host": "169.254.248.55", 
                 "perftest": "", 
                 "perftest_publisher": "", 
                 "perftest_subscriber": "", 
@@ -33,7 +33,7 @@
 			{
                 "name": "p2", 
                 "username": "acwh025", 
-                "host": "$p2", 
+                "host": "169.254.201.141", 
                 "perftest": "", 
                 "ssh_key": "id_rsa"
             }

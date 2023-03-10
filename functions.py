@@ -490,14 +490,14 @@ def restart_vm_thread(machine):
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     
     # ? Check the machine is online
-    check_machine_online(ssh, host, username, ssh_key)
+    check_machine_online(ssh, host, username, ssh_key, 30)
     
-    console.print(host + ": " + ERROR + " Taking longer than expected. Force restarting.", style="bold white") if DEBUG_MODE else None
+    console.print(hostname + ": " + ERROR + " Taking longer than expected. Force restarting.", style="bold white") if DEBUG_MODE else None
     
     # ? Restart the machine
     restart_machine(ssh, host, username, ssh_key)
     
-    console.print(host + ": " + ERROR + " Force restart finished.", style="bold white") if DEBUG_MODE else None
+    console.print(hostname + ": " + ERROR + " Force restart finished.", style="bold white") if DEBUG_MODE else None
 
 """
 ? process_elapsed_test(test, expected_duration, run_dir) logs a test that is taking longer than unexpected and attempts to diagnose it.
@@ -859,8 +859,9 @@ def get_duration(start_time, end_time):
 """
 def ssh_thread(machine, set_name, camp_name, current_repetition, total_repetitions):
     global IS_TEST_OVER_ELAPSED
-    home_dir = "/home/acwh025"
+    home_dir = "~/"
     test_name = machine["test"]
+    hostname = machine["name"]
     host = machine["host"]
     username = machine["username"]
     ssh_key = machine["ssh_key"]
@@ -888,22 +889,22 @@ def ssh_thread(machine, set_name, camp_name, current_repetition, total_repetitio
         scripts = None
       
     if IS_TEST_OVER_ELAPSED:
-        console.print(host + ": " + ERROR + " Test has over elapsed. Quitting this thread.", style="bold white")
+        console.print(hostname + ": " + ERROR + " Test has over elapsed. Quitting this thread.", style="bold white")
         return
     
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     
     # ? Check the machine is online
-    check_machine_online(ssh, host, username, ssh_key)
+    check_machine_online(ssh, host, username, ssh_key, 5)
     
     # ? Restart the machine
-    console.print(host + ": " + EXEC + " Restarting.", style="bold white") if DEBUG_MODE else None
+    console.print(hostname + ": " + EXEC + " Restarting.", style="bold white") if DEBUG_MODE else None
     restart_machine(ssh, host, username, ssh_key) if not SKIP_RESTARTS else None
     
     # ? Check the machine is online
-    check_machine_online(ssh, host, username, ssh_key)
-    console.print(host + ": " +PING+ " Online.", style="bold white") if DEBUG_MODE else None
+    check_machine_online(ssh, host, username, ssh_key, 30)
+    console.print(hostname + ": " +PING+ " Online.", style="bold white") if DEBUG_MODE else None
 
     # ? Check for, download and delete existing .csv files
     if has_leftovers(ssh, host, home_dir):
@@ -914,10 +915,11 @@ def ssh_thread(machine, set_name, camp_name, current_repetition, total_repetitio
         )
         if not os.path.exists(leftovers_path):
             os.makedirs(leftovers_path)
-            console.print(host + ": " +SETUP+ " Making leftovers dir.", style="bold white") if DEBUG_MODE else None
+            console.print(hostname + ": " +SETUP+ " Making leftovers dir.", style="bold white") if DEBUG_MODE else None
     
         download_test_results(
             ssh, 
+            hostname,
             host,
             home_dir, 
             os.path.join(
@@ -938,7 +940,7 @@ def ssh_thread(machine, set_name, camp_name, current_repetition, total_repetitio
     )
     if not os.path.exists(logs_dir):
         os.makedirs(logs_dir)
-        console.print(host + ": " +SETUP+ " Created logs folder.", style="bold white") if DEBUG_MODE else None
+        console.print(hostname + ": " +SETUP+ " Created logs folder.", style="bold white") if DEBUG_MODE else None
 
     # ? Create logs of the scripts
     scripts_filepath = os.path.join(
@@ -950,17 +952,17 @@ def ssh_thread(machine, set_name, camp_name, current_repetition, total_repetitio
     if scripts:
         with open(scripts_filepath, "w") as f:
             f.writelines(scripts)
-    console.print(host + ": " +LOG+ " Created script logs", style="bold white") if DEBUG_MODE else None
+    console.print(hostname + ": " +LOG+ " Created script logs", style="bold white") if DEBUG_MODE else None
     
     # ? Log system info
-    log_system(host, ssh, scripts, test_name)
+    log_system(hostname, ssh, scripts, test_name)
     
     # ? Run the scripts
     if scripts is not None:
-        console.print(host + ": " +EXEC+ " Running scripts.", style="bold white") if DEBUG_MODE else None
+        console.print(hostname + ": " +EXEC+ " Running scripts.", style="bold white") if DEBUG_MODE else None
         stdout, stderr = run_scripts(ssh, machine, username, scripts, ssh_key, test_name)
     else:
-        console.print(host + ": " +EXEC+ " Scripts are empty.", style="bold orange1") if DEBUG_MODE else None
+        console.print(hostname + ": " +EXEC+ " Scripts are empty.", style="bold orange1") if DEBUG_MODE else None
         stdout = None
         stderr = None
         
@@ -975,7 +977,7 @@ def ssh_thread(machine, set_name, camp_name, current_repetition, total_repetitio
     #     with open(stdout_log_filepath, "w") as f:
     #         f.writelines(stdout)
     #     if DEBUG_MODE:
-    #         console.print(host + ": Created stdout logs", style="bold white")
+    #         console.print(hostname + ": Created stdout logs", style="bold white")
         
     # ? Create logs of the test error output
     stderr_log_filepath = os.path.join(
@@ -988,12 +990,13 @@ def ssh_thread(machine, set_name, camp_name, current_repetition, total_repetitio
         with open(stderr_log_filepath, "w") as f:
             f.writelines(stderr)
         if DEBUG_MODE:
-            console.print(host + ": " +LOG+ " Created stderr logs", style="bold white")
+            console.print(hostname + ": " +LOG+ " Created stderr logs", style="bold white")
         
     # ? Download the result files
-    console.print(host + ": " +EXEC+ " Downloading csv files.", style="bold white") if DEBUG_MODE else None
+    console.print(hostname + ": " +EXEC+ " Downloading csv files.", style="bold white") if DEBUG_MODE else None
     download_test_results(
         ssh, 
+        hostname,
         host, 
         home_dir, 
         os.path.join(
@@ -1004,49 +1007,49 @@ def ssh_thread(machine, set_name, camp_name, current_repetition, total_repetitio
     
     # ? Download the log files
     try:
-        download_logs(host, ssh, home_dir, os.path.join(test_dir_path, "run_" + str(current_repetition), "logs"))
+        download_logs(hostname, host, ssh, home_dir, os.path.join(test_dir_path, "run_" + str(current_repetition), "logs"))
     except paramiko.SSHException as e:
-        console.print(host + ": " + ERROR + " Error when downloading the logs. Exception:\n\t[bold red]" + str(e) + "[/bold red]", style="bold white")
+        console.print(hostname + ": " + ERROR + " Error when downloading the logs. Exception:\n\t[bold red]" + str(e) + "[/bold red]", style="bold white")
     
-    console.print(host + ": " +EXEC+ " Finished running.", style="bold white") if DEBUG_MODE else None
+    console.print(hostname + ": " +EXEC+ " Finished running.", style="bold white") if DEBUG_MODE else None
  
-def download_logs(host, ssh, home_dir, target_dir):
-    console.print(host + ": " +LOG+ " Downloading logs.", style="bold white") if DEBUG_MODE else None
+def download_logs(hostname, host, ssh, home_dir, target_dir):
+    console.print(hostname + ": " +LOG+ " Downloading logs.", style="bold white") if DEBUG_MODE else None
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
-        console.print(host + ": " +SETUP+ " Making logs dir.", style="bold white") if DEBUG_MODE else None
+        console.print(hostname + ": " +SETUP+ " Making logs dir.", style="bold white") if DEBUG_MODE else None
 
     with ssh.open_sftp() as sftp:
         all_files = sftp.listdir(home_dir)
         sar_logs = [file for file in all_files if "sar_logs" in file and "log" in file]
         
         if len(sar_logs) == 0:
-            console.print(host + ": " +LOG+ " No logs found.", style="bold red") if DEBUG_MODE else None
+            console.print(hostname + ": " +LOG+ " No logs found.", style="bold red") if DEBUG_MODE else None
         elif len(sar_logs) > 1:
-            console.print(host + ": " +LOG+ " Multiple log files found.", style="bold red") if DEBUG_MODE else None
+            console.print(hostname + ": " +LOG+ " Multiple log files found.", style="bold red") if DEBUG_MODE else None
         else:
             sar_log = sar_logs[0]
             # ? Parse CPU stats
             stdin, stdout, stderr = ssh.exec_command("sar -f " + sar_log + " > cpu.log")
             if stdout.channel.recv_exit_status() == 0:
-                console.print(host + ": " +LOG+ " CPU logs parsed.", style="bold white") if DEBUG_MODE else None
+                console.print(hostname + ": " +LOG+ " CPU logs parsed.", style="bold white") if DEBUG_MODE else None
             else:
-                console.print(host + ": " + LOG + " Error parsing the CPU logs.", style="bold red") if DEBUG_MODE else None
+                console.print(hostname + ": " + LOG + " Error parsing the CPU logs.", style="bold red") if DEBUG_MODE else None
             
             # ? Parse memory stats
             stdin, stdout, stderr = ssh.exec_command("sar -r -f " + sar_log + " > mem.log")
             if stdout.channel.recv_exit_status() == 0:
-                console.print(host + ": " +LOG+ " MEMORY logs parsed.", style="bold white") if DEBUG_MODE else None
+                console.print(hostname + ": " +LOG+ " MEMORY logs parsed.", style="bold white") if DEBUG_MODE else None
             else:
-                console.print(host + ": " + LOG + " Error parsing the MEMORY logs.", style="bold red") if DEBUG_MODE else None
+                console.print(hostname + ": " + LOG + " Error parsing the MEMORY logs.", style="bold red") if DEBUG_MODE else None
             
             # ? Parse network stats
             network_options = ["DEV", "EDEV", "NFS", "NFSD", "SOCK", "IP", "EIP", "ICMP", "EICMP", "TCP", "ETCP", "UDP", "SOCK6", "IP6", "EIP6", "ICMP6", "EICMP6", "UDP6"]
             for option in network_options:
                 stdin, stdout, stderr = ssh.exec_command("sar -n " +option+ " -f " + sar_log + " > " +option.lower()+ ".log")
                 if stdout.channel.recv_exit_status() != 0:
-                    console.print(host + ": " + LOG + " Error parsing the " +option+ " logs.", style="bold red") if DEBUG_MODE else None
-            console.print(host + ": " + LOG + " NETWORK logs parsed.", style="bold white") if DEBUG_MODE else None
+                    console.print(hostname + ": " + LOG + " Error parsing the " +option+ " logs.", style="bold red") if DEBUG_MODE else None
+            console.print(hostname + ": " + LOG + " NETWORK logs parsed.", style="bold white") if DEBUG_MODE else None
             
             # ? Delete the original unparsed sar log file - we no longer have a use for it
             sftp.remove(sar_log)
@@ -1055,14 +1058,14 @@ def download_logs(host, ssh, home_dir, target_dir):
             found_logs = [x for x in sftp.listdir(home_dir) if '.log' in x]
             
             if len(expected_logs) != len(found_logs):
-                console.print(host + ": " + LOG + " Mismatch found between expected and found logs.\n\t" + str(len(expected_logs)) + " expected logs.\n\t" + str(len(found_logs)) + " logs founds.", style="bold red")
+                console.print(hostname + ": " + LOG + " Mismatch found between expected and found logs.\n\t" + str(len(expected_logs)) + " expected logs.\n\t" + str(len(found_logs)) + " logs founds.", style="bold red")
                 
                 if len(expected_logs) > len(found_logs):
-                    console.print(host + ": " + "You are missing the following logs:", style="bold red") if DEBUG_MODE else None
+                    console.print(hostname + ": " + "You are missing the following logs:", style="bold red") if DEBUG_MODE else None
                     for log in list(set(expected_logs) - set(found_logs)):
                         console.print("\t" + log, style="bold red")
                 else:
-                    console.print(host + ": " + "You have the following extra logs:", style="bold red") if DEBUG_MODE else None
+                    console.print(hostname + ": " + "You have the following extra logs:", style="bold red") if DEBUG_MODE else None
                     for log in list(set(found_logs) - set(expected_logs)):
                         console.print("\t" + log, style="bold red")
             else:
@@ -1072,9 +1075,9 @@ def download_logs(host, ssh, home_dir, target_dir):
                     
             leftover_logs = [x for x in sftp.listdir(home_dir) if '.log' in x]
             if len(leftover_logs) > 0:
-                console.print(host + ": " + LOG + " Some logs were leftover.", style="bold red")
+                console.print(hostname + ": " + LOG + " Some logs were leftover.", style="bold red")
             
-    console.print(host + ": " +LOG+ " End of log download.", style="bold white") if DEBUG_MODE else None
+    console.print(hostname + ": " +LOG+ " End of log download.", style="bold white") if DEBUG_MODE else None
             
 """
 ? log_system(host, ssh, scripts) runs the sar command to log the system information throughout the duration of the test.
@@ -1085,41 +1088,41 @@ def download_logs(host, ssh, home_dir, target_dir):
 
 :returns    none
 """
-def log_system(host, ssh, scripts, testname):
+def log_system(hostname, ssh, scripts, testname):
     if scripts:
         duration = get_duration_from_test_scripts(scripts)
     else:
         duration = 0
     
     if duration == 0:
-        duration = get_duration_from_test_name(testname)
+        duration = get_duration_from_test_name(testname, hostname)
     
     duration = duration + FAIL_DURATION_S
     
     # ? Check for any leftover sar_logs files
-    home_dir = "/home/enterprise.internal.city.ac.uk/acwh025"
+    home_dir = "~/"
     with ssh.open_sftp() as sftp:
         all_files = sftp.listdir(home_dir)
         sar_logs = [file for file in all_files if "sar_logs" in file and "log" in file]
         
         if len(sar_logs) > 0:
-            console.print(host + ": " +ERROR+ " Leftover sar_logs found.", style="bold red") if DEBUG_MODE else None
+            console.print(hostname + ": " +ERROR+ " Leftover sar_logs found.", style="bold red") if DEBUG_MODE else None
     
     # ? Start logging and output to a file
     try:
         # console.print(f"{host}: {EXEC} SAR COMMAND: sar -A -o sar_logs 1 {str(duration)}", style="bold green")
         stdin, stdout, stderr = ssh.exec_command("sar -A -o sar_logs 1 " + str(duration) + " >/dev/null 2>&1 &")
     except Exception as e:
-        console.print(host + ": " + ERROR + " Error when logging system stats. Exception:\n\t[bold red]" + str(e) + "[/bold red]", style="bold white")
+        console.print(hostname + ": " + ERROR + " Error when logging system stats. Exception:\n\t[bold red]" + str(e) + "[/bold red]", style="bold white")
     
-    console.print(host + ": " +LOG+ " Logs started.", style="bold white") if DEBUG_MODE else None
+    console.print(hostname + ": " +LOG+ " Logs started.", style="bold white") if DEBUG_MODE else None
 
-def get_duration_from_test_name(testname):
+def get_duration_from_test_name(testname, hostname):
     # ? Look for x numeric digits followed by "s_"
     durations_from_name = re.findall(r'\d*s_', testname)
     
     if len(durations_from_name) == 0:
-        console.print(f"{host}: {ERROR} Couldn't get duration from scripts or test name for {testname}", style="bold white")
+        console.print(f"{hostname}: {ERROR} Couldn't get duration from scripts or test name for {testname}", style="bold white")
         return 0
     
     duration_from_name = durations_from_name[0]
@@ -1162,7 +1165,7 @@ def has_leftovers(ssh, host, home_dir):
 
 :returns    none
 """       
-def download_test_results(ssh, host, home_dir, target_dir):
+def download_test_results(ssh, hostname, host, home_dir, target_dir):
     try:
         with ssh.open_sftp() as sftp:
             for filename in sftp.listdir(home_dir):
@@ -1170,9 +1173,9 @@ def download_test_results(ssh, host, home_dir, target_dir):
                     sftp.get(filename, os.path.join(target_dir, filename))
                     sftp.remove(filename)
     
-                    console.print(host + ": " +EXEC+ " Downloaded " + filename, style="bold white") if DEBUG_MODE else None
+                    console.print(hostname + ": " +EXEC+ " Downloaded " + filename, style="bold white") if DEBUG_MODE else None
     except Exception as e:
-            console.print(host + ": " + ERROR + " Error while downloading the test results. Exception:\n\t[bold red]" + str(e) + "[/bold red]", style="bold white")
+            console.print(hostname + ": " + ERROR + " Error while downloading the test results. Exception:\n\t[bold red]" + str(e) + "[/bold red]", style="bold white")
         
 """
 ? check_machine_online(ssh, host, username, ssh_key) sends periodic pings to the machine until it responds.
@@ -1184,8 +1187,9 @@ def download_test_results(ssh, host, home_dir, target_dir):
 
 :returns    none
 """
-def check_machine_online(ssh, host, username, ssh_key):
-    while True:
+def check_machine_online(ssh, host, username, ssh_key, timeout):
+    timer = 0
+    while timer < timeout:
         try:
             k = paramiko.RSAKey.from_private_key_file(ssh_key)
             ssh.connect(host, username=username, pkey = k)
@@ -1194,6 +1198,11 @@ def check_machine_online(ssh, host, username, ssh_key):
             # console.print("[red]Error connecting to " + host + ". Reconnecting...[/red]", style=output_colour)
             # console.print(e, style="bold yellow")
             time.sleep(1)
+            timer += 1
+
+    if timer == timeout:
+        console.print(f"{PING}: Timeout after {timeout} seconds when pinging {host}.")
+        sys.exit(0)
             
 """
 ? restart_machine(ssh, host, username, ssh_key) restarts the machine.
