@@ -262,6 +262,9 @@ def get_scripts_for_set(settings, machines, set_name):
                 "ssh_key": machines[i]["ssh_key"],
                 "username": machines[i]["username"],
                 "perftest": machines[i]["perftest"],
+                "perftest_publisher": machines[i]["perftest_publisher"],
+                "perftest_subscriber": machines[i]["perftest_subscriber"],
+                "home_dir": machines[i]["home_dir"],
                 "pub_scripts": machine_pub_scripts,
                 "sub_scripts": machine_sub_scripts
             }
@@ -860,7 +863,7 @@ def get_duration(start_time, end_time):
 """
 def ssh_thread(machine, set_name, camp_name, current_repetition, total_repetitions):
     global IS_TEST_OVER_ELAPSED
-    home_dir = "~/"
+    home_dir = machine["home_dir"]
     test_name = machine["test"]
     hostname = machine["name"]
     host = machine["host"]
