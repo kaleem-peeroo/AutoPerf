@@ -911,7 +911,7 @@ def ssh_thread(machine, set_name, camp_name, current_repetition, total_repetitio
     console.print(hostname + ": " +PING+ " Online.", style="bold white") if DEBUG_MODE else None
 
     # ? Check for, download and delete existing .csv files
-    if has_leftovers(ssh, host, home_dir):
+    if has_leftovers(ssh, hostname, home_dir):
         leftovers_path = os.path.join(
             test_dir_path,
             "run_" + str(current_repetition),
@@ -959,7 +959,7 @@ def ssh_thread(machine, set_name, camp_name, current_repetition, total_repetitio
     console.print(hostname + ": " +LOG+ " Created script logs", style="bold white") if DEBUG_MODE else None
     
     # ? Log system info
-    log_system(hostname, ssh, scripts, test_name)
+    log_system(hostname, ssh, scripts, test_name, home_dir)
     
     # ? Run the scripts
     if scripts is not None:
@@ -1092,7 +1092,7 @@ def download_logs(hostname, host, ssh, home_dir, target_dir):
 
 :returns    none
 """
-def log_system(hostname, ssh, scripts, testname):
+def log_system(hostname, ssh, scripts, testname, home_dir):
     if scripts:
         duration = get_duration_from_test_scripts(scripts)
     else:
@@ -1103,9 +1103,21 @@ def log_system(hostname, ssh, scripts, testname):
     
     duration = duration + FAIL_DURATION_S
     
+
+
     # ? Check for any leftover sar_logs files
-    home_dir = "~/"
     with ssh.open_sftp() as sftp:
+        
+        # ? Check if home_dir exists
+        try:
+            attrs = sftp.stat(home_dir)
+            if not stat.S_ISDIR(attrs.st_mode):
+                console.print(f"{hostname}: {home_dir} is not a directory.", style="bold red")
+                sys.exit()
+        except FileNotFoundError:
+            console.print(f"{hostname}: {home_dir} does not exist.", style="bold red")
+            sys.exit()
+
         all_files = sftp.listdir(home_dir)
         sar_logs = [file for file in all_files if "sar_logs" in file and "log" in file]
         
@@ -1150,17 +1162,17 @@ def get_duration_from_test_scripts(scripts):
     else:
         return 0
 
-def has_leftovers(ssh, host, home_dir):
+def has_leftovers(ssh, hostname, home_dir):
     with ssh.open_sftp() as sftp:
 
         # ? Check if home_dir exists
         try:
             attrs = sftp.stat(home_dir)
             if not stat.S_ISDIR(attrs.st_mode):
-                console.print(f"{host}: {home_dir} is not a directory.", style="bold red")
+                console.print(f"{hostname}: {home_dir} is not a directory.", style="bold red")
                 sys.exit()
         except FileNotFoundError:
-            console.print(f"{host}: {home_dir} does not exist.", style="bold red")
+            console.print(f"{hostname}: {home_dir} does not exist.", style="bold red")
             sys.exit()
         
         csv_files = [file for file in sftp.listdir(home_dir) if fnmatch.fnmatch(file, "*.csv")]
