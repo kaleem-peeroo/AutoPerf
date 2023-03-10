@@ -1108,8 +1108,6 @@ def log_system(hostname, ssh, scripts, testname, home_dir):
     
     duration = duration + FAIL_DURATION_S
     
-
-
     # ? Check for any leftover sar_logs files
     with ssh.open_sftp() as sftp:
         
@@ -1132,6 +1130,7 @@ def log_system(hostname, ssh, scripts, testname, home_dir):
     # ? Start logging and output to a file
     try:
         # console.print(f"{host}: {EXEC} SAR COMMAND: sar -A -o sar_logs 1 {str(duration)}", style="bold green")
+        console.print(f"SAR command:\n\tsar -A -o sar_logs 1 " + str(duration) + " >/dev/null 2>&1 &", style="bold white") if DEBUG_MODE else None
         stdin, stdout, stderr = ssh.exec_command("sar -A -o sar_logs 1 " + str(duration) + " >/dev/null 2>&1 &")
     except Exception as e:
         console.print(hostname + ": " + ERROR + " Error when logging system stats. Exception:\n\t[bold red]" + str(e) + "[/bold red]", style="bold white")
