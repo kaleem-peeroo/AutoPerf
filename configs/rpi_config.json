@@ -26,16 +26,20 @@
                 "username": "acwh025", 
                 "host": "169.254.248.55", 
                 "perftest": "", 
-                "perftest_publisher": "", 
-                "perftest_subscriber": "", 
-                "ssh_key": "id_rsa"
+                "perftest_publisher": "$perftest_publisher", 
+                "perftest_subscriber": "$perftest_subscriber", 
+                "ssh_key": "id_rsa",
+                "home_dir": "/home/acwh025"
             },
 			{
                 "name": "p2", 
                 "username": "acwh025", 
                 "host": "169.254.201.141", 
                 "perftest": "", 
-                "ssh_key": "id_rsa"
+                "perftest_publisher": "$perftest_publisher", 
+                "perftest_subscriber": "$perftest_subscriber", 
+                "ssh_key": "id_rsa",
+                "home_dir": "/home/acwh025"
             }
 		],
         "domain_per_machine": false

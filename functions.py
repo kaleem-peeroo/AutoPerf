@@ -9,6 +9,7 @@ import concurrent.futures
 import math
 import threading
 import re
+import stat
 
 from threading import Thread
 from datetime import datetime, timedelta
@@ -1148,6 +1149,17 @@ def get_duration_from_test_scripts(scripts):
 
 def has_leftovers(ssh, host, home_dir):
     with ssh.open_sftp() as sftp:
+
+        # ? Check if home_dir exists
+        try:
+            attrs = sftp.stat(home_dir)
+            if not stat.S_ISDIR(attrs.st_mode):
+                console.print(f"{host}: {home_dir} is not a directory.", style="bold red")
+                sys.exit()
+        except FileNotFoundError:
+            console.print(f"{host}: {home_dir} does not exist.", style="bold red")
+            sys.exit()
+        
         csv_files = [file for file in sftp.listdir(home_dir) if fnmatch.fnmatch(file, "*.csv")]
         log_files = [file for file in sftp.listdir(home_dir) if fnmatch.fnmatch(file, "*.log")]
         if len(csv_files) > 0 or len(log_files) > 0:
