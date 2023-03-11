@@ -28,3 +28,5 @@ from rich.progress import track
 
 console = Console()
 
+def validate_args(args):
+    pprint(args)
