@@ -33,14 +33,23 @@ if Confirm.ask("Would you like to remove some of the combinations?", default=Fal
 else:
     combinations = get_combinations_from_config(config)
 
-# TODO: Create folder for test combination files.
+# TODO: Generate scripts for each campaign's combinations.
+campaign_scripts = []
+for item in combinations:
+    campaign = item['name']
+    
+    camp_config = [item for item in config['campaigns'] if item['name'] == campaign][0]
+    
+    combs = item['combinations']
+    
+    scripts = [generate_scripts(comb) for comb in combs]
+    
+    pub_scripts, sub_scripts = allocate_scripts_per_machine(scripts, len(camp_config['machines']))
 
-# TODO: Generate total combinations for each config.
-
-# TODO: Let user modify which combinations to run.
-
-# TODO: Generate scripts for each test.
-
-# TODO: Create folders to store test results for campaign.
-
-# TODO: Validate machine connection.
+    campaign_scripts.append({
+        'name': campaign,
+        'combinations': combs,
+        'scripts': scripts,
+        'pub_scripts': pub_scripts,
+        'sub_scripts': sub_scripts
+    })

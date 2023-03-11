@@ -117,3 +117,25 @@ def get_combination_from_title(title):
             combination['latency_count'] = int(setting.replace("lc", ""))
 
     return combination
+
+def share(items, bins):
+    if len(items) == 0 or bins == 0:
+        return []
+
+    if bins == 1:
+        return items
+
+    output = []
+    
+    for i in range(bins):
+        output.append([])
+    
+    while len(items) > 0:
+        for i in range(bins):
+            try:
+                output[i].append(items[0])
+                items = items[1:]
+            except Exception as e:
+                None
+            
+    return output

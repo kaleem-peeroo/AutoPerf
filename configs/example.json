@@ -56,9 +56,7 @@
                     "ssh_key": "~/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "",
-                    "perftest_publisher": "$perftest_publisher",
-                    "perftest_subscriber": "$perftest_subscriber"
+                    "perftest": "$perftest_publisher"
                 },
                 {
                     "name": "p2",
@@ -66,9 +64,7 @@
                     "ssh_key": "~/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "",
-                    "perftest_publisher": "$perftest_publisher",
-                    "perftest_subscriber": "$perftest_subscriber"
+                    "perftest": "$perftest_publisher"
                 }
             ]
         }

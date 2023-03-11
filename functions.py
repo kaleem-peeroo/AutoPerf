@@ -81,3 +81,86 @@ def get_combinations_from_config(config):
         })
 
     return combs
+
+def generate_scripts(combination):
+    script_base = ""
+    
+    pub_count = 0
+    sub_count = 0
+    
+    duration_output = None
+    
+    for k, v in combination.items():
+        if "bytes" in k:
+            script_base = script_base + "-dataLen " + str(v) + " "
+        elif "pub" in k:
+            pub_count = v
+        elif "sub" in k:
+            sub_count = v
+        elif "reliability" in k:
+            if not v:
+                script_base = script_base + "-bestEffort "
+        elif "multicast" in k:
+            if v:
+                script_base = script_base + "-multicast "
+        elif "durability" in k:
+            script_base = script_base + "-durability " + str(v) + " "
+        elif "latency_count" in k:
+            latency_count_output = "-LatencyCount " + str(v) + " "
+        elif "duration" in k:
+            duration_output = "-executionTime " + str(v)
+    
+    scripts = []
+    
+    if pub_count == 1:
+        scripts.append( script_base + "-pub -outputFile pub_0.csv -numSubscribers " + str(sub_count))
+    elif pub_count == 0:
+        console.print("Publisher count can't be 0.", style="bold red")
+        sys.exit(0)
+    else:
+        sub_count_string = "-numSubscribers " + str(sub_count) + " "
+        for i in range(pub_count):
+            if i == 0:
+                scripts.append(script_base + "-pub -pidMultiPubTest " + str(i) + " -outputFile pub_" +str(i)+ ".csv " + sub_count_string)
+            else:
+                scripts.append(script_base + "-pub -pidMultiPubTest " + str(i) + " " + sub_count_string)
+    
+    if sub_count == 1:
+        scripts.append( script_base + "-sub -outputFile sub_0.csv -numPublishers " + str(pub_count))
+    elif sub_count == 0:
+        console.print("Subscriber count can't be 0.", style="bold red")
+        sys.exit(0)
+    else:
+        pub_count_string = "-numPublishers " + str(pub_count) + " "
+        for i in range(sub_count):
+            scripts.append(script_base + "-sub -sidMultiSubTest " + str(i) + " -outputFile sub_" + str(i) + ".csv " + pub_count_string)
+    
+    updated_scripts = []
+    for script in scripts:
+        if "-pub" in script:
+            script = script + " " + duration_output + " " + latency_count_output + " -batchSize 0 "
+        
+        script = script + " -transport UDPv4 "
+            
+        updated_scripts.append(script)
+           
+    return updated_scripts
+
+def allocate_scripts_per_machine(scripts, machine_count):
+    shared_pub_scripts = []
+    shared_sub_scripts = []
+    
+    if machine_count == 1:
+        return [scripts]
+    else:
+        for i in range(machine_count):
+            shared_pub_scripts.append([])
+            shared_sub_scripts.append([])
+    
+    pub_scripts = [x for x in scripts if '-pub' in x]
+    sub_scripts = [x for x in scripts if '-sub' in x]
+    
+    shared_pub_scripts = share(pub_scripts, machine_count)
+    shared_sub_scripts = share(sub_scripts, machine_count)
+    
+    return shared_pub_scripts, shared_sub_scripts
