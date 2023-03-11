@@ -1,40 +1,6 @@
-import fnmatch
-import shutil
-import sys
-import os
-import json
-import paramiko
-import time
-import concurrent.futures
-import math
-import threading
-import re
-import stat
-
-from threading import Thread
-from datetime import datetime, timedelta
-from pprint import pprint
-from itertools import product
-from itertools import repeat
-from rich.console import Console
-from rich.markdown import Markdown
-from rich.prompt import Prompt
-from rich.prompt import Confirm
-from rich.progress import track
-
-# ? Uncomment for rich traceback formatting
-# from rich.traceback import install
-# install(show_locals=True)
-
-console = Console()
-
-DEBUG_MODE = "debug" in sys.argv
-
-DEBUG = "[bold red]DEBUG: [/bold red]"
+from utility_functions import *
 
 def validate_args(args):
-    console.print(f"{DEBUG}Validating args...", style="bold white") if DEBUG_MODE else None
-
     # ? No args given.
     if len(args) == 0:
         console.print(f"No config file given.", style="bold red")
@@ -47,4 +13,28 @@ def validate_args(args):
         console.print(f"Can't access {config_path}. Check it exists and is accessible and try again.", style="bold red")
         sys.exit()
 
-    console.print(f"{DEBUG}args validated.", style="bold green") if DEBUG_MODE else None
+def read_config(confpath):
+    try:
+        with open(confpath) as f:
+            config = json.load(f)
+
+        return config
+    except Exception as e:
+        console.print(f"Error when reading config: \n\t{e}", style="bold red")
+        sys.exit()
+
+def get_combinations_count_from_settings(settings):
+    product = 1
+    
+    for key in settings:
+        product *= len(settings[key])
+    
+    return product
+
+def write_combinations_to_file(config):
+    # dir_name = create_dir("test_combinations")
+    # TODO: Write combinations to file per campaign in the dir_name folder that was created in the immediate line above this.
+    
+    None
+
+    # return dir_name

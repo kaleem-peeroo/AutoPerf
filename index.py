@@ -2,12 +2,38 @@ from functions import *
 
 args = sys.argv[1:]
 
-# TODO: Validate args
+# ? Validate args
+console.print(f"{DEBUG}Validating args...", style="bold white") if DEBUG_MODE else None
 validate_args(args)
+console.print(f"{DEBUG}args validated.", style="bold green") if DEBUG_MODE else None
 
-# TODO: Read config file.
+# ? Read config file.
+console.print(f"{DEBUG}Reading config: {args[0]}...", style="bold white") if DEBUG_MODE else None
+config = read_config(args[0])
+console.print(f"{DEBUG}Config read.", style="bold green") if DEBUG_MODE else None
 
-# TODO: Generate total combinations.
+# TODO: Calculate total number of combinations for each campaign.
+console.print(f"Here are the total number of combinations for each campaign:", style="bold white")
+for camp in config["campaigns"]:
+    name = camp['name']
+    comb_count = get_combinations_count_from_settings(camp['settings'])
+    console.print(f"\t[bold blue]{name}[/bold blue]: {comb_count} combinations.")
+
+# TODO: Uncomment next line and delete the line after (if True).
+# if Confirm.ask("Would you like to remove some of the combinations?", default=False):
+if True:
+    file_combs_dir = write_combinations_to_file(config)
+    
+    console.print(f"\nThe combinations of each campaign have been written to /{file_combs_dir}. ", style="bold white")
+    console.print(f"Go ahead and remove the tests you don't want and then come back here to continue.\n", style="bold green")
+
+    is_ready = Confirm.ask("Are you ready?", default=True)
+    while not is_ready:
+        is_ready = Confirm.ask("Are you ready?", default=True)
+
+# TODO: Create folder for test combination files.
+
+# TODO: Generate total combinations for each config.
 
 # TODO: Let user modify which combinations to run.
 

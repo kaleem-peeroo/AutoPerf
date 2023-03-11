@@ -1,13 +1,49 @@
 {
     "campaigns": [
         {
-            "name": "Example Campaign",
+            "name": "Example Campaign 1",
             "repetitions": 1,
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100],
                 "pub_count": [1, 2, 5, 10],
                 "sub_count": [1, 2, 5, 10],
+                "reliability": [true, false],
+                "use_multicast": [true, false],
+                "durability": [0, 1, 2, 3],
+                "latency_count": [100]
+            },
+            "machines": [
+                {
+                    "name": "p1",
+                    "host": "169.254.248.55",
+                    "ssh_key": "~/.ssh/id_rsa",
+                    "username": "acwh025",
+                    "home_dir": "/home/acwh025/",
+                    "perftest": "",
+                    "perftest_publisher": "$perftest_publisher",
+                    "perftest_subscriber": "$perftest_subscriber"
+                },
+                {
+                    "name": "p2",
+                    "host": "169.254.201.141",
+                    "ssh_key": "~/.ssh/id_rsa",
+                    "username": "acwh025",
+                    "home_dir": "/home/acwh025/",
+                    "perftest": "",
+                    "perftest_publisher": "$perftest_publisher",
+                    "perftest_subscriber": "$perftest_subscriber"
+                }
+            ]
+        },
+        {
+            "name": "Example Campaign 2",
+            "repetitions": 1,
+            "settings": {
+                "duration_s": [600],
+                "datalen_bytes": [100],
+                "pub_count": [25, 35, 45, 55, 65, 75],
+                "sub_count": [25, 35, 45, 55, 65, 75],
                 "reliability": [true, false],
                 "use_multicast": [true, false],
                 "durability": [0, 1, 2, 3],
