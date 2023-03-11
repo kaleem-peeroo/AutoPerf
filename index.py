@@ -36,6 +36,8 @@ else:
 # TODO: Generate scripts for each campaign's combinations.
 campaign_scripts = []
 for item in combinations:
+    machine_scripts = []
+    
     campaign = item['name']
     
     camp_config = [item for item in config['campaigns'] if item['name'] == campaign][0]
@@ -46,10 +48,41 @@ for item in combinations:
     
     pub_scripts, sub_scripts = allocate_scripts_per_machine(scripts, len(camp_config['machines']))
 
+    machines = camp_config['machines']
+
+    for i in range(len(machines)):            
+        perftest = machines[i]["perftest"]
+        
+        if len(pub_scripts) > 1:
+            machine_pub_scripts = [perftest + " " + x for x in pub_scripts[i]]
+        else:
+            machine_pub_scripts = pub_scripts
+        
+        if len(sub_scripts) > 1:
+            machine_sub_scripts = [perftest + " " + x for x in sub_scripts[i]]
+        else:
+            machine_sub_scripts = sub_scripts
+        
+        machine_script = {
+            "name": machines[i]["name"],
+            "host": machines[i]["host"],
+            "ssh_key": machines[i]["ssh_key"],
+            "username": machines[i]["username"],
+            "perftest": machines[i]["perftest"],
+            "home_dir": machines[i]["home_dir"],
+            "pub_scripts": machine_pub_scripts,
+            "sub_scripts": machine_sub_scripts
+        }
+        
+        
+        machine_scripts.append(machine_script)
+
     campaign_scripts.append({
         'name': campaign,
         'combinations': combs,
         'scripts': scripts,
         'pub_scripts': pub_scripts,
-        'sub_scripts': sub_scripts
+        'sub_scripts': sub_scripts,
+        'machines': machine_scripts
     })
+
