@@ -32,9 +32,52 @@ def get_combinations_count_from_settings(settings):
     return product
 
 def write_combinations_to_file(config):
-    # dir_name = create_dir("test_combinations")
-    # TODO: Write combinations to file per campaign in the dir_name folder that was created in the immediate line above this.
+    dir_name = create_dir("test_combinations")
     
-    None
+    for campaign in config['campaigns']:
+        comb_filename = campaign['name'].replace(" ", '_')
+        comb_filename = os.path.join(dir_name, comb_filename + ".txt")
+        combinations = get_combinations(campaign['settings'])
+        comb_titles = []
 
-    # return dir_name
+        for combination in combinations:
+            comb_titles.append(get_test_title_from_combination(combination))
+
+        with open(comb_filename, "w") as f:
+            f.writelines(f"{title}\n" for title in comb_titles)
+
+        console.print(f"{DEBUG}Written test combinations to {comb_filename}.", style="bold green") if DEBUG_MODE else None
+
+    return dir_name
+
+def get_combinations_from_file(dirpath, config):
+    comb_files = os.listdir(dirpath)
+    comb_files = [os.path.join(dirpath, file) for file in comb_files]
+
+    combs = []
+    for file in comb_files:
+        camp_name = os.path.basename(file).replace(".json", "")
+        
+        with open(file, 'r') as f:
+            titles = f.readlines()
+
+        combinations = [get_combination_from_title(title) for title in titles]
+
+        combs.append({
+            "name": camp_name,
+            "combinations": combinations
+        })
+
+    return combs
+
+def get_combinations_from_config(config):
+    combs = []
+
+    for campaign in config['campaigns']:
+        comb = get_combinations(campaign['settings'])
+        combs.append({
+            "name": campaign['name'],
+            "combinations": comb
+        })
+
+    return combs

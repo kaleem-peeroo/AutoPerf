@@ -19,9 +19,7 @@ for camp in config["campaigns"]:
     comb_count = get_combinations_count_from_settings(camp['settings'])
     console.print(f"\t[bold blue]{name}[/bold blue]: {comb_count} combinations.")
 
-# TODO: Uncomment next line and delete the line after (if True).
-# if Confirm.ask("Would you like to remove some of the combinations?", default=False):
-if True:
+if Confirm.ask("Would you like to remove some of the combinations?", default=False):
     file_combs_dir = write_combinations_to_file(config)
     
     console.print(f"\nThe combinations of each campaign have been written to /{file_combs_dir}. ", style="bold white")
@@ -30,6 +28,10 @@ if True:
     is_ready = Confirm.ask("Are you ready?", default=True)
     while not is_ready:
         is_ready = Confirm.ask("Are you ready?", default=True)
+
+    combinations = get_combinations_from_file(file_combs_dir, config)
+else:
+    combinations = get_combinations_from_config(config)
 
 # TODO: Create folder for test combination files.
 
