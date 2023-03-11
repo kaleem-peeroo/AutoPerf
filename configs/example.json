@@ -16,20 +16,20 @@
             "machines": [
                 {
                     "name": "p1",
-                    "host": "192.168.3.3",
-                    "ssh_key": "path/to/id_rsa",
-                    "username": "admin",
-                    "home_dir": "/path/to/home",
+                    "host": "169.254.248.55",
+                    "ssh_key": "~/.ssh/id_rsa",
+                    "username": "acwh025",
+                    "home_dir": "/home/acwh025/",
                     "perftest": "",
                     "perftest_publisher": "$perftest_publisher",
                     "perftest_subscriber": "$perftest_subscriber"
                 },
                 {
                     "name": "p2",
-                    "host": "192.168.3.45",
-                    "ssh_key": "path/to/id_rsa",
-                    "username": "admin",
-                    "home_dir": "/path/to/home",
+                    "host": "169.254.201.141",
+                    "ssh_key": "~/.ssh/id_rsa",
+                    "username": "acwh025",
+                    "home_dir": "/home/acwh025/",
                     "perftest": "",
                     "perftest_publisher": "$perftest_publisher",
                     "perftest_subscriber": "$perftest_subscriber"

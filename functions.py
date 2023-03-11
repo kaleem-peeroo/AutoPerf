@@ -28,5 +28,23 @@ from rich.progress import track
 
 console = Console()
 
+DEBUG_MODE = "debug" in sys.argv
+
+DEBUG = "[bold red]DEBUG: [/bold red]"
+
 def validate_args(args):
-    pprint(args)
+    console.print(f"{DEBUG}Validating args...", style="bold white") if DEBUG_MODE else None
+
+    # ? No args given.
+    if len(args) == 0:
+        console.print(f"No config file given.", style="bold red")
+        console.print(f"Config file expected as:\n\tpython index.py <config_file>", style="bold green")
+        sys.exit()
+
+    # ? Validate config file
+    config_path = args[0]
+    if not ( os.path.isfile(config_path) and os.access(config_path, os.R_OK) ):
+        console.print(f"Can't access {config_path}. Check it exists and is accessible and try again.", style="bold red")
+        sys.exit()
+
+    console.print(f"{DEBUG}args validated.", style="bold green") if DEBUG_MODE else None
