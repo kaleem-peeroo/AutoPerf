@@ -30,8 +30,19 @@ if Confirm.ask("Would you like to remove some of the combinations?", default=Fal
         is_ready = Confirm.ask("Are you ready?", default=True)
 
     combinations = get_combinations_from_file(file_combs_dir, config)
+
+    # ? Output number of combinations for confirmation.
+    console.print(f"Here are the [bold blue]updated[/bold blue] total number of combinations for each campaign:", style="bold white")
+    for campaign in combinations:
+        camp_name = campaign['name']
+        camp_combinations = campaign['combinations']
+        camp_comb_count = len(camp_combinations)
+        
+        console.print(f"\t[bold blue]{camp_name}[/bold blue]: {camp_comb_count} combinations.", style="bold white")
+
 else:
     combinations = get_combinations_from_config(config)
+
 
 # TODO: Generate scripts for each campaign's combinations.
 campaign_scripts = []

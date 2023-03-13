@@ -56,7 +56,7 @@ def get_combinations_from_file(dirpath, config):
 
     combs = []
     for file in comb_files:
-        camp_name = os.path.basename(file).replace(".json", "")
+        camp_name = os.path.basename(file).replace(".json", "").replace(".txt", "").replace("_", " ")
         
         with open(file, 'r') as f:
             titles = f.readlines()
