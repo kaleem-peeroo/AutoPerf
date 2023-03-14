@@ -45,55 +45,94 @@ else:
 
 
 # TODO: Generate scripts for each campaign's combinations.
-campaign_scripts = []
-for item in combinations:
-    machine_scripts = []
-    
-    campaign = item['name']
-    
-    camp_config = [item for item in config['campaigns'] if item['name'] == campaign][0]
-    
-    combs = item['combinations']
-    
-    scripts = [generate_scripts(comb) for comb in combs]
-    
-    pub_scripts, sub_scripts = allocate_scripts_per_machine(scripts, len(camp_config['machines']))
-
-    machines = camp_config['machines']
-
-    for i in range(len(machines)):            
-        perftest = machines[i]["perftest"]
-        
-        if len(pub_scripts) > 1:
-            machine_pub_scripts = [perftest + " " + x for x in pub_scripts[i]]
-        else:
-            machine_pub_scripts = pub_scripts
-        
-        if len(sub_scripts) > 1:
-            machine_sub_scripts = [perftest + " " + x for x in sub_scripts[i]]
-        else:
-            machine_sub_scripts = sub_scripts
-        
-        machine_script = {
-            "name": machines[i]["name"],
-            "host": machines[i]["host"],
-            "ssh_key": machines[i]["ssh_key"],
-            "username": machines[i]["username"],
-            "perftest": machines[i]["perftest"],
-            "home_dir": machines[i]["home_dir"],
-            "pub_scripts": machine_pub_scripts,
-            "sub_scripts": machine_sub_scripts
+"""
+combinations = [{
+    'name': 'camp_name',
+    'combinations': [
+        {
+            'durability': ...,
+            'multicast': ...,
+            ...
         }
+    ]
+}]
+"""
+
+campaign_scripts = []
+for camp_comb in combinations:
+    camp_name = camp_comb['name']
+    test_combs = camp_comb['combinations']
+
+    camp_config = [_ for _ in config['campaigns'] if _['name'] == camp_name][0]
+    machine_count = len(camp_config['machines'])
+
+    test_scripts = []
+
+    for test_comb in test_combs:
+        scripts = generate_scripts(test_comb)
+        pub_scripts, sub_scripts = allocate_scripts_per_machine(scripts, machine_count)
+
+        perftest = camp_config['machines'][0]["perftest"]
         
-        
-        machine_scripts.append(machine_script)
+        machine_scripts = []
+
+        for machine, pub_script, sub_script in zip(camp_config['machines'], pub_scripts, sub_scripts):
+            machine_pub_scripts = [f"{perftest} {script}" for script in pub_script]
+            machine_sub_scripts = [f"{perftest} {script}" for script in sub_script]
+
+            machine_pub_scripts = " & ".join(machine_pub_scripts) if len(machine_pub_scripts) > 1 else machine_pub_scripts[0]
+            machine_sub_scripts = " & ".join(machine_sub_scripts) if len(machine_sub_scripts) > 1 else machine_sub_scripts[0]
+
+            if len(machine_pub_scripts) > 0 and len(machine_sub_scripts) > 0:
+                machine_script = machine_pub_scripts + " & " + machine_sub_scripts
+            elif len(machine_pub_scripts) > 0 and len(machine_sub_scripts) == 0:
+                machine_script = machine_pub_scripts
+            elif len(machine_pub_scripts) == 0 and len(machine_sub_scripts) > 0:
+                machine_script = machine_sub_scripts
+            else:
+                machine_script = None
+
+            machine.update({"scripts": machine_script})
+            machine_scripts.append(machine)
+
+        # ? Number of machines = number of machine scripts
+        assert(len(camp_config['machines']) == len(machine_scripts))
+
+        test_scripts.append({
+            "combination": test_comb,
+            "machines": machine_scripts
+        })
+
+    # ? Number of tests = number of scripts per test
+    assert(len(test_combs) == len(test_scripts))
 
     campaign_scripts.append({
-        'name': campaign,
-        'combinations': combs,
-        'scripts': scripts,
-        'pub_scripts': pub_scripts,
-        'sub_scripts': sub_scripts,
-        'machines': machine_scripts
+        "name": camp_name,
+        "tests": test_scripts
     })
 
+# ? Number of campaigns with scripts generated = number of campaigns
+assert(len(campaign_scripts) == len(combinations))
+        
+# ? At this point, every campaign contains a test. Every test contains its combination and the machines involved. Every machine contains the relevant machine information as well as its scripts to run.
+"""
+campaign_scripts = [{
+    'name': 'camp_name',
+    'tests': [
+        {
+            'combination' : {'duration_s': 600, ...},
+            'machines': [
+                {'name': 'p1', 'host': '...', ..., 'scripts': '...'},
+                {'name': 'p2', 'host': '...', ..., 'scripts': '...'}
+            ]
+        },
+        {
+            'combination' : {'duration_s': 600, ...},
+            'machines': [
+                {'name': 'p1', 'host': '...', ..., 'scripts': '...'},
+                {'name': 'p2', 'host': '...', ..., 'scripts': '...'}
+            ]
+        }
+    ]
+}]
+"""
