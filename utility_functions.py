@@ -30,7 +30,8 @@ console = Console()
 
 DEBUG_MODE = "debug" in sys.argv
 
-DEBUG = "[bold red]DEBUG: [/bold red]"
+DEBUG = "[bold red]DEBUG:[/bold red]"
+WARNING = "[bold red] WARNING:[/bold red]"
 
 def create_dir(dirpath):
     dirpath_name = dirpath
@@ -39,6 +40,9 @@ def create_dir(dirpath):
     while os.path.exists(dirpath):
         i += 1
         dirpath = f"{dirpath_name}_{i}"
+
+    if i > 0:
+        console.print(f"{WARNING} {dirpath_name} already exists. Creating the folder {dirpath} instead.", style="bold white")
 
     os.mkdir(dirpath)
 

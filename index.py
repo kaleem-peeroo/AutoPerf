@@ -3,14 +3,14 @@ from functions import *
 args = sys.argv[1:]
 
 # ? Validate args
-console.print(f"{DEBUG}Validating args...", style="bold white") if DEBUG_MODE else None
+console.print(f"{DEBUG} Validating args...", style="bold white") if DEBUG_MODE else None
 validate_args(args)
-console.print(f"{DEBUG}args validated.", style="bold green") if DEBUG_MODE else None
+console.print(f"{DEBUG} args validated.", style="bold green") if DEBUG_MODE else None
 
 # ? Read config file.
-console.print(f"{DEBUG}Reading config: {args[0]}...", style="bold white") if DEBUG_MODE else None
+console.print(f"{DEBUG} Reading config: {args[0]}...", style="bold white") if DEBUG_MODE else None
 config = read_config(args[0])
-console.print(f"{DEBUG}Config read.", style="bold green") if DEBUG_MODE else None
+console.print(f"{DEBUG} Config read.", style="bold green") if DEBUG_MODE else None
 
 # TODO: Calculate total number of combinations for each campaign.
 console.print(f"Here are the total number of combinations for each campaign:", style="bold white")
@@ -140,6 +140,7 @@ campaign_scripts = [{
 """
 TODO:
 For each campaign:
+    - Make a folder.
     For each test:
         - Make a folder of the test results - generate the name using the combination (also check if name already exists and add number at the end).
         - Write the test info (combination, machine scripts) to a .json file.
@@ -156,3 +157,7 @@ For each campaign:
                 - If some are missing - try the test again (up to 3 times before moving on to the next test).
             - Download the system logs.
 """
+for campaign in campaign_scripts:
+    camp_name = campaign['name']
+    # ? Make a folder for the campaign.
+    create_dir(camp_name.replace(" ", "_"))

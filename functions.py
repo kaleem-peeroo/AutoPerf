@@ -46,7 +46,7 @@ def write_combinations_to_file(config):
         with open(comb_filename, "w") as f:
             f.writelines(f"{title}\n" for title in comb_titles)
 
-        console.print(f"{DEBUG}Written test combinations to {comb_filename}.", style="bold green") if DEBUG_MODE else None
+        console.print(f"{DEBUG} Written test combinations to {comb_filename}.", style="bold green") if DEBUG_MODE else None
 
     return dir_name
 
