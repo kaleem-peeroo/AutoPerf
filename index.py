@@ -132,7 +132,27 @@ campaign_scripts = [{
                 {'name': 'p1', 'host': '...', ..., 'scripts': '...'},
                 {'name': 'p2', 'host': '...', ..., 'scripts': '...'}
             ]
-        }
+        },
+        ...
     ]
-}]
+}, ...]
+"""
+"""
+TODO:
+For each campaign:
+    For each test:
+        - Make a folder of the test results - generate the name using the combination (also check if name already exists and add number at the end).
+        - Write the test info (combination, machine scripts) to a .json file.
+        - Create threads for each machine.
+            - Check that the machine is online.
+            - Check for, download, and then delete existing csv files.
+            - Restart the machine.
+            - Check its online.
+            - Start the logging.
+            - Run the scripts.
+            - Wait for scripts to finish.
+            - Write the stderr to a file (if it has content).
+            - Check that all .csv files were generated and dowload them.
+                - If some are missing - try the test again (up to 3 times before moving on to the next test).
+            - Download the system logs.
 """
