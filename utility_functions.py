@@ -31,10 +31,21 @@ console = Console()
 DEBUG_MODE = "debug" in sys.argv
 
 DEBUG = "[bold red]DEBUG:[/bold red]"
-WARNING = "[bold red] WARNING:[/bold red]"
+WARNING = "[bold red]WARNING:[/bold red]"
 
 def create_dir(dirpath):
     dirpath_name = dirpath
+
+    # ? Make sure that there are no _1 or _n at the end of the name
+    index = dirpath.rfind("_")
+    if index != -1:
+        try:
+            int(dirpath[index+1:])
+            dirpath_name = dirpath[:index]
+        except ValueError:
+            # ? No number after the underscore
+            None
+
     i = 0
 
     while os.path.exists(dirpath):

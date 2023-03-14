@@ -68,6 +68,8 @@ for camp_comb in combinations:
 
     test_scripts = []
 
+    console.print(f"{DEBUG} Generating scripts for {len(test_combs)} tests in {camp_name}.", style="bold white") if DEBUG_MODE else None
+
     for test_comb in test_combs:
         scripts = generate_scripts(test_comb)
         pub_scripts, sub_scripts = allocate_scripts_per_machine(scripts, machine_count)
@@ -110,6 +112,8 @@ for camp_comb in combinations:
         "name": camp_name,
         "tests": test_scripts
     })
+
+    console.print(f"{DEBUG} Scripts generated for {camp_name}.", style="bold white") if DEBUG_MODE else None
 
 # ? Number of campaigns with scripts generated = number of campaigns
 assert(len(campaign_scripts) == len(combinations))
