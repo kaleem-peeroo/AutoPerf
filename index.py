@@ -163,5 +163,19 @@ For each campaign:
 """
 for campaign in campaign_scripts:
     camp_name = campaign['name']
+    
     # ? Make a folder for the campaign.
-    create_dir(camp_name.replace(" ", "_"))
+    camp_dir = create_dir(camp_name.replace(" ", "_"))
+
+    tests = campaign['tests']
+
+    for test in tests:
+        # ? Make a folder for the test
+        test_title = get_test_title_from_combination(test['combination'])
+        test_dir = create_dir( os.path.join(camp_dir, test_title) )
+
+        # ? Write test config to file.
+        with open(os.path.join(test_dir, 'config.json'), 'w') as f:
+            json.dump(test, f, indent=4)
+
+        
