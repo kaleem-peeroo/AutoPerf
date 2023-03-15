@@ -174,5 +174,4 @@ def allocate_scripts_per_machine(scripts, machine_count):
     return shared_pub_scripts, shared_sub_scripts
 
 def machine_thread_func(machine):
-    # pprint(machine)
-    None
+    # TODO
