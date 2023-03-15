@@ -30,8 +30,9 @@ console = Console()
 
 DEBUG_MODE = "debug" in sys.argv
 
-DEBUG = "[bold red]DEBUG:[/bold red]"
+DEBUG = "[bold blue]DEBUG:[/bold blue]"
 WARNING = "[bold red]WARNING:[/bold red]"
+ERROR = "[bold red]ERROR:[/bold red]"
 
 def create_dir(dirpath):
     dirpath_name = dirpath
@@ -53,7 +54,7 @@ def create_dir(dirpath):
         dirpath = f"{dirpath_name}_{i}"
 
     if i > 0:
-        console.print(f"{WARNING} {dirpath_name} already exists. Creating the folder {dirpath} instead.", style="bold white")
+        console.print(f"{WARNING} {dirpath_name}_{i-1} already exists. Creating the folder {dirpath} instead.", style="bold white")
 
     os.mkdir(dirpath)
 
@@ -154,3 +155,18 @@ def share(items, bins):
                 None
             
     return output
+
+def get_duration_from_test_name(testname):
+    # ? Look for x numeric digits followed by "s_"
+    durations_from_name = re.findall(r'\d*s_', testname)
+    
+    if len(durations_from_name) == 0:
+        return None
+    
+    duration_from_name = durations_from_name[0]
+
+    duration_from_name = duration_from_name.replace("s_", "")
+    
+    duration = int(duration_from_name)
+    
+    return duration

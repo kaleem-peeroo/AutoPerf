@@ -51,3 +51,7 @@ Then run the following:
 ```bash
 python index.py path/to/config.json
 ```
+
+TODO: 
+- Set up PTST errors collection in one place to see what has gone wrong per test
+    - e.g. test_3 can't get expected duration, example_campaign has no tests, etc.

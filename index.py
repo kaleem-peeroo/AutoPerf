@@ -169,13 +169,48 @@ for campaign in campaign_scripts:
 
     tests = campaign['tests']
 
+    # ? Check for no tests.
+    if len(tests) == 0:
+        console.print(f"{WARNING} No tests found in {camp_name}.", style="bold white")
+        continue
+
     for test in tests:
+        # ? Retry test up to 3 times if the test times out.
+        retry = 3
+
         # ? Make a folder for the test
         test_title = get_test_title_from_combination(test['combination'])
         test_dir = create_dir( os.path.join(camp_dir, test_title) )
-
-        # ? Write test config to file.
-        with open(os.path.join(test_dir, 'config.json'), 'w') as f:
-            json.dump(test, f, indent=4)
-
         
+        # ? Get expected test duration in seconds.
+        expected_duration_sec = get_duration_from_test_name(test_title)
+        if expected_duration_sec is None:
+            console.print(f"{ERROR} Error calculating expected time duration in seconds for\n\t{test_title}.", style="bold white")
+            continue
+
+        with console.status(f"[{tests.index(test) + 1}/{len(tests)}] Running test: {test_title}..."):
+            # ? Write test config to file.
+            with open(os.path.join(test_dir, 'config.json'), 'w') as f:
+                json.dump(test, f, indent=4)
+
+            # ? Create threads for each machine.
+            machine_threads = []
+            for machine in test['machines']:
+                machine_thread = Thread(target=machine_thread_func, args=(machine,))
+                machine_threads.append(machine_thread)
+                machine_thread.start()
+
+            for machine_thread in machine_threads:
+                machine_thread.join(timeout=expected_duration_sec * 1.5)
+
+                # ? If thread is still alive after the timeout then try again.
+                while machine_thread.is_alive() and retry > 0:
+                    machine_thread = Thread(target=machine_thread_func, args=(machine, ))
+                    machine_thread.start()
+                    machine_thread.join(timeout=expected_duration_sec * 1.5)
+                    retry -= 1
+                
+                # ? If thread is still alive after 3 tries, kill it.
+                if machine_thread.is_alive():
+                    machine_thread._stop()
+                    console.print(f"{ERROR} {test_title} timed out 3 times after a duration of {expected_duration_sec * 1.5} seconds.", style="bold white")
