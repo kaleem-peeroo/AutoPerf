@@ -29,6 +29,7 @@ from rich.progress import track
 console = Console()
 
 DEBUG_MODE = "debug" in sys.argv
+SKIP_RESTART = "skip_restart" in sys.argv
 
 DEBUG = "[bold blue]DEBUG:[/bold blue]"
 WARNING = "[bold red]WARNING:[/bold red]"

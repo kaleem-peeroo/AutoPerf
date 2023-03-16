@@ -200,7 +200,7 @@ def machine_thread_func(machine, testdir):
 
     # ? Restart machine.
     log_debug(f"{NAME} Restarting machine...")
-    restart_machine(ssh, host, username, ssh_key) if not DEBUG_MODE else None
+    restart_machine(ssh, host, username, ssh_key) if not SKIP_RESTART else None
     log_debug(f"{NAME} Machine restarted.")
 
     # ? Check machine is online again.
