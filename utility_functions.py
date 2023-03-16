@@ -219,3 +219,47 @@ def restart_machine(ssh, host, username, ssh_key):
             break
         except Exception as e:
             time.sleep(1)
+
+def has_leftovers(machine, ssh):
+    k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
+    ssh.connect(machine['host'], username=machine['username'], pkey = k)
+
+    stdin, stdout, stderr = ssh.exec_command(f"ls {machine['home_dir']}/*.csv")
+
+    return len(stdout.readlines()) > 0
+
+def download_leftovers(machine, ssh, testdir):
+    log_debug(f"{machine['name']} Checking for leftovers...")
+
+    if has_leftovers(machine, ssh):
+        log_debug(f"{machine['name']} Leftovers found.")
+
+        # ? Make leftovers dir.
+        leftover_dir = os.path.join(testdir, "leftovers")
+        leftover_dir = create_dir(leftover_dir)
+
+        k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
+        ssh.connect(machine['host'], username=machine['username'], pkey=k)
+
+        with ssh.open_sftp() as sftp:
+            remote_dir = machine['home_dir']
+            local_dir = testdir
+
+            csv_files = sftp.listdir(remote_dir)
+
+            download_files_count = 0
+
+            for csv_file in csv_files:
+                if csv_file.endswith(".csv"):
+                    remote_filepath = os.path.join(remote_dir, csv_file)
+                    local_filepath = os.path.join(local_dir, csv_file)
+                    remote_filesize = sftp.stat(remote_filepath).st_size
+
+                    if remote_filesize > 0:
+                        sftp.get(remote_filesize, local_filepath)
+                        download_files_count += 1
+
+            log_debug(f"{machine['name']} {download_files_count} files downloaded.")
+
+    else:
+        log_debug(f"{machine['name']} No leftovers found.")

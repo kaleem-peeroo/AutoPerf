@@ -166,7 +166,7 @@ def allocate_scripts_per_machine(scripts, machine_count):
 
     return shared_pub_scripts, shared_sub_scripts
 
-def machine_thread_func(machine):
+def machine_thread_func(machine, testdir):
     """
     - Check that the machine is online.
     - Check for, download, and then delete existing csv files.
@@ -197,9 +197,15 @@ def machine_thread_func(machine):
     check_machine_online(ssh, host, username, ssh_key, 5)
     log_debug(f"{NAME} Is online.")
 
+    # ? Check for, download and delete existing csv files.
+    download_leftovers(machine, ssh, testdir)
+
     # ? Restart machine.
     log_debug(f"{NAME} Restarting machine...")
     restart_machine(ssh, host, username, ssh_key) if not DEBUG_MODE else None
     log_debug(f"{NAME} Machine restarted.")
 
     # ? Check machine is online again.
+    log_debug(f"{NAME} Checking if online again...")
+    check_machine_online(ssh, host, username, ssh_key, 5)
+    log_debug(f"{NAME} Machine is online and ready for testing.")

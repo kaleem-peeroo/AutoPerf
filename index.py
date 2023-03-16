@@ -211,7 +211,7 @@ for campaign in campaign_scripts:
             # ? Create threads for each machine.
             machine_threads = []
             for machine in test['machines']:
-                machine_thread = Thread(target=machine_thread_func, args=(machine,))
+                machine_thread = Thread(target=machine_thread_func, args=(machine, test_dir))
                 machine_threads.append(machine_thread)
                 machine_thread.start()
 
@@ -220,7 +220,7 @@ for campaign in campaign_scripts:
 
                 # ? If thread is still alive after the timeout then try again.
                 while machine_thread.is_alive() and retry > 0:
-                    machine_thread = Thread(target=machine_thread_func, args=(machine, ))
+                    machine_thread = Thread(target=machine_thread_func, args=(machine, test_dir))
                     machine_thread.start()
                     machine_thread.join(timeout=expected_duration_sec * 0.5)
                     retry -= 1
