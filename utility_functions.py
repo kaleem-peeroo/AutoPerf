@@ -290,9 +290,15 @@ def start_system_logging(machine, test_title):
 
     # ? Delete any leftover system logs.
     stdin, stdout, stderr = ssh.exec_command(f"find {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete")
+    exit_status = stdout.channel.recv_exit_status()
+    if exit_status != 0:
+        console.print(f"{ERROR} {machine['name']} Error when executing:\n\tfind {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete", style="bold red")
 
     # ? Start the logging.
-    stdin, stdout, stderr = ssh.exec_command("sar -A -o sar_logs 1 " + str(duration) + " >/dev/null 2>&1 &")
+    stdin, stdout, stderr = ssh.exec_command("sar -A -o sar_logs 1 " + str(int(duration)) + " >/dev/null 2>&1 &")
+    exit_status = stdout.channel.recv_exit_status()
+    if exit_status != 0:
+        console.print(f"{ERROR} {machine['name']} Error when executing:\n\tsar -A -o sar_logs 1 " + str(duration) + " >/dev/null 2>&1 &", style="bold red")
 
 def run_scripts(ssh, machine):
     try:
@@ -343,6 +349,9 @@ def download_logs(machine, ssh, logs_dir):
 
         if len(sar_logs) == 0:
             console.print(f"{ERROR} {machine['name']} No logs found.", style="bold red")
+            console.print(f"{ERROR} {machine['name']} Files in {machine['home_dir']}:", style="bold red")
+            pprint(sftp.listdir(machine['home_dir']))
+            return 0
         elif len(sar_logs) > 1:
             log_debug(f"{machine['name']} Multiple sar_logs found.")
             
