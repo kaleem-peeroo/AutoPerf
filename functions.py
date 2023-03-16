@@ -217,12 +217,13 @@ def machine_thread_func(machine, testdir):
     if scripts:
         stdout, stderr = run_scripts(ssh, machine)
     else:
+        log_debug(f"{machine['name']} No scripts to run.")
         stdout = None
         stderr = None
     log_debug(f"{machine['name']} Scripts finished running.")
 
-    log_debug(f"{machine['name']} Checking generated csv files...")
     # ? Check that all expected files have been generated.
+    log_debug(f"{machine['name']} Checking generated csv files...")
     k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
     ssh.connect(machine['host'], username=machine['username'], pkey = k)
 

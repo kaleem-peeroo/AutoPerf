@@ -20,7 +20,7 @@
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "$perftest_publisher",
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
                     "perftest_publisher": "$perftest_publisher",
                     "perftest_subscriber": "$perftest_subscriber"
                 },
@@ -30,7 +30,7 @@
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "$perftest_publisher",
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
                     "perftest_publisher": "$perftest_publisher",
                     "perftest_subscriber": "$perftest_subscriber"
                 }
@@ -56,7 +56,7 @@
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "$perftest_publisher"
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
                 },
                 {
                     "name": "p2",
@@ -64,7 +64,7 @@
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "$perftest_publisher"
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
                 }
             ]
         }

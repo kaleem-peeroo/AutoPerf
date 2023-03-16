@@ -120,7 +120,7 @@ for camp_comb in combinations:
             else:
                 machine_script = None
 
-            machine.update({"scripts": machine_script})
+            machine.update({"scripts": f"source ~/.bashrc; {machine_script}"})
             machine_scripts.append(machine)
 
         # ? Number of machines = number of machine scripts

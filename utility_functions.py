@@ -304,7 +304,22 @@ def run_scripts(ssh, machine):
     try:
         k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
         ssh.connect(machine["host"], username=machine['username'], pkey = k)
-        _, stdout, stderr = ssh.exec_command("source ~/.bash_profile;" + machine['scripts'])
+        _, stdout, stderr = ssh.exec_command(f"{machine['scripts']}")
+
+        # ? Wait for the scripts to finish.
+        output = stdout.readlines()
+        error = stderr.readlines()
+        
+        if len(output) > 0:
+            log_debug(f"{machine['name']} stdout has content.")
+            # log_debug(f"{machine['name']} Output:\n\t{output}")
+
+        if len(error) > 0:
+            log_debug(f"{machine['name']} stderr has content.")
+            # log_debug(f"{machine['name']} Error:")
+            # for line in error:
+            #     console.print(f"\t{line}", style="bold red")
+
     except Exception as e:
         console.print(f"{ERROR} {machine['name']} Error when running scripts. Exception:\n\t{e}", style="bold red")
         return None, str(e)
