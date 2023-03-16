@@ -198,9 +198,6 @@ def machine_thread_func(machine, testdir):
     # ? Check for, download and delete existing csv files.
     download_leftovers(machine, ssh, testdir)
 
-    # ? Create folder for the system logs.
-    logs_dir = create_dir(os.path.join(testdir, "logs"))
-
     # ? Restart machine.
     log_debug(f"{NAME} Restarting machine...")
     restart_machine(ssh, host, username, ssh_key) if not DEBUG_MODE else None
@@ -234,4 +231,8 @@ def machine_thread_func(machine, testdir):
         console.print(f"{ERROR} {machine['name']} No csv files found after the test has finished...", style="bold white")
         downloaded_files_count = 0
 
-    
+    # ? Create folder for the system logs.
+    logs_dir = create_dir(os.path.join(testdir, "logs"))
+
+    # ? Download system logs.
+    download_logs(machine, ssh, logs_dir)

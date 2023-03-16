@@ -191,22 +191,22 @@ def check_machine_online(ssh, host, username, ssh_key, timeout):
             timer += 1
 
     if timer == timeout:
-        console.print(f"{ERROR} Timeout after {timeout} seconds when pinging {host}.")
+        console.print(f"{ERROR} Timeout after {timeout} seconds when pinging {host}.", style="bold red")
         sys.exit(0)
 
 def validate_ssh_key(ssh_key):
     if not os.path.exists(ssh_key):
-        console.print(f"{ERROR} The ssh key file {ssh_key} does NOT exist.", style="bold white")
+        console.print(f"{ERROR} The ssh key file {ssh_key} does NOT exist.", style="bold red")
         return False
     
     try:
         key = paramiko.RSAKey.from_private_key_file(ssh_key)
         return True
     except paramiko.ssh_exception.PasswordRequiredException:
-        console.print(f"{ERROR} The ssh key file {ssh_key} requires a password.", style="bold white")
+        console.print(f"{ERROR} The ssh key file {ssh_key} requires a password.", style="bold red")
         return False
     except paramiko.ssh_exception.SSHException:
-        console.print(f"{ERROR} The ssh key file {ssh_key} is invalid.", style="bold white")
+        console.print(f"{ERROR} The ssh key file {ssh_key} is invalid.", style="bold red")
         return False
 
 def restart_machine(ssh, host, username, ssh_key):
@@ -299,7 +299,7 @@ def run_scripts(ssh, machine):
         ssh.connect(machine["host"], username=machine['username'], pkey = k)
         _, stdout, stderr = ssh.exec_command("source ~/.bash_profile;" + machine['scripts'])
     except Exception as e:
-        console.print(f"{ERROR} {machine['name']} Error when running scripts. Exception:\n\t{e}", style="bold white")
+        console.print(f"{ERROR} {machine['name']} Error when running scripts. Exception:\n\t{e}", style="bold red")
         return None, str(e)
 
     return stdout, stderr
@@ -333,3 +333,75 @@ def download_csv_files(machine, ssh, testdir):
                     download_files_count += 1
 
     return download_files_count
+
+def download_logs(machine, ssh, logs_dir):
+    with ssh.open_sftp() as sftp:
+        sar_logs = [_ for _ in sftp.listdir(machine['home_dir']) if "sar_logs" in _ and "log" in _]
+
+        if len(sar_logs) == 0:
+            console.print(f"{ERROR} {machine['name']} No logs found.", style="bold red")
+        elif len(sar_logs) > 1:
+            log_debug(f"{machine['name']} Multiple sar_logs found.")
+            
+            # ? Get the most recently created file.
+            latest_file = None
+            latest_time = 0
+
+            for sar_log in sar_logs:
+                if sar_log.st_ctime > latest_time:
+                    latest_file = sar_log
+                    latest_time = sar_log.st_ctime
+
+            sar_log = latest_file
+        else:
+            sar_log = sar_logs[0]
+
+        # ? Parse CPU stats
+        stdin, stdout, stderr = ssh.exec_command("sar -f " + sar_log + " > cpu.log")
+        if stdout.channel.recv_exit_status() == 0:
+            log_debug(f"{machine['name']} CPU logs parsed.")
+        else:
+            log_debug(f"{machine['name']} Error parsing CPU logs.")
+        
+        # ? Parse memory stats
+        stdin, stdout, stderr = ssh.exec_command("sar -r -f " + sar_log + " > mem.log")
+        if stdout.channel.recv_exit_status() == 0:
+            log_debug(f"{machine['name']} MEM logs parsed.")
+        else:
+            log_debug(f"{machine['name']} Error parsing MEM logs.")
+        
+        # ? Parse network stats
+        network_options = ["DEV", "EDEV", "NFS", "NFSD", "SOCK", "IP", "EIP", "ICMP", "EICMP", "TCP", "ETCP", "UDP", "SOCK6", "IP6", "EIP6", "ICMP6", "EICMP6", "UDP6"]
+        for option in network_options:
+            stdin, stdout, stderr = ssh.exec_command("sar -n " +option+ " -f " + sar_log + " > " +option.lower()+ ".log")
+            if stdout.channel.recv_exit_status() != 0:
+                log_debug(f"{machine['name']} Error parsing NETWORK logs.")
+
+        log_debug(f"{machine['name']} NETWORK logs parsed.")
+
+        # ? Delete the original unparsed sar log file - we no longer have a use for it
+        sftp.remove(sar_log)
+
+        expected_logs = ["cpu.log", "mem.log"] + [x.lower() + ".log" for x in network_options]
+        found_logs = [x for x in sftp.listdir(machine['home_dir']) if '.log' in x]
+        
+        if len(expected_logs) != len(found_logs):
+            log_debug(f"{machine['name']} Mismatch found between expected and found logs.\n\t {(len(expected_logs))} expected logs.\n\t {str(len(found_logs))} logs founds.")
+            
+            if len(expected_logs) > len(found_logs):
+                console.print(machine['name'] + ": " + "You are missing the following logs:", style="bold red") if DEBUG_MODE else None
+                for log in list(set(expected_logs) - set(found_logs)):
+                    console.print("\t" + log, style="bold red")
+            else:
+                console.print(machine['name'] + ": " + "You have the following extra logs:", style="bold red") if DEBUG_MODE else None
+                for log in list(set(found_logs) - set(expected_logs)):
+                    console.print("\t" + log, style="bold red")
+        else:
+            for log in expected_logs:
+                sftp.get(log, os.path.join(logs_dir, f"{machine['name']}_{log}"))
+                sftp.remove(log)
+                
+        leftover_logs = [x for x in sftp.listdir(machine['home_dir']) if '.log' in x]
+
+        if len(leftover_logs) > 0:
+            console.print(f"{WARNING} {machine['name']} Some logs were leftover.", style="bold white")
