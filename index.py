@@ -231,3 +231,5 @@ for campaign in campaign_scripts:
                     console.print(f"{ERROR} {test_title} timed out 3 times after a duration of {expected_duration_sec * 1.5} seconds.", style="bold white")
 
             # ? Scripts finished running at this point.
+
+        asdf

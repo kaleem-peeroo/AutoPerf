@@ -17,7 +17,7 @@
                 {
                     "name": "p1",
                     "host": "169.254.248.55",
-                    "ssh_key": "~/.ssh/id_rsa",
+                    "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
                     "perftest": "$perftest_publisher",
@@ -27,7 +27,7 @@
                 {
                     "name": "p2",
                     "host": "169.254.201.141",
-                    "ssh_key": "~/.ssh/id_rsa",
+                    "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
                     "perftest": "$perftest_publisher",
@@ -53,7 +53,7 @@
                 {
                     "name": "p1",
                     "host": "169.254.248.55",
-                    "ssh_key": "~/.ssh/id_rsa",
+                    "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
                     "perftest": "$perftest_publisher"
@@ -61,7 +61,7 @@
                 {
                     "name": "p2",
                     "host": "169.254.201.141",
-                    "ssh_key": "~/.ssh/id_rsa",
+                    "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
                     "perftest": "$perftest_publisher"

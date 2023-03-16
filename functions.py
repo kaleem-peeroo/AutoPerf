@@ -180,7 +180,23 @@ def machine_thread_func(machine):
         - If some are missing - try the test again (up to 3 times before moving on to the next test).
     - Download the system logs.
     """
-    machine_name = machine['name']
+    name = machine['name']
     host = machine['host']
+    username = machine['username']
     ssh_key = machine['ssh_key']
-    
+    home_dir = machine['home_dir']
+    scripts = machine['scripts']
+
+    NAME = f"[bold green]{name.upper()}:[/bold green]"
+
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    console.print(f"{DEBUG} {NAME} Validating ssh key...", style="bold white") if DEBUG_MODE else None
+    if not validate_ssh_key(ssh_key):
+        return
+    console.print(f"{DEBUG} {NAME} ssh key is valid.", style="bold white") if DEBUG_MODE else None
+
+    console.print(f"{DEBUG} {NAME} Checking if online...", style="bold white") if DEBUG_MODE else None
+    check_machine_online(ssh, host, username, ssh_key, 5)
+    console.print(f"{DEBUG} {NAME} Is online", style="bold white") if DEBUG_MODE else None

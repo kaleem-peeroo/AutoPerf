@@ -170,3 +170,36 @@ def get_duration_from_test_name(testname):
     duration = int(duration_from_name)
     
     return duration
+
+def check_machine_online(ssh, host, username, ssh_key, timeout):
+    timer = 0
+    while timer < timeout:
+        try:
+            k = paramiko.RSAKey.from_private_key_file(ssh_key)
+            ssh.connect(host, username=username, pkey = k)
+            break
+        except Exception as e:
+            # console.print("[red]Error connecting to " + host + ". Reconnecting...[/red]", style=output_colour)
+            # console.print(e, style="bold yellow")
+            time.sleep(1)
+            timer += 1
+
+    if timer == timeout:
+        console.print(f"{ERROR} Timeout after {timeout} seconds when pinging {host}.")
+        sys.exit(0)
+
+def validate_ssh_key(ssh_key):
+    if not os.path.exists(ssh_key):
+        console.print(f"{ERROR} The ssh key file {ssh_key} does NOT exist.", style="bold white")
+        return False
+    
+    try:
+        key = paramiko.RSAKey.from_private_key_file(ssh_key)
+        return True
+    except paramiko.ssh_exception.PasswordRequiredException:
+        console.print(f"{ERROR} The ssh key file {ssh_key} requires a password.", style="bold white")
+        return False
+    except paramiko.ssh_exception.SSHException:
+        console.print(f"{ERROR} The ssh key file {ssh_key} is invalid.", style="bold white")
+        return False
+
