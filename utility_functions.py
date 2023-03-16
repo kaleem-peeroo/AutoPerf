@@ -33,7 +33,7 @@ DEBUG_MODE = "debug" in sys.argv
 SKIP_RESTART = "skip_restart" in sys.argv
 
 DEBUG = "[bold blue]DEBUG:[/bold blue]"
-WARNING = "[bold red]WARNING:[/bold red]"
+WARNING = "\n[bold red]WARNING:[/bold red]"
 ERROR = "[bold red]ERROR:[/bold red]"
 
 def log_debug(message):
@@ -59,7 +59,7 @@ def create_dir(dirpath):
         dirpath = f"{dirpath_name}_{i}"
 
     if i > 0:
-        console.print(f"{WARNING} {dirpath_name}_{i-1} already exists. Creating the folder {dirpath} instead.", style="bold white")
+        console.print(f"{WARNING} {dirpath_name}_{i-1} already exists. Creating the folder {dirpath} instead.\n", style="bold white")
 
     os.mkdir(dirpath)
 
@@ -433,11 +433,14 @@ def download_logs(machine, ssh, logs_dir):
         leftover_logs = [x for x in sftp.listdir(machine['home_dir']) if '.log' in x]
 
         if len(leftover_logs) > 0:
-            console.print(f"{WARNING} {machine['name']} Some logs were leftover.", style="bold white")
+            console.print(f"{WARNING} {machine['name']} Some logs were leftover.\n", style="bold white")
 
     return downloaded_files_count
 
 def update_progress(progress_json, test_title, start_time, end_time):
+    start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))
+    end_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time))
+    
     with open(progress_json, 'r+') as file:
         data = json.load(file)
         data.append({'test': test_title, 'start_time': start_time, 'end_time': end_time})

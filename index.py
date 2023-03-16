@@ -184,7 +184,7 @@ for campaign in campaign_scripts:
 
     # ? Check for no tests.
     if len(tests) == 0:
-        console.print(f"{WARNING} No tests found in {camp_name}.", style="bold white")
+        console.print(f"{WARNING} No tests found in {camp_name}.\n", style="bold white")
         continue
 
     for test in tests:
@@ -203,6 +203,8 @@ for campaign in campaign_scripts:
             continue
 
         with console.status(f"[{tests.index(test) + 1}/{len(tests)}] Running test: {test_title}..."):
+            console.print(f"[{tests.index(test) + 1}/{len(tests)}] Running test: {test_title}.")
+
             # ? Write test config to file.
             with open(os.path.join(test_dir, 'config.json'), 'w') as f:
                 json.dump(test, f, indent=4)

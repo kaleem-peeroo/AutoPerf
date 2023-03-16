@@ -192,7 +192,7 @@ def machine_thread_func(machine, testdir):
 
     # ? Check machine is online.
     log_debug(f"{NAME} Checking if online...")
-    check_machine_online(ssh, host, username, ssh_key, 5)
+    check_machine_online(ssh, host, username, ssh_key, 60)
     log_debug(f"{NAME} Is online.")
 
     # ? Check for, download and delete existing csv files.
@@ -205,7 +205,7 @@ def machine_thread_func(machine, testdir):
 
     # ? Check machine is online again.
     log_debug(f"{NAME} Checking if online again...")
-    check_machine_online(ssh, host, username, ssh_key, 5)
+    check_machine_online(ssh, host, username, ssh_key, 60)
     log_debug(f"{NAME} Machine is online and ready for testing.")
 
     # ? Start system logging.
