@@ -52,6 +52,11 @@ Then run the following:
 python index.py path/to/config.json
 ```
 
+For debug mode just add `debug`:
+```bash
+python index.py path/to/config.json debug
+```
+
 TODO: 
 - Set up PTST errors collection in one place to see what has gone wrong per test
     - e.g. test_3 can't get expected duration, example_campaign has no tests, etc.
