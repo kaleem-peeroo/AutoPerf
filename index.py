@@ -211,7 +211,8 @@ for campaign in campaign_scripts:
             # ? Create threads for each machine.
             machine_threads = []
             for machine in test['machines']:
-                machine_thread = Thread(target=machine_thread_func, args=(machine, test_dir))
+                # machine_thread = Thread(target=machine_thread_func, args=(machine, test_dir))
+                machine_thread = multiprocessing.Process(target=machine_thread_func, args=(machine, test_dir))
                 machine_threads.append(machine_thread)
                 machine_thread.start()
 
@@ -220,7 +221,7 @@ for campaign in campaign_scripts:
                 
                 # ? If thread is still alive kill it.
                 if machine_thread.is_alive():
-                    machine_thread._stop()
+                    machine_thread.terminate()
                     console.print(f"{ERROR} {test_title} timed out after a duration of {expected_duration_sec * 1.5} seconds.", style="bold white")
 
         # ? Scripts finished running at this point.
