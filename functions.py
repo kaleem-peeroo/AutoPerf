@@ -167,5 +167,20 @@ def allocate_scripts_per_machine(scripts, machine_count):
     return shared_pub_scripts, shared_sub_scripts
 
 def machine_thread_func(machine):
-    # TODO
-    None
+    """
+    - Check that the machine is online.
+    - Check for, download, and then delete existing csv files.
+    - Restart the machine.
+    - Check its online.
+    - Start the logging.
+    - Run the scripts.
+    - Wait for scripts to finish.
+    - Write the stderr to a file (if it has content).
+    - Check that all .csv files were generated and dowload them.
+        - If some are missing - try the test again (up to 3 times before moving on to the next test).
+    - Download the system logs.
+    """
+    machine_name = machine['name']
+    host = machine['host']
+    ssh_key = machine['ssh_key']
+    

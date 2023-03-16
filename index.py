@@ -149,17 +149,6 @@ For each campaign:
         - Make a folder of the test results - generate the name using the combination (also check if name already exists and add number at the end).
         - Write the test info (combination, machine scripts) to a .json file.
         - Create threads for each machine.
-            - Check that the machine is online.
-            - Check for, download, and then delete existing csv files.
-            - Restart the machine.
-            - Check its online.
-            - Start the logging.
-            - Run the scripts.
-            - Wait for scripts to finish.
-            - Write the stderr to a file (if it has content).
-            - Check that all .csv files were generated and dowload them.
-                - If some are missing - try the test again (up to 3 times before moving on to the next test).
-            - Download the system logs.
 """
 for campaign in campaign_scripts:
     camp_name = campaign['name']
@@ -175,7 +164,7 @@ for campaign in campaign_scripts:
         continue
 
     for test in tests:
-        # ? Retry test up to 3 times if the test times out.
+        # ? Retry thread join up to 3 times if the test times out.
         retry = 3
 
         # ? Make a folder for the test
@@ -207,10 +196,12 @@ for campaign in campaign_scripts:
                 while machine_thread.is_alive() and retry > 0:
                     machine_thread = Thread(target=machine_thread_func, args=(machine, ))
                     machine_thread.start()
-                    machine_thread.join(timeout=expected_duration_sec * 1.5)
+                    machine_thread.join(timeout=expected_duration_sec * 0.5)
                     retry -= 1
                 
                 # ? If thread is still alive after 3 tries, kill it.
                 if machine_thread.is_alive():
                     machine_thread._stop()
                     console.print(f"{ERROR} {test_title} timed out 3 times after a duration of {expected_duration_sec * 1.5} seconds.", style="bold white")
+
+            # ? Scripts finished running at this point.
