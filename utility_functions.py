@@ -257,7 +257,7 @@ def download_leftovers(machine, ssh, testdir):
                     remote_filesize = sftp.stat(remote_filepath).st_size
 
                     if remote_filesize > 0:
-                        sftp.get(remote_filesize, local_filepath)
+                        sftp.get(remote_filepath, local_filepath)
                         download_files_count += 1
 
             log_debug(f"{machine['name']} {download_files_count} leftover files downloaded.")
@@ -435,3 +435,10 @@ def download_logs(machine, ssh, logs_dir):
             console.print(f"{WARNING} {machine['name']} Some logs were leftover.", style="bold white")
 
     return downloaded_files_count
+
+def update_progress(progress_json, test_title, start_time, end_time):
+    with open(progress_json, 'r+') as file:
+        data = json.load(file)
+        data.append({'test': test_title, 'start_time': start_time, 'end_time': end_time})
+        file.seek(0)
+        json.dump(data, file, indent=4)

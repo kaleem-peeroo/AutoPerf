@@ -173,6 +173,13 @@ for campaign in campaign_scripts:
     # ? Make a folder for the campaign.
     camp_dir = create_dir(camp_name.replace(" ", "_"))
 
+    # ? Make progress.json for the campaign.
+    log_debug(f"Making progress.json for {camp_name}...")
+    progress_json = os.path.join(camp_dir, 'progress.json')
+    with open(progress_json, 'w') as f:
+        json.dump([], f)
+    log_debug(f"progress.json made for {camp_name}.")
+
     tests = campaign['tests']
 
     # ? Check for no tests.
@@ -181,6 +188,8 @@ for campaign in campaign_scripts:
         continue
 
     for test in tests:
+        start_time = time.time()
+
         # ? Make a folder for the test
         test_title = get_test_title_from_combination(test['combination'])
         test_dir = create_dir( os.path.join(camp_dir, test_title) )
@@ -214,4 +223,10 @@ for campaign in campaign_scripts:
                     machine_thread._stop()
                     console.print(f"{ERROR} {test_title} timed out after a duration of {expected_duration_sec * 1.5} seconds.", style="bold white")
 
-            # ? Scripts finished running at this point.
+        # ? Scripts finished running at this point.
+        
+        end_time = time.time()
+        
+        # ? Record test start and end time.
+        update_progress(progress_json, test_title, start_time, end_time)
+        asdf
