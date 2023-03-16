@@ -85,6 +85,32 @@ for camp_comb in combinations:
             machine_pub_scripts = " & ".join(machine_pub_scripts) if len(machine_pub_scripts) > 1 else machine_pub_scripts[0]
             machine_sub_scripts = " & ".join(machine_sub_scripts) if len(machine_sub_scripts) > 1 else machine_sub_scripts[0]
 
+            # TODO: Turn the two copies of code below into a function.
+
+            # ? Add the home_dir path to the start of the outputFile path
+            machine_pub_scripts_list = machine_pub_scripts.split()
+            for i in range(len(machine_pub_scripts_list)):
+                if machine_pub_scripts_list[i] == '-outputFile':
+                    if i + 1 < len(machine_pub_scripts_list):
+                        output_file = machine_pub_scripts_list[i + 1]
+                        home_dir = machine['home_dir']
+                        new_output_file = os.path.join(home_dir, output_file)
+                        machine_pub_scripts_list[i + 1] = new_output_file
+
+            machine_pub_scripts = " ".join(machine_pub_scripts_list)
+
+            # ? Add the home_dir path to the start of the outputFile path
+            machine_sub_scripts_list = machine_sub_scripts.split()
+            for i in range(len(machine_sub_scripts_list)):
+                if machine_sub_scripts_list[i] == '-outputFile':
+                    if i + 1 < len(machine_sub_scripts_list):
+                        output_file = machine_sub_scripts_list[i + 1]
+                        home_dir = machine['home_dir']
+                        new_output_file = os.path.join(home_dir, output_file)
+                        machine_sub_scripts_list[i + 1] = new_output_file
+
+            machine_sub_scripts = " ".join(machine_sub_scripts_list)
+
             if len(machine_pub_scripts) > 0 and len(machine_sub_scripts) > 0:
                 machine_script = machine_pub_scripts + " & " + machine_sub_scripts
             elif len(machine_pub_scripts) > 0 and len(machine_sub_scripts) == 0:
