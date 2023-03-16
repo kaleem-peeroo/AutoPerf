@@ -172,6 +172,9 @@ def get_duration_from_test_name(testname):
     return duration
 
 def check_machine_online(ssh, host, username, ssh_key, timeout):
+    if not validate_ssh_key(ssh_key):
+        return
+    
     timer = 0
     while timer < timeout:
         try:
