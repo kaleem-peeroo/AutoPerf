@@ -206,3 +206,13 @@ def validate_ssh_key(ssh_key):
         console.print(f"{ERROR} The ssh key file {ssh_key} is invalid.", style="bold white")
         return False
 
+def restart_machine(ssh, host, username, ssh_key):
+    while True:
+        try:
+            k = paramiko.RSAKey.from_private_key_file(ssh_key)
+            ssh.connect(host, username=username, pkey = k)
+            ssh.exec_command("sudo reboot")
+            time.sleep(3)
+            break
+        except Exception as e:
+            time.sleep(1)

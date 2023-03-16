@@ -192,6 +192,14 @@ def machine_thread_func(machine):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+    # ? Check machine is online.
     console.print(f"{DEBUG} {NAME} Checking if online...", style="bold white") if DEBUG_MODE else None
     check_machine_online(ssh, host, username, ssh_key, 5)
     console.print(f"{DEBUG} {NAME} Is online", style="bold white") if DEBUG_MODE else None
+
+    # ? Restart machine.
+    console.print(f"{DEBUG} {NAME} Restarting machine...", style="bold white") if DEBUG_MODE else None
+    restart_machine(ssh, host, username, ssh_key) if not DEBUG_MODE else None
+    console.print(f"{DEBUG} {NAME} Machine restarted.", style="bold white")
+
+    # ? Check machine is online again.
