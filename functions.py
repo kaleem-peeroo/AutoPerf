@@ -210,14 +210,18 @@ def machine_thread_func(machine, testdir):
 
     # ? Start system logging.
     start_system_logging(machine, os.path.basename(testdir))
+    log_debug(f"{machine['name']} Logging started.")
 
     # ? Run the scripts.
+    log_debug(f"{machine['name']} Running scripts...")
     if scripts:
         stdout, stderr = run_scripts(ssh, machine)
     else:
         stdout = None
         stderr = None
+    log_debug(f"{machine['name']} Scripts finished running.")
 
+    log_debug(f"{machine['name']} Checking generated csv files...")
     # ? Check that all expected files have been generated.
     k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
     ssh.connect(machine['host'], username=machine['username'], pkey = k)
@@ -225,14 +229,22 @@ def machine_thread_func(machine, testdir):
     # ? Check how many csv files exist in the home_dir now that the test has finished.
     stdin, stdout, stderr = ssh.exec_command(f"ls {machine['home_dir']}/*.csv")
 
+    log_debug(f"{machine['name']} {len(stdout.readlines())} csv files found.")
+
     if len(stdout.readlines()) > 0:
+        log_debug(f"{machine['name']} Downloading csv files...")
         downloaded_files_count = download_csv_files(machine, ssh, testdir)
+        log_debug(f"{machine['name']} {downloaded_files_count} csv files downloaded.")
     else:
         console.print(f"{ERROR} {machine['name']} No csv files found after the test has finished...", style="bold white")
         downloaded_files_count = 0
 
     # ? Create folder for the system logs.
+    log_debug(f"{machine['name']} Creating logs folder...")
     logs_dir = create_dir(os.path.join(testdir, "logs"))
+    log_debug(f"{machine['name']} logs folder created.")
 
     # ? Download system logs.
-    download_logs(machine, ssh, logs_dir)
+    log_debug(f"{machine['name']} Parsing and downloading system logs...")
+    downloaded_logs_count = download_logs(machine, ssh, logs_dir)
+    log_debug(f"{machine['name']} {downloaded_logs_count} system logs downloaded.")

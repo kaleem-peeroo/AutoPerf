@@ -12,13 +12,14 @@ log_debug(f"Reading config: {args[0]}...")
 config = read_config(args[0])
 log_debug("Config read.")
 
-# TODO: Calculate total number of combinations for each campaign.
+# ? Calculate total number of combinations for each campaign.
 console.print(f"Here are the total number of combinations for each campaign:", style="bold white")
 for camp in config["campaigns"]:
     name = camp['name']
     comb_count = get_combinations_count_from_settings(camp['settings'])
     console.print(f"\t[bold blue]{name}[/bold blue]: {comb_count} combinations.")
 
+# ? Ask user for combination modification.
 if Confirm.ask("Would you like to remove some of the combinations?", default=False):
     file_combs_dir = write_combinations_to_file(config)
     
@@ -44,7 +45,6 @@ else:
     combinations = get_combinations_from_config(config)
 
 
-# TODO: Generate scripts for each campaign's combinations.
 """
 combinations = [{
     'name': 'camp_name',
@@ -167,15 +167,6 @@ campaign_scripts = [{
     ]
 }, ...]
 """
-"""
-TODO:
-For each campaign:
-    - Make a folder.
-    For each test:
-        - Make a folder of the test results - generate the name using the combination (also check if name already exists and add number at the end).
-        - Write the test info (combination, machine scripts) to a .json file.
-        - Create threads for each machine.
-"""
 for campaign in campaign_scripts:
     camp_name = campaign['name']
     
@@ -190,15 +181,14 @@ for campaign in campaign_scripts:
         continue
 
     for test in tests:
-        # ? Retry thread join up to 3 times if the test times out.
-        retry = 3
-
         # ? Make a folder for the test
         test_title = get_test_title_from_combination(test['combination'])
         test_dir = create_dir( os.path.join(camp_dir, test_title) )
+        log_debug(f"Made testdir: {test_dir}.")
         
         # ? Get expected test duration in seconds.
         expected_duration_sec = get_duration_from_test_name(test_title)
+        log_debug(f"Expected Duration (s) for {test_title}: {expected_duration_sec} seconds.")
         if expected_duration_sec is None:
             console.print(f"{ERROR} Error calculating expected time duration in seconds for\n\t{test_title}.", style="bold white")
             continue
@@ -207,6 +197,7 @@ for campaign in campaign_scripts:
             # ? Write test config to file.
             with open(os.path.join(test_dir, 'config.json'), 'w') as f:
                 json.dump(test, f, indent=4)
+            log_debug(f"Test configuration written to {os.path.join(test_dir, 'config.json')}.")
 
             # ? Create threads for each machine.
             machine_threads = []
@@ -217,18 +208,11 @@ for campaign in campaign_scripts:
 
             for machine_thread in machine_threads:
                 machine_thread.join(timeout=expected_duration_sec * 1.5)
-
-                # ? If thread is still alive after the timeout then try again.
-                while machine_thread.is_alive() and retry > 0:
-                    machine_thread = Thread(target=machine_thread_func, args=(machine, test_dir))
-                    machine_thread.start()
-                    machine_thread.join(timeout=expected_duration_sec * 0.5)
-                    retry -= 1
                 
-                # ? If thread is still alive after 3 tries, kill it.
+                # ? If thread is still alive kill it.
                 if machine_thread.is_alive():
                     machine_thread._stop()
-                    console.print(f"{ERROR} {test_title} timed out 3 times after a duration of {expected_duration_sec * 1.5} seconds.", style="bold white")
+                    console.print(f"{ERROR} {test_title} timed out after a duration of {expected_duration_sec * 1.5} seconds.", style="bold white")
 
             # ? Scripts finished running at this point.
 

@@ -260,7 +260,7 @@ def download_leftovers(machine, ssh, testdir):
                         sftp.get(remote_filesize, local_filepath)
                         download_files_count += 1
 
-            log_debug(f"{machine['name']} {download_files_count} files downloaded.")
+            log_debug(f"{machine['name']} {download_files_count} leftover files downloaded.")
 
     else:
         log_debug(f"{machine['name']} No leftovers found.")
@@ -336,6 +336,8 @@ def download_csv_files(machine, ssh, testdir):
     return download_files_count
 
 def download_logs(machine, ssh, logs_dir):
+    downloaded_files_count = 0
+
     with ssh.open_sftp() as sftp:
         sar_logs = [_ for _ in sftp.listdir(machine['home_dir']) if "sar_logs" in _ and "log" in _]
 
@@ -400,9 +402,12 @@ def download_logs(machine, ssh, logs_dir):
         else:
             for log in expected_logs:
                 sftp.get(log, os.path.join(logs_dir, f"{machine['name']}_{log}"))
+                downloaded_files_count += 1
                 sftp.remove(log)
                 
         leftover_logs = [x for x in sftp.listdir(machine['home_dir']) if '.log' in x]
 
         if len(leftover_logs) > 0:
             console.print(f"{WARNING} {machine['name']} Some logs were leftover.", style="bold white")
+
+    return downloaded_files_count
