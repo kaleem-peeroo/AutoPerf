@@ -263,3 +263,32 @@ def download_leftovers(machine, ssh, testdir):
 
     else:
         log_debug(f"{machine['name']} No leftovers found.")
+
+def get_duration_from_test_scripts(scripts):
+    if "-executionTime" in scripts:
+        return int(scripts.split("-executionTime")[1].split("-")[0])
+    else:
+        return 0
+
+def start_system_logging(machine, test_title):
+    if machine['scripts']:
+        duration = get_duration_from_test_scripts(machine['scripts'])
+    else:
+        duration = get_duration_from_test_name(test_title)
+
+    # ? Give enough buffer time to contain the test.
+    duration *= 1.2
+
+    #  ? Check for any leftover logs.
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
+
+    ssh.connect(machine['host'], username=machine['username'], pkey=k)
+
+    # ? Delete any leftover system logs.
+    stdin, stdout, stderr = ssh.exec_command(f"find {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete")
+
+    # ? Start the logging.
+    stdin, stdout, stderr = ssh.exec_command("sar -A -o sar_logs 1 " + str(duration) + " >/dev/null 2>&1 &")
