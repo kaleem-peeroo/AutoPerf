@@ -184,7 +184,6 @@ def machine_thread_func(machine, testdir):
     host = machine['host']
     username = machine['username']
     ssh_key = machine['ssh_key']
-    home_dir = machine['home_dir']
     scripts = machine['scripts']
 
     NAME = f"[bold green]{name.upper()}:[/bold green]"

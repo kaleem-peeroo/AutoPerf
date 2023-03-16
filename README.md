@@ -58,5 +58,6 @@ python index.py path/to/config.json debug
 ```
 
 TODO: 
-- Set up PTST errors collection in one place to see what has gone wrong per test
-    - e.g. test_3 can't get expected duration, example_campaign has no tests, etc.
+- [ ] Set up PTST errors collection in one place to see what has gone wrong per test
+    - [ ] e.g. test_3 can't get expected duration, example_campaign has no tests, etc.
+- [ ] Periodically zip then upload files from k1 to cloud
