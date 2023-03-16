@@ -62,6 +62,11 @@ You can skip the restarts using `skip_restart`:
 python index.py path/to/config.json debug skip_restart
 ```
 
+If you want to save the output to a file:
+```bash
+python index.py path/to/config.json |& tee output.txt
+```
+
 TODO: 
 - [ ] Set up PTST errors collection in one place to see what has gone wrong per test
     - [ ] e.g. test_3 can't get expected duration, example_campaign has no tests, etc.
