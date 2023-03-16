@@ -148,8 +148,6 @@ def generate_scripts(combination):
 
 def allocate_scripts_per_machine(scripts, machine_count):
     
-    allocated_scripts = []
-
     shared_pub_scripts = []
     shared_sub_scripts = []
     
@@ -166,12 +164,8 @@ def allocate_scripts_per_machine(scripts, machine_count):
     shared_pub_scripts = share(pub_scripts, machine_count)
     shared_sub_scripts = share(sub_scripts, machine_count)
 
-    allocated_script = {
-        "pub_scripts": shared_pub_scripts,
-        "sub_scripts": shared_sub_scripts,
-    }
-
     return shared_pub_scripts, shared_sub_scripts
 
 def machine_thread_func(machine):
     # TODO
+    None
