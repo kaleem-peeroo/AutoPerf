@@ -303,3 +303,33 @@ def run_scripts(ssh, machine):
         return None, str(e)
 
     return stdout, stderr
+
+def get_expected_csv_count_from_test_title(test_title):
+    sub_count = int(test_title.split('_')[3][:-1])
+    csv_count = sub_count + 1
+
+    return csv_count
+
+def download_csv_files(machine, ssh, testdir):
+    k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
+    ssh.connect(machine['host'], username=machine['username'], pkey=k)
+
+    with ssh.open_sftp() as sftp:
+        remote_dir = machine['home_dir']
+        local_dir = testdir
+
+        csv_files = sftp.listdir(remote_dir)
+
+        download_files_count = 0
+
+        for csv_file in csv_files:
+            if csv_file.endswith(".csv"):
+                remote_filepath = os.path.join(remote_dir, csv_file)
+                local_filepath = os.path.join(local_dir, csv_file)
+                remote_filesize = sftp.stat(remote_filepath).st_size
+
+                if remote_filesize > 0:
+                    sftp.get(remote_filesize, local_filepath)
+                    download_files_count += 1
+
+    return download_files_count

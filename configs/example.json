@@ -4,7 +4,7 @@
             "name": "Example Campaign 1",
             "repetitions": 1,
             "settings": {
-                "duration_s": [600],
+                "duration_s": [30],
                 "datalen_bytes": [100],
                 "pub_count": [5, 10],
                 "sub_count": [5, 10],
@@ -40,7 +40,7 @@
             "name": "Example Campaign 2",
             "repetitions": 1,
             "settings": {
-                "duration_s": [600],
+                "duration_s": [30],
                 "datalen_bytes": [100],
                 "pub_count": [25, 35, 45, 55, 65, 75],
                 "sub_count": [25, 35, 45, 55, 65, 75],

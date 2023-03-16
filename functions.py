@@ -177,7 +177,6 @@ def machine_thread_func(machine, testdir):
     - Wait for scripts to finish.
     - Write the stderr to a file (if it has content).
     - Check that all .csv files were generated and dowload them.
-        - If some are missing - try the test again (up to 3 times before moving on to the next test).
     - Download the system logs.
     """
     name = machine['name']
@@ -221,5 +220,18 @@ def machine_thread_func(machine, testdir):
     else:
         stdout = None
         stderr = None
+
+    # ? Check that all expected files have been generated.
+    k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
+    ssh.connect(machine['host'], username=machine['username'], pkey = k)
+
+    # ? Check how many csv files exist in the home_dir now that the test has finished.
+    stdin, stdout, stderr = ssh.exec_command(f"ls {machine['home_dir']}/*.csv")
+
+    if len(stdout.readlines()) > 0:
+        downloaded_files_count = download_csv_files(machine, ssh, testdir)
+    else:
+        console.print(f"{ERROR} {machine['name']} No csv files found after the test has finished...", style="bold white")
+        downloaded_files_count = 0
 
     
