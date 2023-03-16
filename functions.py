@@ -216,4 +216,11 @@ def machine_thread_func(machine, testdir):
     # ? Start system logging.
     start_system_logging(machine, os.path.basename(testdir))
 
+    # ? Run the scripts.
+    if scripts:
+        stdout, stderr = run_scripts(ssh, machine)
+    else:
+        stdout = None
+        stderr = None
+
     

@@ -292,3 +292,14 @@ def start_system_logging(machine, test_title):
 
     # ? Start the logging.
     stdin, stdout, stderr = ssh.exec_command("sar -A -o sar_logs 1 " + str(duration) + " >/dev/null 2>&1 &")
+
+def run_scripts(ssh, machine):
+    try:
+        k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
+        ssh.connect(machine["host"], username=machine['username'], pkey = k)
+        _, stdout, stderr = ssh.exec_command("source ~/.bash_profile;" + machine['scripts'])
+    except Exception as e:
+        console.print(f"{ERROR} {machine['name']} Error when running scripts. Exception:\n\t{e}", style="bold white")
+        return None, str(e)
+
+    return stdout, stderr
