@@ -34,6 +34,9 @@ DEBUG = "[bold blue]DEBUG:[/bold blue]"
 WARNING = "[bold red]WARNING:[/bold red]"
 ERROR = "[bold red]ERROR:[/bold red]"
 
+def log_debug(message):
+    console.print(f"{DEBUG} {message}", style="bold white") if DEBUG_MODE else None
+
 def create_dir(dirpath):
     dirpath_name = dirpath
 

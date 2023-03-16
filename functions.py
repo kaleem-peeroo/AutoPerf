@@ -46,7 +46,7 @@ def write_combinations_to_file(config):
         with open(comb_filename, "w") as f:
             f.writelines(f"{title}\n" for title in comb_titles)
 
-        console.print(f"{DEBUG} Written test combinations to {comb_filename}.", style="bold green") if DEBUG_MODE else None
+        log_debug(f"Written test combinations to {comb_filename}.")
 
     return dir_name
 
@@ -193,13 +193,13 @@ def machine_thread_func(machine):
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     # ? Check machine is online.
-    console.print(f"{DEBUG} {NAME} Checking if online...", style="bold white") if DEBUG_MODE else None
+    log_debug(f"{NAME} Checking if online...")
     check_machine_online(ssh, host, username, ssh_key, 5)
-    console.print(f"{DEBUG} {NAME} Is online", style="bold white") if DEBUG_MODE else None
+    log_debug(f"{NAME} Is online.")
 
     # ? Restart machine.
-    console.print(f"{DEBUG} {NAME} Restarting machine...", style="bold white") if DEBUG_MODE else None
+    log_debug(f"{NAME} Restarting machine...")
     restart_machine(ssh, host, username, ssh_key) if not DEBUG_MODE else None
-    console.print(f"{DEBUG} {NAME} Machine restarted.", style="bold white")
+    log_debug(f"{NAME} Machine restarted.")
 
     # ? Check machine is online again.

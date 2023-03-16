@@ -3,14 +3,14 @@ from functions import *
 args = sys.argv[1:]
 
 # ? Validate args
-console.print(f"{DEBUG} Validating args...", style="bold white") if DEBUG_MODE else None
+log_debug("Validating args...")
 validate_args(args)
-console.print(f"{DEBUG} args validated.", style="bold green") if DEBUG_MODE else None
+log_debug("args validated.")
 
 # ? Read config file.
-console.print(f"{DEBUG} Reading config: {args[0]}...", style="bold white") if DEBUG_MODE else None
+log_debug(f"Reading config: {args[0]}...")
 config = read_config(args[0])
-console.print(f"{DEBUG} Config read.", style="bold green") if DEBUG_MODE else None
+log_debug("Config read.")
 
 # TODO: Calculate total number of combinations for each campaign.
 console.print(f"Here are the total number of combinations for each campaign:", style="bold white")
@@ -68,7 +68,7 @@ for camp_comb in combinations:
 
     test_scripts = []
 
-    console.print(f"{DEBUG} Generating scripts for {len(test_combs)} tests in {camp_name}.", style="bold white") if DEBUG_MODE else None
+    log_debug(f"Generating scripts for {len(test_combs)} tests in {camp_name}.")
 
     for test_comb in test_combs:
         scripts = generate_scripts(test_comb)
@@ -139,7 +139,7 @@ for camp_comb in combinations:
         "tests": test_scripts
     })
 
-    console.print(f"{DEBUG} Scripts generated for {camp_name}.", style="bold white") if DEBUG_MODE else None
+    log_debug(f"Scripts generated for {camp_name}.")
 
 # ? Number of campaigns with scripts generated = number of campaigns
 assert(len(campaign_scripts) == len(combinations))
