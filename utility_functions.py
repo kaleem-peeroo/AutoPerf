@@ -274,14 +274,15 @@ def get_duration_from_test_scripts(scripts):
     else:
         return 0
 
-def start_system_logging(machine, test_title):
+def start_system_logging(machine, test_title, buffer_multiple):
     if machine['scripts']:
         duration = get_duration_from_test_scripts(machine['scripts'])
     else:
         duration = get_duration_from_test_name(test_title)
 
     # ? Give enough buffer time to contain the test.
-    duration *= 1.2
+    duration *= buffer_multiple
+    log_debug(f"{machine['name']} Started logging for {duration} seconds.")
 
     #  ? Check for any leftover logs.
     ssh = paramiko.SSHClient()

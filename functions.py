@@ -176,7 +176,7 @@ def allocate_scripts_per_machine(scripts, machine_count):
 
     return shared_pub_scripts, shared_sub_scripts
 
-def machine_thread_func(machine, testdir):
+def machine_thread_func(machine, testdir, buffer_multiple):
     """
     - Check that the machine is online.
     - Check for, download, and then delete existing csv files.
@@ -219,7 +219,7 @@ def machine_thread_func(machine, testdir):
     log_debug(f"{NAME} Machine is online and ready for testing.")
 
     # ? Start system logging.
-    start_system_logging(machine, os.path.basename(testdir))
+    start_system_logging(machine, os.path.basename(testdir), buffer_multiple)
     log_debug(f"{machine['name']} Logging started.")
 
     # ? Run the scripts.

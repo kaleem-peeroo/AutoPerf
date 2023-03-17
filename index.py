@@ -219,7 +219,7 @@ for campaign in campaign_scripts:
             machine_threads = []
             for machine in test['machines']:
                 # machine_thread = Thread(target=machine_thread_func, args=(machine, test_dir))
-                machine_thread = multiprocessing.Process(target=machine_thread_func, args=(machine, test_dir))
+                machine_thread = multiprocessing.Process(target=machine_thread_func, args=(machine, test_dir, buffer_multiple))
                 machine_threads.append(machine_thread)
                 machine_thread.start()
 

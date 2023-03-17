@@ -76,11 +76,8 @@ python index.py path/to/config.json |& tee output.txt
 ```
 
 TODO: 
-- [ ] Set up PTST errors collection in one place to see what has gone wrong per test
-    - [ ] e.g. test_3 can't get expected duration, example_campaign has no tests, etc.
-- [ ] Add \# of leftover csv files, generated csv files, generated logs to the tests in `progress.json`.
-- [ ] Record if test failed or not.
 - [ ] Show how long all tests will take in total and expected end date + time
 - [ ] Periodically zip then upload files from k1 to cloud
+- [x] Record if test failed or not.
 - [x] Why are empty leftovers folders being made?
 - [x] Show test progress
