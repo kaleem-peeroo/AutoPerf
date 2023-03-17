@@ -202,6 +202,7 @@ for campaign in campaign_scripts:
         # ? Get expected test duration in seconds.
         expected_duration_sec = get_duration_from_test_name(test_title)
         log_debug(f"Expected Duration (s) for {test_title}: {expected_duration_sec} seconds.")
+        log_debug(f"Buffer Duration (s) for {test_title}: {expected_duration_sec * buffer_multiple} seconds.")
         if expected_duration_sec is None:
             console.print(f"{ERROR} Error calculating expected time duration in seconds for\n\t{test_title}.", style="bold white")
             continue
