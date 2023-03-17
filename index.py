@@ -12,6 +12,9 @@ log_debug(f"Reading config: {args[0]}...")
 config = read_config(args[0])
 log_debug("Config read.")
 
+# ? Read in buffer_multiple:
+buffer_multiple = float(args[1])
+
 # ? Calculate total number of combinations for each campaign.
 console.print(f"Here are the total number of combinations for each campaign:", style="bold white")
 for camp in config["campaigns"]:
@@ -220,12 +223,12 @@ for campaign in campaign_scripts:
                 machine_thread.start()
 
             for machine_thread in machine_threads:
-                machine_thread.join(timeout=expected_duration_sec * 1.5)
+                machine_thread.join(timeout=expected_duration_sec * buffer_multiple)
                 
                 # ? If thread is still alive kill it.
                 if machine_thread.is_alive():
                     machine_thread.terminate()
-                    console.print(f"{ERROR} {machine['name']} {test_title} timed out after a duration of {expected_duration_sec * 1.5} seconds.", style="bold white")
+                    console.print(f"{ERROR} {machine['name']} {test_title} timed out after a duration of {expected_duration_sec * buffer_multiple} seconds.", style="bold white")
                     test_end_status = "fail"
 
         # ? Scripts finished running at this point.

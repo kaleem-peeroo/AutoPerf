@@ -13,6 +13,16 @@ def validate_args(args):
         console.print(f"Can't access {config_path}. Check it exists and is accessible and try again.", style="bold red")
         sys.exit()
 
+    # ? Validate buffer multiple
+    try:
+        buffer_multiple = float(args[1])
+        if buffer_multiple <= 1:
+            console.print(f"<buffer_multiple> has to be greater than 1 instead of {buffer_multiple}.", style="bold red")
+            sys.exit()
+    except ValueError:
+        console.print(f"<buffer_multiple> has to be a float value greater than 1 instead of {args[1]}", style="bold red")
+        sys.exit()
+
 def read_config(confpath):
     try:
         with open(confpath) as f:

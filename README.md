@@ -49,8 +49,16 @@ Set up the config.json file. Here is an example:
 
 Then run the following:
 ```bash
-python index.py path/to/config.json
+python index.py path/to/config.json <buffer_multiple>
 ```
+
+Where `<buffer_multiple>` is a decimal value multiplied to the test duration to add a buffer to wait after a test. For example:
+If:
+```
+test_duration = 60 seconds
+buffer_multiple = 1.5
+```
+Then PTST will wait up to 90 seconds (60 * 1.5) for the test to finish before interrupting it and recording it as a failure.
 
 For debug mode just add `debug`:
 ```bash
