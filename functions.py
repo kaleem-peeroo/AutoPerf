@@ -174,6 +174,28 @@ def calculate_total_duration(camp_scripts):
 
     return total_duration_s
 
+def validate_scripts(combination, scripts):
+
+    if not validate_setting(int(combination['datalen_bytes']), 'dataLen', scripts, combination):
+        return False
+
+    if not validate_setting(int(combination['duration_s']), 'executionTime', scripts, combination):
+        return False
+
+    if not validate_setting(int(combination['pub_count']), 'numPublishers', scripts, combination):
+        return False
+    
+    if not validate_setting(int(combination['sub_count']), 'numSubscribers', scripts, combination):
+        return False
+    
+    if not validate_setting(int(combination['durability']), 'durability', scripts, combination):
+        return False
+    
+    if not validate_setting(int(combination['latency_count']), 'LatencyCount', scripts, combination):
+        return False
+
+    return True
+
 def allocate_scripts_per_machine(scripts, machine_count):
     
     shared_pub_scripts = []

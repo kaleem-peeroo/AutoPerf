@@ -450,3 +450,71 @@ def update_progress(progress_json, test_title, start_time, end_time, test_end_st
         data.append({'test': test_title, 'start_time': start_time, 'end_time': end_time, 'status': test_end_status})
         file.seek(0)
         json.dump(data, file, indent=4)
+
+def validate_setting(combination_value, setting_string, scripts, combination):
+    instances = []
+    
+    for script in scripts:
+        script_settings = script.split(" -")
+        instances += [_ for _ in script_settings if setting_string in _]
+        
+    if len(instances) == 0:
+        console.print(f"{ERROR} {setting_string} not found in the generated scripts...", style="bold red")
+        console.print(f"\nCombinations:", style="bold white")
+        for key, value in combination.items():
+            console.print(f"\t{key}: {value}", style="bold white")
+        console.print(f"\n", style="bold white")
+        console.print(f"Scripts:", style="bold white")
+        for script in scripts:
+            console.print(f"\t{script}", style="bold white")
+        console.print(f"\n", style="bold white")
+        return False
+
+    # ? Get the dataLen values to compare with datalen_bytes.
+    values = []
+    for item in instances:
+        try:
+            value = int(item.replace(f"-{setting_string} ", ""))
+        except ValueError:
+            value = int(item.replace(f"{setting_string} ", ""))
+        values.append(value)
+
+    if len(set(values)) > 1:
+        # ! Multiple datalen values found in the script when there should be one.
+        console.print(f"{ERROR} Multiple {setting_string} values found in the script where there should be one.\n{scripts}", style="bold red")
+        console.print(f"\nCombinations:", style="bold white")
+        for key, value in combination.items():
+            console.print(f"\t{key}: {value}", style="bold white")
+        console.print(f"\n", style="bold white")
+        console.print(f"Scripts:", style="bold white")
+        for script in scripts:
+            console.print(f"\t{script}", style="bold white")
+        console.print(f"\n", style="bold white")
+        return False
+    elif len(set(values)) == 0:
+        # ! No datalen values found in the script when there should be one.
+        console.print(f"{ERROR} No {setting_string} values found in the script when there should be one.\n{scripts}", style="bold red")
+        console.print(f"\nCombinations:", style="bold white")
+        for key, value in combination.items():
+            console.print(f"\t{key}: {value}", style="bold white")
+        console.print(f"\n", style="bold white")
+        console.print(f"Scripts:", style="bold white")
+        for script in scripts:
+            console.print(f"\t{script}", style="bold white")
+        console.print(f"\n", style="bold white")
+        return False
+    else:
+        if combination_value != values[0]:
+            # ! The datalen in the combination and the data len used in the script are two different values.
+            console.print(f"The {setting_string} in the combination and the {setting_string} used in the script are two different values.\n{scripts}", style="bold red")
+            console.print(f"\nCombinations:", style="bold white")
+            for key, value in combination.items():
+                console.print(f"\t{key}: {value}", style="bold white")
+            console.print(f"\n", style="bold white")
+            console.print(f"Scripts:", style="bold white")
+            for script in scripts:
+                console.print(f"\t{script}", style="bold white")
+            console.print(f"\n", style="bold white")
+            return False
+
+    return True            

@@ -60,7 +60,6 @@ combinations = [{
     ]
 }]
 """
-
 campaign_scripts = []
 for camp_comb in combinations:
     camp_name = camp_comb['name']
@@ -75,6 +74,11 @@ for camp_comb in combinations:
 
     for test_comb in test_combs:
         scripts = generate_scripts(test_comb)
+
+        if not validate_scripts(test_comb, scripts):
+            console.print(f"{ERROR} Error when validating scripts. Scripts are NOT valid.", style="bold red")
+            sys.exit()
+
         pub_scripts, sub_scripts = allocate_scripts_per_machine(scripts, machine_count)
 
         if len(pub_scripts) == 0:
@@ -132,9 +136,9 @@ for camp_comb in combinations:
             else:
                 machine_script = None
 
-            machine.update({"scripts": f"source ~/.bashrc; {machine_script}"})
-            machine_scripts.append(machine)
-
+            machine_obj = {"scripts": f"source ~/.bashrc; {machine_script}"}
+            machine_scripts.append(machine_obj)
+            
         # ? Number of machines = number of machine scripts
         assert(len(camp_config['machines']) == len(machine_scripts))
 
@@ -142,7 +146,7 @@ for camp_comb in combinations:
             "combination": test_comb,
             "machines": machine_scripts
         })
-
+        
     # ? Number of tests = number of scripts per test
     assert(len(test_combs) == len(test_scripts))
 
@@ -155,7 +159,7 @@ for camp_comb in combinations:
 
 # ? Number of campaigns with scripts generated = number of campaigns
 assert(len(campaign_scripts) == len(combinations))
-        
+
 # ? At this point, every campaign contains a test. Every test contains its combination and the machines involved. Every machine contains the relevant machine information as well as its scripts to run.
 """
 campaign_scripts = [{
