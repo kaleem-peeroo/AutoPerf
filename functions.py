@@ -240,9 +240,11 @@ def machine_thread_func(machine, testdir):
     # ? Check how many csv files exist in the home_dir now that the test has finished.
     stdin, stdout, stderr = ssh.exec_command(f"ls {machine['home_dir']}/*.csv")
 
-    log_debug(f"{machine['name']} {len(stdout.readlines())} csv files found.")
+    csv_file_count = len(stdout.readlines())
 
-    if len(stdout.readlines()) > 0:
+    log_debug(f"{machine['name']} {csv_file_count} csv files found.")
+
+    if csv_file_count > 0:
         log_debug(f"{machine['name']} Downloading csv files...")
         downloaded_files_count = download_csv_files(machine, ssh, testdir)
         log_debug(f"{machine['name']} {downloaded_files_count} csv files downloaded.")
