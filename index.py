@@ -94,6 +94,7 @@ for camp_comb in combinations:
         machine_scripts = []
 
         for machine, pub_script, sub_script in zip(camp_config['machines'], pub_scripts, sub_scripts):
+            machine_obj = machine
             machine_pub_scripts = [f"{perftest} {script}" for script in pub_script]
             machine_sub_scripts = [f"{perftest} {script}" for script in sub_script]
 
@@ -136,7 +137,7 @@ for camp_comb in combinations:
             else:
                 machine_script = None
 
-            machine_obj = {"scripts": f"source ~/.bashrc; {machine_script}"}
+            machine_obj["scripts"] = f"source ~/.bashrc; {machine_script}"
             machine_scripts.append(machine_obj)
             
         # ? Number of machines = number of machine scripts
