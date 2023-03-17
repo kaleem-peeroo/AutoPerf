@@ -73,4 +73,5 @@ TODO:
 - [ ] Periodically zip then upload files from k1 to cloud
 - [ ] Add \# of leftover csv files, generated csv files, generated logs to the tests in `progress.json`.
 - [ ] Show how long all tests will take in total and expected end date + time
+- [ ] Why are empty leftovers folders being made?
 - [x] Show test progress

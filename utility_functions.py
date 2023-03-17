@@ -238,14 +238,15 @@ def download_leftovers(machine, ssh, testdir):
 
         # ? Make leftovers dir.
         leftover_dir = os.path.join(testdir, "leftovers")
-        leftover_dir = create_dir(leftover_dir)
+        if not os.path.exists(leftover_dir):
+            os.makedirs(leftover_dir)
 
         k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
         ssh.connect(machine['host'], username=machine['username'], pkey=k)
 
         with ssh.open_sftp() as sftp:
             remote_dir = machine['home_dir']
-            local_dir = testdir
+            local_dir = leftover_dir
 
             csv_files = sftp.listdir(remote_dir)
 
@@ -261,7 +262,7 @@ def download_leftovers(machine, ssh, testdir):
                         sftp.get(remote_filepath, local_filepath)
                         download_files_count += 1
 
-            log_debug(f"{machine['name']} {download_files_count} leftover files downloaded.")
+            log_debug(f"{machine['name']} {download_files_count} leftover files downloaded to {local_dir}.")
 
     else:
         log_debug(f"{machine['name']} No leftovers found.")
@@ -352,7 +353,8 @@ def download_csv_files(machine, ssh, testdir):
                 remote_filesize = sftp.stat(remote_filepath).st_size
 
                 if remote_filesize > 0:
-                    sftp.get(remote_filesize, local_filepath)
+                    sftp.get(remote_filepath, local_filepath)
+                    sftp.remove(remote_filepath)
                     download_files_count += 1
 
     return download_files_count
