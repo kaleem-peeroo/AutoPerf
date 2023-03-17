@@ -170,6 +170,14 @@ campaign_scripts = [{
     ]
 }, ...]
 """
+total_duration_s = calculate_total_duration(campaign_scripts)
+console.print(f"Expected duration for all tests: {convert_seconds(total_duration_s)}", style="bold white")
+
+current_time = datetime.now()
+expected_end_time = current_time + timedelta(seconds=total_duration_s)
+expected_end_time = expected_end_time.strftime("%Y-%m-%d %H:%M:%S")
+console.print(f"Expected End Date: {expected_end_time}", style="bold white")
+
 for campaign in campaign_scripts:
     camp_name = campaign['name']
     

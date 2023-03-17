@@ -156,6 +156,24 @@ def generate_scripts(combination):
            
     return updated_scripts
 
+def convert_seconds(seconds):
+    days = seconds // (24 * 3600)
+    seconds = seconds % (24 * 3600)
+    hours = seconds // 3600
+    seconds %= 3600
+    minutes = seconds // 60
+    seconds %= 60
+    return f"{days} Days, {hours} Hours, {minutes} Minutes, {seconds} Seconds"
+
+def calculate_total_duration(camp_scripts):
+    total_duration_s = 0
+    for camp in camp_scripts:
+        for test in camp['tests']:
+            duration_s = int(test['combination']['duration_s'])
+            total_duration_s += duration_s
+
+    return total_duration_s
+
 def allocate_scripts_per_machine(scripts, machine_count):
     
     shared_pub_scripts = []
