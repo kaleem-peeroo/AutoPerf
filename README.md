@@ -76,8 +76,8 @@ python index.py path/to/config.json |& tee output.txt
 ```
 
 TODO: 
-- [ ] Show how long all tests will take in total and expected end date + time
-- [ ] Periodically zip then upload files from k1 to cloud
+<!-- - [ ] Periodically zip then upload files from k1 to cloud -->
+- [x] Show how long all tests will take in total and expected end date + time
 - [x] Record if test failed or not.
 - [x] Why are empty leftovers folders being made?
 - [x] Show test progress
