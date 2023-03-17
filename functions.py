@@ -253,9 +253,11 @@ def machine_thread_func(machine, testdir):
         downloaded_files_count = 0
 
     # ? Create folder for the system logs.
-    log_debug(f"{machine['name']} Creating logs folder...")
-    logs_dir = create_dir(os.path.join(testdir, "logs"))
-    log_debug(f"{machine['name']} logs folder created.")
+    logs_dir = os.path.join(testdir, "logs")
+    if not os.path.exists(logs_dir):
+        log_debug(f"{machine['name']} Creating logs folder...")
+        os.makedirs(logs_dir)
+        log_debug(f"{machine['name']} logs folder created.")
 
     # ? Download system logs.
     log_debug(f"{machine['name']} Parsing and downloading system logs...")

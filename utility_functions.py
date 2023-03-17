@@ -260,6 +260,7 @@ def download_leftovers(machine, ssh, testdir):
 
                     if remote_filesize > 0:
                         sftp.get(remote_filepath, local_filepath)
+                        sftp.remove(remote_filepath)
                         download_files_count += 1
 
             log_debug(f"{machine['name']} {download_files_count} leftover files downloaded to {local_dir}.")
