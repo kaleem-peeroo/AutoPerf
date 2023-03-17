@@ -189,6 +189,7 @@ for campaign in campaign_scripts:
 
     for test in tests:
         start_time = time.time()
+        test_end_status = "success"
 
         # ? Make a folder for the test
         test_title = get_test_title_from_combination(test['combination'])
@@ -225,10 +226,11 @@ for campaign in campaign_scripts:
                 if machine_thread.is_alive():
                     machine_thread.terminate()
                     console.print(f"{ERROR} {test_title} timed out after a duration of {expected_duration_sec * 1.5} seconds.", style="bold white")
+                    test_end_status = "fail"
 
         # ? Scripts finished running at this point.
         
         end_time = time.time()
         
         # ? Record test start and end time.
-        update_progress(progress_json, test_title, start_time, end_time)
+        update_progress(progress_json, test_title, start_time, end_time, test_end_status)

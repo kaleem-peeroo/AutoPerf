@@ -439,12 +439,12 @@ def download_logs(machine, ssh, logs_dir):
 
     return downloaded_files_count
 
-def update_progress(progress_json, test_title, start_time, end_time):
+def update_progress(progress_json, test_title, start_time, end_time, test_end_status):
     start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))
     end_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time))
     
     with open(progress_json, 'r+') as file:
         data = json.load(file)
-        data.append({'test': test_title, 'start_time': start_time, 'end_time': end_time})
+        data.append({'test': test_title, 'start_time': start_time, 'end_time': end_time, 'status': test_end_status})
         file.seek(0)
         json.dump(data, file, indent=4)

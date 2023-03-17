@@ -7,8 +7,8 @@
                 "datalen_bytes": [100],
                 "pub_count": [10],
                 "sub_count": [10],
-                "reliability": [true, false],
-                "use_multicast": [true, false],
+                "reliability": [false],
+                "use_multicast": [false],
                 "durability": [0],
                 "latency_count": [100]
             },
