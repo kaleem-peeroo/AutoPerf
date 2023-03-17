@@ -225,7 +225,7 @@ for campaign in campaign_scripts:
                 # ? If thread is still alive kill it.
                 if machine_thread.is_alive():
                     machine_thread.terminate()
-                    console.print(f"{ERROR} {test_title} timed out after a duration of {expected_duration_sec * 1.5} seconds.", style="bold white")
+                    console.print(f"{ERROR} {machine['name']} {test_title} timed out after a duration of {expected_duration_sec * 1.5} seconds.", style="bold white")
                     test_end_status = "fail"
 
         # ? Scripts finished running at this point.
