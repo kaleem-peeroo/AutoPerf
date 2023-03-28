@@ -259,8 +259,11 @@ def machine_thread_func(machine, testdir, buffer_multiple):
     log_debug(f"{NAME} Machine is online and ready for testing.")
 
     # ? Start system logging.
-    start_system_logging(machine, os.path.basename(testdir), buffer_multiple)
-    log_debug(f"{machine['name']} Logging started.")
+    if start_system_logging(machine, os.path.basename(testdir), buffer_multiple):
+        log_debug(f"{machine['name']} Logging started.")
+    else:
+        log_debug(f"{machine['name']} Something went wrong when starting the system log. The sar_logs file wasn't found after running the log command.")
+        return
 
     # ? Run the scripts.
     log_debug(f"{machine['name']} Running scripts...")

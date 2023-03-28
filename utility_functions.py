@@ -278,7 +278,9 @@ def get_duration_from_test_scripts(scripts):
         return 0
 
 def start_system_logging(machine, test_title, buffer_multiple):
-    if machine['scripts']:
+    script_len = len(machine["scripts"].replace("source ~/.bashrc;", ""))
+
+    if script_len > 10:
         duration = get_duration_from_test_scripts(machine['scripts'])
     else:
         duration = get_duration_from_test_name(test_title)
@@ -306,6 +308,19 @@ def start_system_logging(machine, test_title, buffer_multiple):
     exit_status = stdout.channel.recv_exit_status()
     if exit_status != 0:
         console.print(f"{ERROR} {machine['name']} Error when executing:\n\tsar -A -o sar_logs 1 " + str(duration) + " >/dev/null 2>&1 &", style="bold red")
+
+    # ? Wait some time for the file to be made.
+    time.sleep(5)
+
+    # ? Check that log is working - file should be generated.
+    try:
+        log_dir = os.path.join(f"{machine['home_dir']}", "sar_logs")
+        sftp = ssh.open_sftp()
+        sftp.stat(log_dir)
+    except IOError:
+        return False
+
+    return True
 
 def run_scripts(ssh, machine):
     try:
