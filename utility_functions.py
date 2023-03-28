@@ -239,7 +239,10 @@ def download_leftovers(machine, ssh, testdir):
         # ? Make leftovers dir.
         leftover_dir = os.path.join(testdir, "leftovers")
         if not os.path.exists(leftover_dir):
-            os.makedirs(leftover_dir)
+            try:
+                os.makedirs(leftover_dir)
+            except FileExistsError:
+                None
 
         k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
         ssh.connect(machine['host'], username=machine['username'], pkey=k)
@@ -369,9 +372,8 @@ def download_logs(machine, ssh, logs_dir):
 
         if len(sar_logs) == 0:
             console.print(f"{ERROR} {machine['name']} No logs found.", style="bold red")
-            console.print(f"{ERROR} {machine['name']} Files in {machine['home_dir']}:", style="bold red")
-            pprint(sftp.listdir(machine['home_dir']))
             return 0
+        
         elif len(sar_logs) > 1:
             log_debug(f"{machine['name']} Multiple sar_logs found.")
             
