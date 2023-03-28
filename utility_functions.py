@@ -517,4 +517,4 @@ def validate_setting(combination_value, setting_string, scripts, combination):
             console.print(f"\n", style="bold white")
             return False
 
-    return True            
+    return True

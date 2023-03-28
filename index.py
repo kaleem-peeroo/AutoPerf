@@ -94,7 +94,8 @@ for camp_comb in combinations:
         machine_scripts = []
 
         for machine, pub_script, sub_script in zip(camp_config['machines'], pub_scripts, sub_scripts):
-            machine_obj = machine
+            new_machine_dict = dict(machine)
+
             machine_pub_scripts = [f"{perftest} {script}" for script in pub_script]
             machine_sub_scripts = [f"{perftest} {script}" for script in sub_script]
 
@@ -135,19 +136,21 @@ for camp_comb in combinations:
             elif len(machine_pub_scripts) == 0 and len(machine_sub_scripts) > 0:
                 machine_script = machine_sub_scripts
             else:
-                machine_script = None
+                machine_script = ""
 
-            machine_obj["scripts"] = f"source ~/.bashrc; {machine_script}"
-            machine_scripts.append(machine_obj)
-            
+            new_machine_dict.update({"scripts": f"source ~/.bashrc; {machine_script}"})
+            machine_scripts.append(new_machine_dict)
+
         # ? Number of machines = number of machine scripts
         assert(len(camp_config['machines']) == len(machine_scripts))
 
         test_scripts.append({
             "combination": test_comb,
-            "machines": machine_scripts
+            "machines": machine_scripts,
         })
-        
+
+    # ? All good here. scripts and test_comb match.
+
     # ? Number of tests = number of scripts per test
     assert(len(test_combs) == len(test_scripts))
 
