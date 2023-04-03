@@ -268,3 +268,5 @@ for campaign in campaign_scripts:
         
         # ? Record test start and end time.
         update_progress(progress_json, test_title, start_time, end_time, test_end_status)
+
+        output_test_progress(progress_json)
