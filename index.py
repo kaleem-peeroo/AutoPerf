@@ -218,22 +218,23 @@ for campaign in campaign_scripts:
     for test in tests:
         start_time = time.time()
         test_end_status = "success"
-
-        # ? Make a folder for the test
-        test_title = get_test_title_from_combination(test['combination'])
-        test_dir = create_dir( os.path.join(camp_dir, test_title) )
-        log_debug(f"Made testdir: {test_dir}.")
         
-        # ? Get expected test duration in seconds.
-        expected_duration_sec = get_duration_from_test_name(test_title)
-        log_debug(f"Expected Duration (s) for {test_title}: {expected_duration_sec} seconds.")
-        log_debug(f"Buffer Duration (s) for {test_title}: {expected_duration_sec * buffer_multiple} seconds.")
-        if expected_duration_sec is None:
-            console.print(f"{ERROR} Error calculating expected time duration in seconds for\n\t{test_title}.", style="bold white")
-            continue
-
         with console.status(f"[{tests.index(test) + 1}/{len(tests)}] Running test: {test_title}..."):
             console.print(f"[{tests.index(test) + 1}/{len(tests)}] Running test: {test_title}.")
+
+            # ? Make a folder for the test
+            test_title = get_test_title_from_combination(test['combination'])
+            test_dir = create_dir( os.path.join(camp_dir, test_title) )
+            log_debug(f"Made testdir: {test_dir}.")
+            
+            # ? Get expected test duration in seconds.
+            expected_duration_sec = get_duration_from_test_name(test_title)
+            log_debug(f"Expected Duration (s) for {test_title}: {expected_duration_sec} seconds.")
+            log_debug(f"Buffer Duration (s) for {test_title}: {expected_duration_sec * buffer_multiple} seconds.")
+            if expected_duration_sec is None:
+                console.print(f"{ERROR} Error calculating expected time duration in seconds for\n\t{test_title}.", style="bold white")
+                continue
+
 
             # ? Write test config to file.
             with open(os.path.join(test_dir, 'config.json'), 'w') as f:
