@@ -306,3 +306,13 @@ def machine_thread_func(machine, testdir, buffer_multiple):
     log_debug(f"{machine['name']} Parsing and downloading system logs...")
     downloaded_logs_count = download_logs(machine, ssh, logs_dir)
     log_debug(f"{machine['name']} {downloaded_logs_count} system logs downloaded.")
+
+def add_seconds_to_now(seconds_amount):
+    now = datetime.now()
+
+    new_time = now + timedelta(seconds=seconds_amount)
+
+    return new_time.strftime("%Y-%m-%d %H:%M:%S")
+
+def format_now():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")

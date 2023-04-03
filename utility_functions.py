@@ -32,9 +32,12 @@ console = Console()
 DEBUG_MODE = "debug" in sys.argv
 SKIP_RESTART = "skip_restart" in sys.argv
 
-DEBUG = "[bold blue]DEBUG:[/bold blue]"
-WARNING = "\n[bold red]WARNING:[/bold red]"
-ERROR = "[bold red]ERROR:[/bold red]"
+def format_now():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+DEBUG = f"[{format_now()}] [bold blue]DEBUG:[/bold blue]"
+WARNING = f"\n\n[{format_now()}] [bold red]WARNING:[/bold red]"
+ERROR = f"[{format_now()}] [bold red]ERROR:[/bold red]"
 
 def log_debug(message):
     console.print(f"{DEBUG} {message}", style="bold white") if DEBUG_MODE else None
@@ -535,3 +538,4 @@ def validate_setting(combination_value, setting_string, scripts, combination):
             return False
 
     return True
+

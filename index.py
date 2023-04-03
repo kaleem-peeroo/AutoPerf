@@ -188,7 +188,7 @@ campaign_scripts = [{
 }, ...]
 """
 campaign_duration_s = calculate_total_duration(campaign_scripts)
-console.print(f"Expected Campaign Duration: {convert_seconds(campaign_duration_s)}", style="bold white")
+console.print(f"\nExpected Campaign Duration: {convert_seconds(campaign_duration_s)}", style="bold white")
 
 current_time = datetime.now()
 campaign_expected_end_time = current_time + timedelta(seconds=campaign_duration_s)
@@ -219,22 +219,26 @@ for campaign in campaign_scripts:
         start_time = time.time()
         test_end_status = "success"
         
+        # ? Make a folder for the test
+        test_title = get_test_title_from_combination(test['combination'])
+        test_dir = create_dir( os.path.join(camp_dir, test_title) )
+        log_debug(f"Made testdir: {test_dir}.")
+
         with console.status(f"[{tests.index(test) + 1}/{len(tests)}] Running test: {test_title}..."):
             console.print(f"[{tests.index(test) + 1}/{len(tests)}] Running test: {test_title}.")
 
-            # ? Make a folder for the test
-            test_title = get_test_title_from_combination(test['combination'])
-            test_dir = create_dir( os.path.join(camp_dir, test_title) )
-            log_debug(f"Made testdir: {test_dir}.")
-            
             # ? Get expected test duration in seconds.
             expected_duration_sec = get_duration_from_test_name(test_title)
-            log_debug(f"Expected Duration (s) for {test_title}: {expected_duration_sec} seconds.")
-            log_debug(f"Buffer Duration (s) for {test_title}: {expected_duration_sec * buffer_multiple} seconds.")
+            
+            console.print(f"\t[{format_now()}] Expected Duration (s) for {test_title}: {expected_duration_sec} seconds.", style="bold white")
+            console.print(f"\t[{format_now()}] Expected End Date: {add_seconds_to_now(expected_duration_sec)}", style="bold white")
+            
+            console.print(f"\n\t[{format_now()}] Buffer Duration (s) for {test_title}: {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
+            console.print(f"\t[{format_now()}] Expected Buffer End Date: {add_seconds_to_now(expected_duration_sec * buffer_multiple)}", style="bold white")
+
             if expected_duration_sec is None:
                 console.print(f"{ERROR} Error calculating expected time duration in seconds for\n\t{test_title}.", style="bold white")
                 continue
-
 
             # ? Write test config to file.
             with open(os.path.join(test_dir, 'config.json'), 'w') as f:
