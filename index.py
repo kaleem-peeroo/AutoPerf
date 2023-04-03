@@ -225,7 +225,7 @@ for campaign in campaign_scripts:
         log_debug(f"Made testdir: {test_dir}.")
 
         with console.status(f"[{tests.index(test) + 1}/{len(tests)}] Running test: {test_title}..."):
-            console.print(f"[{tests.index(test) + 1}/{len(tests)}] Running test: {test_title}.")
+            console.print(f"\n[{tests.index(test) + 1}/{len(tests)}] Running test: {test_title}.")
 
             # ? Get expected test duration in seconds.
             expected_duration_sec = get_duration_from_test_name(test_title)
