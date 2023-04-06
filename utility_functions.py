@@ -35,12 +35,12 @@ SKIP_RESTART = "skip_restart" in sys.argv
 def format_now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-DEBUG = f"[{format_now()}] [bold blue]DEBUG:[/bold blue]"
-WARNING = f"\n\n[{format_now()}] [bold red]WARNING:[/bold red]"
-ERROR = f"[{format_now()}] [bold red]ERROR:[/bold red]"
+DEBUG = f"[bold blue]DEBUG:[/bold blue]"
+WARNING = f"\n\n[bold red]WARNING:[/bold red]"
+ERROR = f"[bold red]ERROR:[/bold red]"
 
 def log_debug(message):
-    console.print(f"{DEBUG} {message}", style="bold white") if DEBUG_MODE else None
+    console.print(f"[{format_now()}] {DEBUG} {message}", style="bold white") if DEBUG_MODE else None
 
 def create_dir(dirpath):
     dirpath_name = dirpath
@@ -62,7 +62,7 @@ def create_dir(dirpath):
         dirpath = f"{dirpath_name}_{i}"
 
     if i > 0:
-        console.print(f"{WARNING} {dirpath_name}_{i-1} already exists. Creating the folder {dirpath} instead.\n", style="bold white")
+        console.print(f"[{format_now()}] {WARNING} {dirpath_name}_{i-1} already exists. Creating the folder {dirpath} instead.\n", style="bold white")
 
     os.mkdir(dirpath)
 
@@ -196,22 +196,22 @@ def check_machine_online(ssh, host, username, ssh_key, timeout):
             timer += 1
 
     if timer == timeout:
-        console.print(f"{ERROR} Timeout after {timeout} seconds when pinging {host}.", style="bold red")
+        console.print(f"[{format_now()}] {ERROR} Timeout after {timeout} seconds when pinging {host}.", style="bold red")
         sys.exit(0)
 
 def validate_ssh_key(ssh_key):
     if not os.path.exists(ssh_key):
-        console.print(f"{ERROR} The ssh key file {ssh_key} does NOT exist.", style="bold red")
+        console.print(f"[{format_now()}] {ERROR} The ssh key file {ssh_key} does NOT exist.", style="bold red")
         return False
     
     try:
         key = paramiko.RSAKey.from_private_key_file(ssh_key)
         return True
     except paramiko.ssh_exception.PasswordRequiredException:
-        console.print(f"{ERROR} The ssh key file {ssh_key} requires a password.", style="bold red")
+        console.print(f"[{format_now()}] {ERROR} The ssh key file {ssh_key} requires a password.", style="bold red")
         return False
     except paramiko.ssh_exception.SSHException:
-        console.print(f"{ERROR} The ssh key file {ssh_key} is invalid.", style="bold red")
+        console.print(f"[{format_now()}] {ERROR} The ssh key file {ssh_key} is invalid.", style="bold red")
         return False
 
 def restart_machine(ssh, host, username, ssh_key):
@@ -304,13 +304,13 @@ def start_system_logging(machine, test_title, buffer_multiple):
     stdin, stdout, stderr = ssh.exec_command(f"find {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete")
     exit_status = stdout.channel.recv_exit_status()
     if exit_status != 0:
-        console.print(f"{ERROR} {machine['name']} Error when executing:\n\tfind {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete", style="bold red")
+        console.print(f"[{format_now()}] {ERROR} {machine['name']} Error when executing:\n\tfind {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete", style="bold red")
 
     # ? Start the logging.
     stdin, stdout, stderr = ssh.exec_command("sar -A -o sar_logs 1 " + str(int(duration)) + " >/dev/null 2>&1 &")
     exit_status = stdout.channel.recv_exit_status()
     if exit_status != 0:
-        console.print(f"{ERROR} {machine['name']} Error when executing:\n\tsar -A -o sar_logs 1 " + str(duration) + " >/dev/null 2>&1 &", style="bold red")
+        console.print(f"[{format_now()}] {ERROR} {machine['name']} Error when executing:\n\tsar -A -o sar_logs 1 " + str(duration) + " >/dev/null 2>&1 &", style="bold red")
 
     # ? Wait some time for the file to be made.
     time.sleep(5)
@@ -346,7 +346,7 @@ def run_scripts(ssh, machine):
             #     console.print(f"\t{line}", style="bold red")
 
     except Exception as e:
-        console.print(f"{ERROR} {machine['name']} Error when running scripts. Exception:\n\t{e}", style="bold red")
+        console.print(f"[{format_now()}] {ERROR} {machine['name']} Error when running scripts. Exception:\n\t{e}", style="bold red")
         return None, str(e)
 
     return stdout, stderr
@@ -389,7 +389,7 @@ def download_logs(machine, ssh, logs_dir):
         sar_logs = [_ for _ in sftp.listdir(machine['home_dir']) if "sar_logs" in _ and "log" in _]
 
         if len(sar_logs) == 0:
-            console.print(f"{ERROR} {machine['name']} No logs found.", style="bold red")
+            console.print(f"[{format_now()}] {ERROR} {machine['name']} No logs found.", style="bold red")
             return 0
         
         elif len(sar_logs) > 1:
@@ -457,7 +457,7 @@ def download_logs(machine, ssh, logs_dir):
         leftover_logs = [x for x in sftp.listdir(machine['home_dir']) if '.log' in x]
 
         if len(leftover_logs) > 0:
-            console.print(f"{WARNING} {machine['name']} Some logs were leftover.\n", style="bold white")
+            console.print(f"[{format_now()}] {WARNING} {machine['name']} Some logs were leftover.\n", style="bold white")
 
     return downloaded_files_count
 
@@ -479,7 +479,7 @@ def validate_setting(combination_value, setting_string, scripts, combination):
         instances += [_ for _ in script_settings if setting_string in _]
         
     if len(instances) == 0:
-        console.print(f"{ERROR} {setting_string} not found in the generated scripts...", style="bold red")
+        console.print(f"[{format_now()}] {ERROR} {setting_string} not found in the generated scripts...", style="bold red")
         console.print(f"\nCombinations:", style="bold white")
         for key, value in combination.items():
             console.print(f"\t{key}: {value}", style="bold white")
@@ -501,7 +501,7 @@ def validate_setting(combination_value, setting_string, scripts, combination):
 
     if len(set(values)) > 1:
         # ! Multiple datalen values found in the script when there should be one.
-        console.print(f"{ERROR} Multiple {setting_string} values found in the script where there should be one.\n{scripts}", style="bold red")
+        console.print(f"[{format_now()}] {ERROR} Multiple {setting_string} values found in the script where there should be one.\n{scripts}", style="bold red")
         console.print(f"\nCombinations:", style="bold white")
         for key, value in combination.items():
             console.print(f"\t{key}: {value}", style="bold white")
@@ -513,7 +513,7 @@ def validate_setting(combination_value, setting_string, scripts, combination):
         return False
     elif len(set(values)) == 0:
         # ! No datalen values found in the script when there should be one.
-        console.print(f"{ERROR} No {setting_string} values found in the script when there should be one.\n{scripts}", style="bold red")
+        console.print(f"[{format_now()}] {ERROR} No {setting_string} values found in the script when there should be one.\n{scripts}", style="bold red")
         console.print(f"\nCombinations:", style="bold white")
         for key, value in combination.items():
             console.print(f"\t{key}: {value}", style="bold white")
