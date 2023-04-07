@@ -36,7 +36,7 @@ def format_now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 DEBUG = f"[bold blue]DEBUG:[/bold blue]"
-WARNING = f"\n\n[bold red]WARNING:[/bold red]"
+WARNING = f"[bold red]WARNING:[/bold red]"
 ERROR = f"[bold red]ERROR:[/bold red]"
 
 def log_debug(message):
