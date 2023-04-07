@@ -286,7 +286,7 @@ def machine_thread_func(machine, testdir, buffer_multiple):
     log_debug(f"{machine['name']} Checking generated csv files...")
     k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
     try:
-        ssh.connect(machine['host'], username=machine['username'], pkey = k)
+        ssh.connect(machine['host'], username=machine['username'], pkey = k, banner_timeout=60)
     
         # ? Check how many csv files exist in the home_dir now that the test has finished.
         stdin, stdout, stderr = ssh.exec_command(f"ls {machine['home_dir']}/*.csv")
