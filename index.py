@@ -76,17 +76,17 @@ for camp_comb in combinations:
         scripts = generate_scripts(test_comb)
 
         if not validate_scripts(test_comb, scripts):
-            console.print(f"{ERROR} Error when validating scripts. Scripts are NOT valid.", style="bold red")
+            console.print(f"[{format_now()}] {ERROR} Error when validating scripts. Scripts are NOT valid.", style="bold red")
             sys.exit()
 
         pub_scripts, sub_scripts = allocate_scripts_per_machine(scripts, machine_count)
 
         if len(pub_scripts) == 0:
-            console.print(f"{ERROR} No pub scripts found in:\n\t{scripts}.", style="bold red")
+            console.print(f"[{format_now()}] {ERROR} No pub scripts found in:\n\t{scripts}.", style="bold red")
             sys.exit()
 
         if len(sub_scripts) == 0:
-            console.print(f"{ERROR} No sub scripts found in:\n\t{scripts}.", style="bold red")
+            console.print(f"[{format_now()}] {ERROR} No sub scripts found in:\n\t{scripts}.", style="bold red")
             sys.exit()
 
         perftest = camp_config['machines'][0]["perftest"]
@@ -237,7 +237,7 @@ for campaign in campaign_scripts:
             console.print(f"\t[{format_now()}] Expected Buffer End Date: {add_seconds_to_now(expected_duration_sec * buffer_multiple)}", style="bold white")
 
             if expected_duration_sec is None:
-                console.print(f"{ERROR} Error calculating expected time duration in seconds for\n\t{test_title}.", style="bold white")
+                console.print(f"[{format_now()}] {ERROR} Error calculating expected time duration in seconds for\n\t{test_title}.", style="bold white")
                 continue
 
             # ? Write test config to file.
@@ -259,7 +259,7 @@ for campaign in campaign_scripts:
                 # ? If thread is still alive kill it.
                 if machine_thread.is_alive():
                     machine_thread.terminate()
-                    console.print(f"{ERROR} {machine['name']} {test_title} timed out after a duration of {expected_duration_sec * buffer_multiple} seconds.", style="bold white")
+                    console.print(f"[{format_now()}] {ERROR} {machine['name']} {test_title} timed out after a duration of {expected_duration_sec * buffer_multiple} seconds.", style="bold white")
                     test_end_status = "fail"
 
         # ? Scripts finished running at this point.
