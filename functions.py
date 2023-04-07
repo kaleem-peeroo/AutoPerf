@@ -246,7 +246,11 @@ def machine_thread_func(machine, testdir, buffer_multiple):
     log_debug(f"{NAME} Is online.")
 
     # ? Check for, download and delete existing csv files.
-    download_leftovers(machine, ssh, testdir)
+    if download_leftovers(machine, ssh, testdir):
+        log_debug(f"{machine['name']} Leftovers downloaded.")
+    else:
+        log_debug(f"{machine['name']} Something went wrong when downloading the leftovers.")
+        return
 
     # ? Restart machine.
     log_debug(f"{NAME} Restarting machine...")
@@ -275,25 +279,32 @@ def machine_thread_func(machine, testdir, buffer_multiple):
         stderr = None
     log_debug(f"{machine['name']} Scripts finished running.")
 
+    # ? Give some time for files to actually generate.
+    time.sleep(10)
+
     # ? Check that all expected files have been generated.
     log_debug(f"{machine['name']} Checking generated csv files...")
     k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
-    ssh.connect(machine['host'], username=machine['username'], pkey = k)
+    try:
+        ssh.connect(machine['host'], username=machine['username'], pkey = k)
+    
+        # ? Check how many csv files exist in the home_dir now that the test has finished.
+        stdin, stdout, stderr = ssh.exec_command(f"ls {machine['home_dir']}/*.csv")
+        
+        csv_file_count = len(stdout.readlines())
 
-    # ? Check how many csv files exist in the home_dir now that the test has finished.
-    stdin, stdout, stderr = ssh.exec_command(f"ls {machine['home_dir']}/*.csv")
+        log_debug(f"{machine['name']} {csv_file_count} csv files found.")
 
-    csv_file_count = len(stdout.readlines())
+        if csv_file_count > 0:
+            log_debug(f"{machine['name']} Downloading csv files...")
+            downloaded_files_count = download_csv_files(machine, ssh, testdir)
+            log_debug(f"{machine['name']} {downloaded_files_count} csv files downloaded.")
+        else:
+            console.print(f"{ERROR} {machine['name']} No csv files found after the test has finished...", style="bold white")
+            downloaded_files_count = 0
 
-    log_debug(f"{machine['name']} {csv_file_count} csv files found.")
-
-    if csv_file_count > 0:
-        log_debug(f"{machine['name']} Downloading csv files...")
-        downloaded_files_count = download_csv_files(machine, ssh, testdir)
-        log_debug(f"{machine['name']} {downloaded_files_count} csv files downloaded.")
-    else:
-        console.print(f"{ERROR} {machine['name']} No csv files found after the test has finished...", style="bold white")
-        downloaded_files_count = 0
+    except Exception as e:
+        console.print(f"{ERROR} {machine['name']} Couldn't connect to the machine to download the generated csv files.")
 
     # ? Create folder for the system logs.
     logs_dir = os.path.join(testdir, "logs")

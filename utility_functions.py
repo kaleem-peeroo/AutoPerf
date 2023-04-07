@@ -187,7 +187,7 @@ def check_machine_online(ssh, host, username, ssh_key, timeout):
     while timer < timeout:
         try:
             k = paramiko.RSAKey.from_private_key_file(ssh_key)
-            ssh.connect(host, username=username, pkey = k)
+            ssh.connect(host, username=username, pkey = k, banner_timeout=10)
             break
         except Exception as e:
             # console.print("[red]Error connecting to " + host + ". Reconnecting...[/red]", style=output_colour)
@@ -218,7 +218,7 @@ def restart_machine(ssh, host, username, ssh_key):
     while True:
         try:
             k = paramiko.RSAKey.from_private_key_file(ssh_key)
-            ssh.connect(host, username=username, pkey = k)
+            ssh.connect(host, username=username, pkey = k, banner_timeout=10)
             ssh.exec_command("sudo reboot")
             time.sleep(3)
             break
@@ -227,7 +227,11 @@ def restart_machine(ssh, host, username, ssh_key):
 
 def has_leftovers(machine, ssh):
     k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
-    ssh.connect(machine['host'], username=machine['username'], pkey = k)
+    try:
+        ssh.connect(machine['host'], username=machine['username'], pkey = k, banner_timeout=10)
+    except Exception as e:
+        # TODO: Write to exceptions log.
+        return False
 
     stdin, stdout, stderr = ssh.exec_command(f"ls {machine['home_dir']}/*.csv")
 
@@ -248,7 +252,11 @@ def download_leftovers(machine, ssh, testdir):
                 None
 
         k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
-        ssh.connect(machine['host'], username=machine['username'], pkey=k)
+        try:
+            ssh.connect(machine['host'], username=machine['username'], pkey=k, banner_timeout=10)
+        except Exception as e:
+            # TODO: Write exception to exception log
+            return False
 
         with ssh.open_sftp() as sftp:
             remote_dir = machine['home_dir']
@@ -274,6 +282,8 @@ def download_leftovers(machine, ssh, testdir):
     else:
         log_debug(f"{machine['name']} No leftovers found.")
 
+    return True
+
 def get_duration_from_test_scripts(scripts):
     if "-executionTime" in scripts:
         return int(scripts.split("-executionTime")[1].split("-")[0])
@@ -298,7 +308,10 @@ def start_system_logging(machine, test_title, buffer_multiple):
 
     k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
 
-    ssh.connect(machine['host'], username=machine['username'], pkey=k)
+    try:
+        ssh.connect(machine['host'], username=machine['username'], pkey=k, banner_timeout=10)
+    except Exception as e:
+        return False
 
     # ? Delete any leftover system logs.
     stdin, stdout, stderr = ssh.exec_command(f"find {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete")
@@ -328,7 +341,7 @@ def start_system_logging(machine, test_title, buffer_multiple):
 def run_scripts(ssh, machine):
     try:
         k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
-        ssh.connect(machine["host"], username=machine['username'], pkey = k)
+        ssh.connect(machine["host"], username=machine['username'], pkey = k, banner_timeout=10)
         _, stdout, stderr = ssh.exec_command(f"{machine['scripts']}")
 
         # ? Wait for the scripts to finish.
@@ -359,7 +372,12 @@ def get_expected_csv_count_from_test_title(test_title):
 
 def download_csv_files(machine, ssh, testdir):
     k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
-    ssh.connect(machine['host'], username=machine['username'], pkey=k)
+    
+    try:
+        ssh.connect(machine['host'], username=machine['username'], pkey=k, banner_timeout=10)
+    except Exception as e:
+        # TODO: Write to exceptions log.
+        return 0
 
     with ssh.open_sftp() as sftp:
         remote_dir = machine['home_dir']
