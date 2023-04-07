@@ -181,7 +181,7 @@ def get_duration_from_test_name(testname):
 
 def check_machine_online(ssh, host, username, ssh_key, timeout):
     if not validate_ssh_key(ssh_key):
-        return
+        return False
     
     timer = 0
     while timer < timeout:
@@ -198,6 +198,8 @@ def check_machine_online(ssh, host, username, ssh_key, timeout):
     if timer == timeout:
         console.print(f"[{format_now()}] {ERROR} Timeout after {timeout} seconds when pinging {host}.", style="bold red")
         sys.exit(0)
+
+    return True
 
 def validate_ssh_key(ssh_key):
     if not os.path.exists(ssh_key):

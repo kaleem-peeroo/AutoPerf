@@ -242,8 +242,10 @@ def machine_thread_func(machine, testdir, buffer_multiple):
 
     # ? Check machine is online.
     log_debug(f"{NAME} Checking if online...")
-    check_machine_online(ssh, host, username, ssh_key, 60)
-    log_debug(f"{NAME} Is online.")
+    if check_machine_online(ssh, host, username, ssh_key, 60):
+        log_debug(f"{NAME} Is online.")
+    else:
+        console.print(f"[{format_now()}] {ERROR} Error when checking if machine is online.", style="bold red")
 
     # ? Check for, download and delete existing csv files.
     if download_leftovers(machine, ssh, testdir):
@@ -259,8 +261,10 @@ def machine_thread_func(machine, testdir, buffer_multiple):
 
     # ? Check machine is online again.
     log_debug(f"{NAME} Checking if online again...")
-    check_machine_online(ssh, host, username, ssh_key, 60)
-    log_debug(f"{NAME} Machine is online and ready for testing.")
+    if check_machine_online(ssh, host, username, ssh_key, 60):
+        log_debug(f"{NAME} Machine is online and ready for testing.")
+    else:
+        console.print(f"[{format_now()}] {ERROR} Error when checking if machine is online again.", style="bold red")
 
     # ? Start system logging.
     if start_system_logging(machine, os.path.basename(testdir), buffer_multiple):
