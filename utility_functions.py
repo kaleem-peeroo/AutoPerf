@@ -187,7 +187,7 @@ def check_machine_online(ssh, host, username, ssh_key, timeout):
     while timer < timeout:
         try:
             k = paramiko.RSAKey.from_private_key_file(ssh_key)
-            ssh.connect(host, username=username, pkey = k, banner_timeout=10)
+            ssh.connect(host, username=username, pkey = k, banner_timeout=60)
             break
         except Exception as e:
             # console.print("[red]Error connecting to " + host + ". Reconnecting...[/red]", style=output_colour)
@@ -218,7 +218,7 @@ def restart_machine(ssh, host, username, ssh_key):
     while True:
         try:
             k = paramiko.RSAKey.from_private_key_file(ssh_key)
-            ssh.connect(host, username=username, pkey = k, banner_timeout=10)
+            ssh.connect(host, username=username, pkey = k, banner_timeout=60)
             ssh.exec_command("sudo reboot")
             time.sleep(3)
             break
@@ -228,7 +228,7 @@ def restart_machine(ssh, host, username, ssh_key):
 def has_leftovers(machine, ssh):
     k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
     try:
-        ssh.connect(machine['host'], username=machine['username'], pkey = k, banner_timeout=10)
+        ssh.connect(machine['host'], username=machine['username'], pkey = k, banner_timeout=60)
     except Exception as e:
         # TODO: Write to exceptions log.
         return False
@@ -253,7 +253,7 @@ def download_leftovers(machine, ssh, testdir):
 
         k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
         try:
-            ssh.connect(machine['host'], username=machine['username'], pkey=k, banner_timeout=10)
+            ssh.connect(machine['host'], username=machine['username'], pkey=k, banner_timeout=60)
         except Exception as e:
             # TODO: Write exception to exception log
             return False
@@ -309,7 +309,7 @@ def start_system_logging(machine, test_title, buffer_multiple):
     k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
 
     try:
-        ssh.connect(machine['host'], username=machine['username'], pkey=k, banner_timeout=10)
+        ssh.connect(machine['host'], username=machine['username'], pkey=k, banner_timeout=60)
     except Exception as e:
         return False
 
@@ -341,7 +341,7 @@ def start_system_logging(machine, test_title, buffer_multiple):
 def run_scripts(ssh, machine):
     try:
         k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
-        ssh.connect(machine["host"], username=machine['username'], pkey = k, banner_timeout=10)
+        ssh.connect(machine["host"], username=machine['username'], pkey = k, banner_timeout=60)
         _, stdout, stderr = ssh.exec_command(f"{machine['scripts']}")
 
         # ? Wait for the scripts to finish.
@@ -374,7 +374,7 @@ def download_csv_files(machine, ssh, testdir):
     k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
     
     try:
-        ssh.connect(machine['host'], username=machine['username'], pkey=k, banner_timeout=10)
+        ssh.connect(machine['host'], username=machine['username'], pkey=k, banner_timeout=60)
     except Exception as e:
         # TODO: Write to exceptions log.
         return 0
