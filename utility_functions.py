@@ -313,33 +313,34 @@ def start_system_logging(machine, test_title, buffer_multiple):
 
     try:
         ssh.connect(machine['host'], username=machine['username'], pkey=k, banner_timeout=60)
+    
+        # ? Delete any leftover system logs.
+        stdin, stdout, stderr = ssh.exec_command(f"find {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete")
+        exit_status = stdout.channel.recv_exit_status()
+        if exit_status != 0:
+            console.print(f"[{format_now()}] {ERROR} {machine['name']} Error when executing:\n\tfind {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete", style="bold red")
+
+        # ? Start the logging.
+        stdin, stdout, stderr = ssh.exec_command("sar -A -o sar_logs 1 " + str(int(duration)) + " >/dev/null 2>&1 &")
+        exit_status = stdout.channel.recv_exit_status()
+        if exit_status != 0:
+            console.print(f"[{format_now()}] {ERROR} {machine['name']} Error when executing:\n\tsar -A -o sar_logs 1 " + str(duration) + " >/dev/null 2>&1 &", style="bold red")
+
+        # ? Wait some time for the file to be made.
+        time.sleep(5)
+
+        # ? Check that log is working - file should be generated.
+        try:
+            log_dir = os.path.join(f"{machine['home_dir']}", "sar_logs")
+            sftp = ssh.open_sftp()
+            sftp.stat(log_dir)
+        except IOError:
+            return False
+
+        return True
+    
     except Exception as e:
         return False
-
-    # ? Delete any leftover system logs.
-    stdin, stdout, stderr = ssh.exec_command(f"find {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete")
-    exit_status = stdout.channel.recv_exit_status()
-    if exit_status != 0:
-        console.print(f"[{format_now()}] {ERROR} {machine['name']} Error when executing:\n\tfind {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete", style="bold red")
-
-    # ? Start the logging.
-    stdin, stdout, stderr = ssh.exec_command("sar -A -o sar_logs 1 " + str(int(duration)) + " >/dev/null 2>&1 &")
-    exit_status = stdout.channel.recv_exit_status()
-    if exit_status != 0:
-        console.print(f"[{format_now()}] {ERROR} {machine['name']} Error when executing:\n\tsar -A -o sar_logs 1 " + str(duration) + " >/dev/null 2>&1 &", style="bold red")
-
-    # ? Wait some time for the file to be made.
-    time.sleep(5)
-
-    # ? Check that log is working - file should be generated.
-    try:
-        log_dir = os.path.join(f"{machine['home_dir']}", "sar_logs")
-        sftp = ssh.open_sftp()
-        sftp.stat(log_dir)
-    except IOError:
-        return False
-
-    return True
 
 def run_scripts(ssh, machine):
     try:
@@ -361,11 +362,12 @@ def run_scripts(ssh, machine):
             # for line in error:
             #     console.print(f"\t{line}", style="bold red")
 
+        return stdout, stderr
+    
     except Exception as e:
         console.print(f"[{format_now()}] {ERROR} {machine['name']} Error when running scripts. Exception:\n\t{e}", style="bold red")
         return None, str(e)
 
-    return stdout, stderr
 
 def get_expected_csv_count_from_test_title(test_title):
     sub_count = int(test_title.split('_')[3][:-1])
