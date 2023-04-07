@@ -229,13 +229,14 @@ def has_leftovers(machine, ssh):
     k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
     try:
         ssh.connect(machine['host'], username=machine['username'], pkey = k, banner_timeout=60)
+        
+        stdin, stdout, stderr = ssh.exec_command(f"ls {machine['home_dir']}/*.csv")
+        
+        return len(stdout.readlines()) > 0
+    
     except Exception as e:
         # TODO: Write to exceptions log.
         return False
-
-    stdin, stdout, stderr = ssh.exec_command(f"ls {machine['home_dir']}/*.csv")
-
-    return len(stdout.readlines()) > 0
 
 def download_leftovers(machine, ssh, testdir):
     log_debug(f"{machine['name']} Checking for leftovers...")
@@ -252,37 +253,39 @@ def download_leftovers(machine, ssh, testdir):
                 None
 
         k = paramiko.RSAKey.from_private_key_file(machine['ssh_key'])
+
         try:
             ssh.connect(machine['host'], username=machine['username'], pkey=k, banner_timeout=60)
+        
+            with ssh.open_sftp() as sftp:
+                remote_dir = machine['home_dir']
+                local_dir = leftover_dir
+
+                csv_files = sftp.listdir(remote_dir)
+
+                download_files_count = 0
+
+                for csv_file in csv_files:
+                    if csv_file.endswith(".csv"):
+                        remote_filepath = os.path.join(remote_dir, csv_file)
+                        local_filepath = os.path.join(local_dir, csv_file)
+                        remote_filesize = sftp.stat(remote_filepath).st_size
+
+                        if remote_filesize > 0:
+                            sftp.get(remote_filepath, local_filepath)
+                            sftp.remove(remote_filepath)
+                            download_files_count += 1
+
+                log_debug(f"{machine['name']} {download_files_count} leftover files downloaded to {local_dir}.")
+                return True
+
         except Exception as e:
             # TODO: Write exception to exception log
             return False
 
-        with ssh.open_sftp() as sftp:
-            remote_dir = machine['home_dir']
-            local_dir = leftover_dir
-
-            csv_files = sftp.listdir(remote_dir)
-
-            download_files_count = 0
-
-            for csv_file in csv_files:
-                if csv_file.endswith(".csv"):
-                    remote_filepath = os.path.join(remote_dir, csv_file)
-                    local_filepath = os.path.join(local_dir, csv_file)
-                    remote_filesize = sftp.stat(remote_filepath).st_size
-
-                    if remote_filesize > 0:
-                        sftp.get(remote_filepath, local_filepath)
-                        sftp.remove(remote_filepath)
-                        download_files_count += 1
-
-            log_debug(f"{machine['name']} {download_files_count} leftover files downloaded to {local_dir}.")
-
     else:
         log_debug(f"{machine['name']} No leftovers found.")
-
-    return True
+        return True
 
 def get_duration_from_test_scripts(scripts):
     if "-executionTime" in scripts:
@@ -375,30 +378,30 @@ def download_csv_files(machine, ssh, testdir):
     
     try:
         ssh.connect(machine['host'], username=machine['username'], pkey=k, banner_timeout=60)
+    
+        with ssh.open_sftp() as sftp:
+            remote_dir = machine['home_dir']
+            local_dir = testdir
+
+            csv_files = sftp.listdir(remote_dir)
+
+            download_files_count = 0
+
+            for csv_file in csv_files:
+                if csv_file.endswith(".csv"):
+                    remote_filepath = os.path.join(remote_dir, csv_file)
+                    local_filepath = os.path.join(local_dir, csv_file)
+                    remote_filesize = sftp.stat(remote_filepath).st_size
+
+                    if remote_filesize > 0:
+                        sftp.get(remote_filepath, local_filepath)
+                        sftp.remove(remote_filepath)
+                        download_files_count += 1
+
+        return download_files_count
     except Exception as e:
         # TODO: Write to exceptions log.
         return 0
-
-    with ssh.open_sftp() as sftp:
-        remote_dir = machine['home_dir']
-        local_dir = testdir
-
-        csv_files = sftp.listdir(remote_dir)
-
-        download_files_count = 0
-
-        for csv_file in csv_files:
-            if csv_file.endswith(".csv"):
-                remote_filepath = os.path.join(remote_dir, csv_file)
-                local_filepath = os.path.join(local_dir, csv_file)
-                remote_filesize = sftp.stat(remote_filepath).st_size
-
-                if remote_filesize > 0:
-                    sftp.get(remote_filepath, local_filepath)
-                    sftp.remove(remote_filepath)
-                    download_files_count += 1
-
-    return download_files_count
 
 def download_logs(machine, ssh, logs_dir):
     downloaded_files_count = 0
