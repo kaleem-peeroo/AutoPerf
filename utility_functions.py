@@ -298,10 +298,7 @@ def get_duration_from_test_scripts(scripts):
 def start_system_logging(machine, test_title, buffer_multiple):
     script_len = len(machine["scripts"].replace("source ~/.bashrc;", ""))
 
-    if script_len > 10:
-        duration = get_duration_from_test_scripts(machine['scripts'])
-    else:
-        duration = get_duration_from_test_name(test_title)
+    duration = get_duration_from_test_name(test_title)
 
     # ? Give enough buffer time to contain the test.
     duration *= buffer_multiple
