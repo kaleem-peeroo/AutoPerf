@@ -353,4 +353,4 @@ def output_test_progress(progress_json):
     # ? Good + bad = total
     assert(total_test_count == failed_test_count + good_test_count)
 
-    console.print(f"[{format_now()}] {total_test_count} tests run. {failed_test_count} ({failed_percent}%) tests wer prolonged. {good_test_count} ({good_percent}%) tests were punctual.")
+    console.print(f"[{format_now()}] {total_test_count} tests run. {failed_test_count} ({failed_percent}%) tests were prolonged. {good_test_count} ({good_percent}%) tests were punctual.")
