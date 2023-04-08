@@ -341,16 +341,16 @@ def output_test_progress(progress_json):
     total_test_count = len(progress)
 
     # ? Get number of failed tests.
-    failed_test_count = len([test for test in progress if 'fail' in test['status']])
+    failed_test_count = len([test for test in progress if 'prolonged' in test['status']])
     failed_percent = (failed_test_count / total_test_count) * 100
     failed_percent = "{:.2f}".format(failed_percent)
 
     # ? Get number of good tests.
-    good_test_count = len([test for test in progress if 'success' in test['status']])
+    good_test_count = len([test for test in progress if 'punctual' in test['status']])
     good_percent = (good_test_count / total_test_count) * 100
     good_percent = "{:.2f}".format(good_percent)
 
     # ? Good + bad = total
     assert(total_test_count == failed_test_count + good_test_count)
 
-    console.print(f"[{format_now()}] {total_test_count} tests run. {failed_test_count} ({failed_percent}%) tests failed. {good_test_count} ({good_percent}%) tests succeeded.")
+    console.print(f"[{format_now()}] {total_test_count} tests run. {failed_test_count} ({failed_percent}%) tests wer prolonged. {good_test_count} ({good_percent}%) tests were punctual.")
