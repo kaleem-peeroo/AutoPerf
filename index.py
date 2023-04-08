@@ -217,7 +217,7 @@ for campaign in campaign_scripts:
 
     for test in tests:
         start_time = time.time()
-        test_end_status = "success"
+        test_end_status = "punctual"
         
         # ? Make a folder for the test
         test_title = get_test_title_from_combination(test['combination'])
@@ -260,7 +260,7 @@ for campaign in campaign_scripts:
                 if machine_thread.is_alive():
                     machine_thread.terminate()
                     console.print(f"[{format_now()}] {ERROR} {machine['name']} {test_title} timed out after a duration of {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
-                    test_end_status = "fail"
+                    test_end_status = "prolonged"
 
         # ? Scripts finished running at this point.
         
