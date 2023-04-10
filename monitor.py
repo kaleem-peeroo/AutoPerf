@@ -61,7 +61,6 @@ remote_txt_file_contents = remote_txt_file_contents.split("\n")
 # ? Get campaign start.
 try:
     camp_start_date_line = [line for line in remote_txt_file_contents if '[1/' in line][0]
-    pprint(camp_start_date_line)
     timestamp = re.findall(r'\[(.*?)\]', camp_start_date_line)[0]
     camp_start = timestamp
 except:
