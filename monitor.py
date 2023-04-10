@@ -12,6 +12,7 @@ import sys
 from pprint import pprint
 from rich.bar import Bar
 from rich.console import Console
+from rich.progress import track
 from rich.table import Table
 console = Console()
 
@@ -60,6 +61,7 @@ remote_txt_file_contents = remote_txt_file_contents.split("\n")
 # ? Get campaign start.
 try:
     camp_start_date_line = [line for line in remote_txt_file_contents if '[1/' in line][0]
+    pprint(camp_start_date_line)
     timestamp = re.findall(r'\[(.*?)\]', camp_start_date_line)[0]
     camp_start = timestamp
 except:
@@ -87,16 +89,17 @@ test_dirs = [os.path.join(ptstdir, camp_dir, _) for _ in camp_files if '.json' n
 
 usable_count = 0
 
-with console.status("Counting usable tests..."):
-    for test_dir in test_dirs:
-        split_string = os.path.basename(test_dir).split("_")
-        s_index = [i for i, s in enumerate(split_string) if 'S' in s][0]
-        s_num = int(split_string[s_index].strip('S'))
-        expected_csv_count = int(s_num) + 1
-        csv_count = len([_ for _ in sftp.listdir(test_dir) if '.csv' in _])
-        
-        if expected_csv_count == csv_count:
-            usable_count += 1
+# for test_dir in test_dirs:
+for i in track(range(len(test_dirs)), description="Analysing tests..."):
+    test_dir = test_dirs[i]
+    split_string = os.path.basename(test_dir).split("_")
+    s_index = [i for i, s in enumerate(split_string) if 'S' in s][0]
+    s_num = int(split_string[s_index].strip('S'))
+    expected_csv_count = int(s_num) + 1
+    csv_count = len([_ for _ in sftp.listdir(test_dir) if '.csv' in _])
+    
+    if expected_csv_count == csv_count:
+        usable_count += 1
 
 progress_json = [_ for _ in camp_files if '.json' in _][0]
 progress_json = os.path.join( ptstdir, camp_dir, progress_json )
