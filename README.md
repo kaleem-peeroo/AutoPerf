@@ -91,3 +91,13 @@ Script used to check up on the controllers. The controllers are running PTST. `m
 - Prolonged Test Count + %
 - Usable Tests Count + %
     - Where usable = has all data that is expected of it
+
+## How to Use
+```bash
+python monitor.py <controller_ip> <path_to_ptst_on_controller>
+```
+
+Example:
+```bash
+python monitor.py 10.210.35.27 "/home/acwh025/Documents/PTST"
+```
