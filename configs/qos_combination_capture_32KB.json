@@ -1,11 +1,11 @@
 {
     "campaigns": [
         {
-            "name": "QoS Combination Capture 100B",
+            "name": "QoS Combination Capture 32KB",
             "repetitions": 1,
             "settings": {
                 "duration_s": [600],
-                "datalen_bytes": [100],
+                "datalen_bytes": [32000],
                 "pub_count": [1, 5, 10, 25, 50],
                 "sub_count": [1, 5, 10, 25, 50],
                 "reliability": [true, false],

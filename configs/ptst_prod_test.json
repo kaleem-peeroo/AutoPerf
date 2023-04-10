@@ -1,16 +1,15 @@
 {
     "campaigns": [
         {
-            "name": "QoS Combination Capture 100B",
-            "repetitions": 1,
+            "name": "PTST Production Test",
             "settings": {
-                "duration_s": [600],
+                "duration_s": [30],
                 "datalen_bytes": [100],
-                "pub_count": [1, 5, 10, 25, 50],
-                "sub_count": [1, 5, 10, 25, 50],
+                "pub_count": [1, 5],
+                "sub_count": [1, 5],
                 "reliability": [true, false],
                 "use_multicast": [true, false],
-                "durability": [0, 1, 2, 3],
+                "durability": [0],
                 "latency_count": [100]
             },
             "machines": [
