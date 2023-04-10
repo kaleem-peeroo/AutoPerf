@@ -101,3 +101,6 @@ Example:
 ```bash
 python monitor.py 10.210.35.27 "/home/acwh025/Documents/PTST"
 ```
+
+TODO:
+- [ ] Show current test running, when it started, and when its expected to finish
