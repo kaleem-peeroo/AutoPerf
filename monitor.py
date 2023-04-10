@@ -74,23 +74,29 @@ except:
 # ? Get campaign name.
 camp_name = latest_txt_file.replace("_output", "").replace(".txt", "")
 
-camp_dir = [_ for _ in remote_files if camp_name.lower() in _.lower() and len(_.split(".")) == 1][0]
+camp_dirs = [_ for _ in remote_files if camp_name.lower() in _.lower() and len(_.split(".")) == 1]
 
+if len(camp_dirs) > 1:
+    camp_dir = [_ for _ in camp_dirs if _.lower() == camp_name.lower()][0]
+else:
+    camp_dir = camp_dirs[0]
+    
 camp_files = sftp.listdir(os.path.join(ptstdir, camp_dir))
 
-test_dirs = [os.path.join(ptstdir, camp_dir, _) for _ in camp_files if '.json' not in _]
+test_dirs = [os.path.join(ptstdir, camp_dir, _) for _ in camp_files if '.json' not in _ and '.txt' not in _]
 
 usable_count = 0
 
-for test_dir in test_dirs:
-    split_string = os.path.basename(test_dir).split("_")
-    s_index = [i for i, s in enumerate(split_string) if 'S' in s][0]
-    s_num = int(split_string[s_index].strip('S'))
-    expected_csv_count = int(s_num) + 1
-    csv_count = len([_ for _ in sftp.listdir(test_dir) if '.csv' in _])
-    
-    if expected_csv_count == csv_count:
-        usable_count += 1
+with console.status("Counting usable tests..."):
+    for test_dir in test_dirs:
+        split_string = os.path.basename(test_dir).split("_")
+        s_index = [i for i, s in enumerate(split_string) if 'S' in s][0]
+        s_num = int(split_string[s_index].strip('S'))
+        expected_csv_count = int(s_num) + 1
+        csv_count = len([_ for _ in sftp.listdir(test_dir) if '.csv' in _])
+        
+        if expected_csv_count == csv_count:
+            usable_count += 1
 
 progress_json = [_ for _ in camp_files if '.json' in _][0]
 progress_json = os.path.join( ptstdir, camp_dir, progress_json )
@@ -111,10 +117,10 @@ punctual_test_count = status_counts['punctual']
 prolonged_test_count = status_counts['prolonged']
 total_test_count = len(progress_contents)
 
-usable_percentage = int(usable_count / total_test_count) * 100
+usable_percentage = int(usable_count / total_test_count * 100)
 
-punctual_test_percent = int(punctual_test_count / total_test_count) * 100
-prolonged_test_percent = int(prolonged_test_count / total_test_count) * 100
+punctual_test_percent = int(punctual_test_count / total_test_count * 100)
+prolonged_test_percent = int(prolonged_test_count / total_test_count * 100)
 
 punctual_bar = Bar(
     size=100,
