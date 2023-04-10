@@ -82,3 +82,12 @@ TODO:
 - [x] Record if test failed or not.
 - [x] Why are empty leftovers folders being made?
 - [x] Show test progress.
+
+# Monitor
+Script used to check up on the controllers. The controllers are running PTST. `monitor.py` will basically SSH into the controllers and return the status of the campaign. It'll basically show you the following in a table format:
+- Campaign Start + Expected End
+- Total Test Count
+- Punctual Test Count + %
+- Prolonged Test Count + %
+- Usable Tests Count + %
+    - Where usable = has all data that is expected of it
