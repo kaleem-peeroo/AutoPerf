@@ -1,4 +1,19 @@
-from functions import *
+import warnings
+from cryptography.utils import CryptographyDeprecationWarning
+with warnings.catch_warnings():
+    warnings.filterwarnings('ignore', category=CryptographyDeprecationWarning)
+    import paramiko
+    
+import json
+import os
+import re
+import sys
+
+from pprint import pprint
+from rich.bar import Bar
+from rich.console import Console
+from rich.table import Table
+console = Console()
 
 """
 1. SSH into machine.
@@ -6,3 +21,124 @@ from functions import *
 3. Parse the progress.json file to get punctual and prolonged test stats.
 4. Analyse the files to get usable test stats.
 """
+
+args = sys.argv[1:]
+
+if len(args) != 2:
+    console.log(f"2 arguments should be given. Check the README to find out how to use this.", style="bold red")
+    sys.exit()
+else:
+    host = args[0]
+    ptstdir = args[1]
+
+# ? Connect to the controller.
+    
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+key_path = "/Users/kaleem/.ssh/id_rsa"
+k = paramiko.RSAKey.from_private_key_file(key_path)
+ssh.connect(host, username="acwh025", pkey = k, banner_timeout=120)
+
+# ? Check if ptstdir is valid.
+sftp = ssh.open_sftp()
+try:
+    remote_files = sftp.listdir(ptstdir)
+except Exception as e:
+    console.log(f"{e}", style="bold red")
+    
+# ? Find the latest output file.
+stdin, stdout, stderr = ssh.exec_command(f"cd {ptstdir}; ls -t *.txt | head -1")
+latest_txt_file = stdout.read().decode().strip()
+    
+remote_txt_file = sftp.open(os.path.join( ptstdir, latest_txt_file ))
+remote_txt_file_contents = remote_txt_file.read().decode("utf-8").strip()
+remote_txt_file.close()
+
+remote_txt_file_contents = remote_txt_file_contents.split("\n")
+
+# ? Get campaign start.
+try:
+    camp_start_date_line = [line for line in remote_txt_file_contents if '[1/' in line][0]
+    timestamp = re.findall(r'\[(.*?)\]', camp_start_date_line)[0]
+    camp_start = timestamp
+except:
+    camp_start = f"Not found in {latest_txt_file}."
+    
+# ? Get campaign end.
+try:
+    camp_end = [line for line in remote_txt_file_contents if 'Campaign Expected End' in line][0].replace("Campaign Expected End Date: ", "")
+except:
+    camp_end = f"Not found in {latest_txt_file}."
+    
+# ? Get campaign name.
+camp_name = latest_txt_file.replace("_output", "").replace(".txt", "")
+
+camp_dir = [_ for _ in remote_files if camp_name.lower() in _.lower() and len(_.split(".")) == 1][0]
+
+camp_files = sftp.listdir(os.path.join(ptstdir, camp_dir))
+
+test_dirs = [os.path.join(ptstdir, camp_dir, _) for _ in camp_files if '.json' not in _]
+
+usable_count = 0
+
+for test_dir in test_dirs:
+    split_string = os.path.basename(test_dir).split("_")
+    s_index = [i for i, s in enumerate(split_string) if 'S' in s][0]
+    s_num = int(split_string[s_index].strip('S'))
+    expected_csv_count = int(s_num) + 1
+    csv_count = len([_ for _ in sftp.listdir(test_dir) if '.csv' in _])
+    
+    if expected_csv_count == csv_count:
+        usable_count += 1
+
+progress_json = [_ for _ in camp_files if '.json' in _][0]
+progress_json = os.path.join( ptstdir, camp_dir, progress_json )
+
+# ? Read progress.json for campaign.
+progress_json = sftp.open(progress_json, 'r')
+progress_contents = json.load(progress_json)
+progress_json.close()
+
+# ? Count test statuses.
+status_counts = {"punctual": 0, "prolonged": 0}
+for item in progress_contents:
+    status = item["status"]
+    status_counts[status] +=1
+    
+# ? Get punctual, prolonged, and total test count.
+punctual_test_count = status_counts['punctual']
+prolonged_test_count = status_counts['prolonged']
+total_test_count = len(progress_contents)
+
+usable_percentage = int(usable_count / total_test_count) * 100
+
+punctual_test_percent = int(punctual_test_count / total_test_count) * 100
+prolonged_test_percent = int(prolonged_test_count / total_test_count) * 100
+
+punctual_bar = Bar(
+    size=100,
+    begin=0,
+    end=punctual_test_percent,
+    color="green"
+)
+
+prolonged_bar = Bar(
+    size=100,
+    begin=punctual_test_percent,
+    end=100,
+    color="red"
+)
+
+table = Table(title="PTST Monitor", show_lines=True)
+table.add_column("Stat")
+table.add_column("Value")
+table.add_row("Current Campaign", f"{camp_name}")
+table.add_row("Campaign Start", f"{camp_start}")
+table.add_row("Campaign Expected End", f"{camp_end}")
+table.add_row("Completed Tests", f"{total_test_count}")
+table.add_row("Punctual Tests", f"{punctual_test_count}/{total_test_count} ({punctual_test_percent}%)")
+table.add_row("Prolonged Tests", f"{prolonged_test_count}/{total_test_count} ({prolonged_test_percent}%)")
+table.add_row("Usable Tests", f"{usable_count}/{total_test_count} ({usable_percentage}%)")
+
+console.print(table)
