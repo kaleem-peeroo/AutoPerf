@@ -59,6 +59,12 @@ remote_txt_file.close()
 
 remote_txt_file_contents = remote_txt_file_contents.split("\n")
 
+total_combination_count_line = [line for line in remote_txt_file_contents[:10] if "combinations." in line][0].strip()
+
+total_combination_count = total_combination_count_line.split(":")[1].strip().replace(" combinations.", "")
+
+total_combination_count = int(total_combination_count)
+
 # ? Get campaign start.
 try:
     camp_start_date_line = [line for line in remote_txt_file_contents if '[1/' in line][0]
@@ -89,7 +95,6 @@ test_dirs = [os.path.join(ptstdir, camp_dir, _) for _ in camp_files if '.json' n
 
 usable_count = 0
 
-# for test_dir in test_dirs:
 for i in track(range(len(test_dirs)), description="Analysing tests..."):
     test_dir = test_dirs[i]
     split_string = os.path.basename(test_dir).split("_")
@@ -118,12 +123,14 @@ for item in progress_contents:
 # ? Get punctual, prolonged, and total test count.
 punctual_test_count = status_counts['punctual']
 prolonged_test_count = status_counts['prolonged']
-total_test_count = len(progress_contents)
+completed_test_count = len(progress_contents)
 
-usable_percentage = int(usable_count / total_test_count * 100)
+usable_percentage = int(usable_count / completed_test_count * 100)
 
-punctual_test_percent = int(punctual_test_count / total_test_count * 100)
-prolonged_test_percent = int(prolonged_test_count / total_test_count * 100)
+punctual_test_percent = int(punctual_test_count / completed_test_count * 100)
+prolonged_test_percent = int(prolonged_test_count / completed_test_count * 100)
+
+completed_test_percent = int(completed_test_count / total_combination_count * 100)
 
 punctual_bar = Bar(
     size=100,
@@ -145,9 +152,9 @@ table.add_column("Value")
 table.add_row("Current Campaign", f"{camp_name}")
 table.add_row("Campaign Start", f"{camp_start}")
 table.add_row("Campaign Expected End", f"{camp_end}")
-table.add_row("Completed Tests", f"{total_test_count}")
-table.add_row("[bold green]Punctual Tests[/bold green]", f"[bold green]{punctual_test_count}/{total_test_count} ({punctual_test_percent}%)[/bold green]")
-table.add_row("[bold red]Prolonged Tests[/bold red]", f"[bold red]{prolonged_test_count}/{total_test_count} ({prolonged_test_percent}%)[/bold red]")
-table.add_row("[bold green]Usable Tests[/bold green]", f"[bold green]{usable_count}/{total_test_count} ({usable_percentage}%)[/bold green]")
+table.add_row("Completed Tests", f"{completed_test_count}/{total_combination_count} ({completed_test_percent}%)")
+table.add_row("[bold green]Punctual Tests[/bold green]", f"[bold green]{punctual_test_count}/{completed_test_count} ({punctual_test_percent}%)[/bold green]")
+table.add_row("[bold red]Prolonged Tests[/bold red]", f"[bold red]{prolonged_test_count}/{completed_test_count} ({prolonged_test_percent}%)[/bold red]")
+table.add_row("[bold green]Usable Tests[/bold green]", f"[bold green]{usable_count}/{completed_test_count} ({usable_percentage}%)[/bold green]")
 
 console.print(table)
