@@ -25,12 +25,13 @@ console = Console()
 
 args = sys.argv[1:]
 
-if len(args) != 2:
-    console.log(f"2 arguments should be given. Check the README to find out how to use this.", style="bold red")
+if len(args) != 3:
+    console.log(f"3 arguments should be given. Check the README to find out how to use this.", style="bold red")
     sys.exit()
 else:
     host = args[0]
-    ptstdir = args[1]
+    name = args[1]
+    ptstdir = args[2]
 
 # ? Connect to the controller.
     
@@ -138,7 +139,7 @@ prolonged_bar = Bar(
     color="red"
 )
 
-table = Table(title="PTST Monitor", show_lines=True)
+table = Table(title=f"{name} Monitor", show_lines=True)
 table.add_column("Stat")
 table.add_column("Value")
 table.add_row("Current Campaign", f"{camp_name}")
