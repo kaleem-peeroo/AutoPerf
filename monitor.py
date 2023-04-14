@@ -9,6 +9,7 @@ import os
 import re
 import sys
 
+from datetime import datetime
 from pprint import pprint
 from rich.bar import Bar
 from rich.console import Console
@@ -70,8 +71,21 @@ try:
     camp_start_date_line = [line for line in remote_txt_file_contents if '[1/' in line][0]
     timestamp = re.findall(r'\[(.*?)\]', camp_start_date_line)[0]
     camp_start = timestamp
+    start_date = datetime.strptime("2023-04-14 16:38:38", "%Y-%m-%d %H:%M:%S")
+    now = datetime.now()
+
+    duration = now - start_date
+
+    days = duration.days
+    seconds = duration.seconds
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+
+    camp_duration = f"{days} days, {hours} hours, {minutes} minutes, {seconds} seconds"
 except:
     camp_start = f"Not found in {latest_txt_file}."
+    camp_duration = f"Not able to calculate because the campaign start was not found."
     
 # ? Get campaign end.
 try:
@@ -151,6 +165,7 @@ table.add_column("Stat")
 table.add_column("Value")
 table.add_row("Current Campaign", f"{camp_name}")
 table.add_row("Campaign Start", f"{camp_start}")
+table.add_row("Campaign Duration", f"{camp_duration}")
 table.add_row("Campaign Expected End", f"{camp_end}")
 table.add_row("Completed Tests", f"{completed_test_count}/{total_combination_count} ({completed_test_percent}%)")
 table.add_row("[bold green]Punctual Tests[/bold green]", f"[bold green]{punctual_test_count}/{completed_test_count} ({punctual_test_percent}%)[/bold green]")
