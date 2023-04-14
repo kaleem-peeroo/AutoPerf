@@ -125,7 +125,7 @@ punctual_test_count = status_counts['punctual']
 prolonged_test_count = status_counts['prolonged']
 completed_test_count = len(progress_contents)
 
-usable_percentage = int(usable_count / completed_test_count * 100)
+usable_percentage = int(usable_count / completed_test_count * 100) if completed_test_count > 0 else 0
 
 punctual_test_percent = int(punctual_test_count / completed_test_count * 100)
 prolonged_test_percent = int(prolonged_test_count / completed_test_count * 100)
