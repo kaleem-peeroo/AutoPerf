@@ -141,10 +141,10 @@ completed_test_count = len(progress_contents)
 
 usable_percentage = int(usable_count / completed_test_count * 100) if completed_test_count > 0 else 0
 
-punctual_test_percent = int(punctual_test_count / completed_test_count * 100)
-prolonged_test_percent = int(prolonged_test_count / completed_test_count * 100)
+punctual_test_percent = int(punctual_test_count / completed_test_count * 100) if completed_test_count > 0 else 0
+prolonged_test_percent = int(prolonged_test_count / completed_test_count * 100) if completed_test_count > 0 else 0
 
-completed_test_percent = int(completed_test_count / total_combination_count * 100)
+completed_test_percent = int(completed_test_count / total_combination_count * 100) if completed_test_count > 0 else 0
 
 punctual_bar = Bar(
     size=100,
