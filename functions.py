@@ -214,6 +214,8 @@ def allocate_scripts_per_machine(scripts, machine_count):
     shared_pub_scripts = share(pub_scripts, machine_count)
     shared_sub_scripts = share(sub_scripts, machine_count)
 
+    shared_pub_scripts.reverse()
+
     return shared_pub_scripts, shared_sub_scripts
 
 def machine_thread_func(machine, testdir, buffer_multiple):
