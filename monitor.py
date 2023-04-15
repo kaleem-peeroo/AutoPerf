@@ -71,7 +71,7 @@ try:
     camp_start_date_line = [line for line in remote_txt_file_contents if '[1/' in line][0]
     timestamp = re.findall(r'\[(.*?)\]', camp_start_date_line)[0]
     camp_start = timestamp
-    start_date = datetime.strptime("2023-04-14 16:38:38", "%Y-%m-%d %H:%M:%S")
+    start_date = datetime.strptime(camp_start, "%Y-%m-%d %H:%M:%S")
     now = datetime.now()
 
     duration = now - start_date
