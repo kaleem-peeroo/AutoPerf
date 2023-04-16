@@ -245,23 +245,22 @@ for campaign in campaign_scripts:
                 json.dump(test, f, indent=4)
             log_debug(f"Test configuration written to {os.path.join(test_dir, 'config.json')}.")
 
-            # ? Create threads for each machine.
-            machine_threads = []
+            # ? Create processes for each machine.
+            machine_processes = []
             for machine in test['machines']:
-                # machine_thread = Thread(target=machine_thread_func, args=(machine, test_dir))
-                machine_thread = multiprocessing.Process(target=machine_thread_func, args=(machine, test_dir, buffer_multiple))
-                machine_threads.append(machine_thread)
-                machine_thread.start()
+                machine_process = multiprocessing.Process(target=machine_process_func, args=(machine, test_dir, buffer_multiple))
+                machine_processes.append(machine_process)
+                machine_process.start()
 
-            for machine_thread in machine_threads:
-                machine_thread.join(timeout=int(expected_duration_sec * buffer_multiple))
+            for machine_process in machine_processes:
+                machine_process.join(timeout=int(expected_duration_sec * buffer_multiple))
                 
-                # ? If thread is still alive kill it.
-                if machine_thread.is_alive():
-                    machine_thread.terminate()
+                # ? If process is still alive kill it.
+                if machine_process.is_alive():
+                    machine_process.terminate()
                     console.print(f"[{format_now()}] {ERROR} {machine['name']} {test_title} timed out after a duration of {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
                     test_end_status = "prolonged"
-
+                    
         # ? Scripts finished running at this point.
         
         end_time = time.time()

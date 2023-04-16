@@ -218,7 +218,7 @@ def allocate_scripts_per_machine(scripts, machine_count):
 
     return shared_pub_scripts, shared_sub_scripts
 
-def machine_thread_func(machine, testdir, buffer_multiple):
+def machine_process_func(machine, testdir, buffer_multiple):
     """
     - Check that the machine is online.
     - Check for, download, and then delete existing csv files.
