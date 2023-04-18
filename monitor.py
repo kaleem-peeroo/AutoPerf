@@ -90,6 +90,15 @@ except:
 # ? Get campaign end.
 try:
     camp_end = [line for line in remote_txt_file_contents if 'Campaign Expected End' in line][0].replace("Campaign Expected End Date: ", "")
+    duration = datetime.strptime(camp_end, "%Y-%m-%d %H:%M:%S") - datetime.strptime(camp_start, "%Y-%m-%d %H:%M:%S")
+
+    days = duration.days
+    seconds = duration.seconds
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+
+    expected_camp_duration = f"{days} days, {hours} hours, {minutes} minutes, {seconds} seconds"
 except:
     camp_end = f"Not found in {latest_txt_file}."
     
@@ -166,6 +175,7 @@ table.add_column("Value")
 table.add_row("Current Campaign", f"{camp_name}")
 table.add_row("Campaign Start", f"{camp_start}")
 table.add_row("Campaign Duration", f"{camp_duration}")
+table.add_row("Campaign Expected Duration", f"{expected_camp_duration}")
 table.add_row("Campaign Expected End", f"{camp_end}")
 table.add_row("Completed Tests", f"{completed_test_count}/{total_combination_count} ({completed_test_percent}%)")
 table.add_row("[bold green]Punctual Tests[/bold green]", f"[bold green]{punctual_test_count}/{completed_test_count} ({punctual_test_percent}%)[/bold green]")
