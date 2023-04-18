@@ -19,7 +19,8 @@
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
+                    "participant_allocation": "pub"
                 },
                 {
                     "name": "k3",
@@ -27,7 +28,8 @@
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
+                    "participant_allocation": "sub"
                 },
                 {
                     "name": "k4",
@@ -35,7 +37,8 @@
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
+                    "participant_allocation": "all"
                 },
                 {
                     "name": "k5",
@@ -43,7 +46,8 @@
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
+                    "participant_allocation": "all"
                 }
             ]
         }
