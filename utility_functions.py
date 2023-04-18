@@ -332,18 +332,18 @@ def run_scripts(ssh, machine):
         if len(output) > 0:
             with open(f"{machine['name']}_stdout.txt", 'w') as f:
                 f.writelines(output)
-            log_debug(f"{machine['name']} stdout has content which has been written to {machine['name']}_stdout.txt")
+            log_debug(f"{machine['name']} stdout has content which has been written to {machine['name']}_stdout.txt.")
 
         if len(error) > 0:
-            log_debug(f"{machine['name']} stderr has content.")
-            
+            with open(f"{machine['name']}_stderr.txt", 'w') as f:
+                f.writelines(error)
+            log_debug(f"{machine['name']} stderr has content which has been written to {machine['name']}_stderr.txt.")
 
         return stdout, stderr
     
     except Exception as e:
         console.print(f"[{format_now()}] {ERROR} {machine['name']} Error when running scripts. Exception:\n\t{e}", style="bold red")
         return None, str(e)
-
 
 def get_expected_csv_count_from_test_title(test_title):
     sub_count = int(test_title.split('_')[3][:-1])
