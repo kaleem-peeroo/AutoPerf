@@ -23,27 +23,29 @@ for camp in config["campaigns"]:
     console.print(f"\t[bold blue]{name}[/bold blue]: {comb_count} combinations.")
 
 # ? Ask user for combination modification.
-if Confirm.ask("Would you like to remove some of the combinations?", default=False):
-    file_combs_dir = write_combinations_to_file(config)
-    
-    console.print(f"\nThe combinations of each campaign have been written to /{file_combs_dir}. ", style="bold white")
-    console.print(f"Go ahead and remove the tests you don't want and then come back here to continue.\n", style="bold green")
-
-    is_ready = Confirm.ask("Are you ready?", default=True)
-    while not is_ready:
-        is_ready = Confirm.ask("Are you ready?", default=True)
-
-    combinations = get_combinations_from_file(file_combs_dir, config)
-
-    # ? Output number of combinations for confirmation.
-    console.print(f"Here are the [bold blue]updated[/bold blue] total number of combinations for each campaign:", style="bold white")
-    for campaign in combinations:
-        camp_name = campaign['name']
-        camp_combinations = campaign['combinations']
-        camp_comb_count = len(camp_combinations)
+if "-skip-confirmation" not in args:
+    if Confirm.ask("Would you like to remove some of the combinations?", default=False):
+        file_combs_dir = write_combinations_to_file(config)
         
-        console.print(f"\t[bold blue]{camp_name}[/bold blue]: {camp_comb_count} combinations.", style="bold white")
+        console.print(f"\nThe combinations of each campaign have been written to /{file_combs_dir}. ", style="bold white")
+        console.print(f"Go ahead and remove the tests you don't want and then come back here to continue.\n", style="bold green")
 
+        is_ready = Confirm.ask("Are you ready?", default=True)
+        while not is_ready:
+            is_ready = Confirm.ask("Are you ready?", default=True)
+
+        combinations = get_combinations_from_file(file_combs_dir, config)
+
+        # ? Output number of combinations for confirmation.
+        console.print(f"Here are the [bold blue]updated[/bold blue] total number of combinations for each campaign:", style="bold white")
+        for campaign in combinations:
+            camp_name = campaign['name']
+            camp_combinations = campaign['combinations']
+            camp_comb_count = len(camp_combinations)
+            
+            console.print(f"\t[bold blue]{camp_name}[/bold blue]: {camp_comb_count} combinations.", style="bold white")
+    else:
+        combinations = get_combinations_from_config(config)
 else:
     combinations = get_combinations_from_config(config)
 
@@ -66,104 +68,134 @@ for camp_comb in combinations:
     test_combs = camp_comb['combinations']
 
     camp_config = [_ for _ in config['campaigns'] if _['name'] == camp_name][0]
-    machine_count = len(camp_config['machines'])
-
+    
     test_scripts = []
 
     log_debug(f"Generating scripts for {len(test_combs)} tests in {camp_name}.")
 
     for test_comb in test_combs:
+        machines_conf = camp_config['machines']
+        
+        machine_scripts = []
         scripts = generate_scripts(test_comb)
 
         if not validate_scripts(test_comb, scripts):
             console.print(f"[{format_now}] {ERROR} Error when validating scripts. Scripts are NOT valid.", style="bold red")
             sys.exit()
 
-        pub_scripts, sub_scripts = allocate_scripts_per_machine(scripts, machine_count)
-
-        if len(pub_scripts) == 0:
-            console.print(f"[{format_now}] {ERROR} No pub scripts found in:\n\t{scripts}.", style="bold red")
-            sys.exit()
-
-        if len(sub_scripts) == 0:
-            console.print(f"[{format_now}] {ERROR} No sub scripts found in:\n\t{scripts}.", style="bold red")
-            sys.exit()
-
-        perftest = camp_config['machines'][0]["perftest"]
+        participant_allocations = [machine['participant_allocation'] for machine in machines_conf]
         
-        machine_scripts = []
-
-        for machine, pub_script, sub_script in zip(camp_config['machines'], pub_scripts, sub_scripts):
-            new_machine_dict = dict(machine)
-
-            machine_pub_scripts = [f"{perftest} {script}" for script in pub_script]
-            machine_sub_scripts = [f"{perftest} {script}" for script in sub_script]
-
-            # TODO: Turn the two copies of code below into a function.
-
-            if len(machine_pub_scripts) > 0:
-                machine_pub_scripts = " & ".join(machine_pub_scripts) if len(machine_pub_scripts) > 1 else machine_pub_scripts[0]
-                # ? Add the home_dir path to the start of the outputFile path
-                machine_pub_scripts_list = machine_pub_scripts.split()
-                for i in range(len(machine_pub_scripts_list)):
-                    if machine_pub_scripts_list[i] == '-outputFile':
-                        if i + 1 < len(machine_pub_scripts_list):
-                            output_file = machine_pub_scripts_list[i + 1]
-                            home_dir = machine['home_dir']
-                            new_output_file = os.path.join(home_dir, output_file)
-                            machine_pub_scripts_list[i + 1] = new_output_file
-
-                machine_pub_scripts = " ".join(machine_pub_scripts_list)
+        pub_machines = [_ for _ in machines_conf if "pub" in _['participant_allocation'] or "all" in _['participant_allocation']]
+        sub_machines = [_ for _ in machines_conf if "sub" in _['participant_allocation'] or "all" in _['participant_allocation']]
+        
+        pub_machines_count = len(pub_machines)
+        sub_machines_count = len(sub_machines)
+        
+        pub_scripts = [_ for _ in scripts if '-pub' in _]
+        sub_scripts = [_ for _ in scripts if '-sub' in _]
+        
+        balanced_pub_scripts = share(pub_scripts, pub_machines_count)
+        balanced_sub_scripts = share(sub_scripts, sub_machines_count)
             
-            if len(machine_sub_scripts) > 0:
-                machine_sub_scripts = " & ".join(machine_sub_scripts) if len(machine_sub_scripts) > 1 else machine_sub_scripts[0]
-                # ? Add the home_dir path to the start of the outputFile path
-                machine_sub_scripts_list = machine_sub_scripts.split()
-                for i in range(len(machine_sub_scripts_list)):
-                    if machine_sub_scripts_list[i] == '-outputFile':
-                        if i + 1 < len(machine_sub_scripts_list):
-                            output_file = machine_sub_scripts_list[i + 1]
+        loaded_machines_conf = []
+                
+        for i in range(pub_machines_count):
+            machine = dict(pub_machines[i])
+            scripts = balanced_pub_scripts[i]
+            
+            perftest = machine["perftest"]
+            scripts = [f"{perftest} {script}" for script in scripts]
+            
+            updated_scripts = []
+            
+            # ? Add the home_dir path to the outputFile path.
+            for script in scripts:
+                script_items = script.split()
+                for j in range(len(script_items)):
+                    if script_items[j] == "-outputFile":
+                        # ? Avoid accessing outside of list.
+                        if j + 1 < len(script_items):
+                            output_dir = script_items[j + 1]
                             home_dir = machine['home_dir']
-                            new_output_file = os.path.join(home_dir, output_file)
-                            machine_sub_scripts_list[i + 1] = new_output_file
+                            output_dir = os.path.join(home_dir, output_dir)
+                            script_items[j + 1] = output_dir
+                script = " ".join(script_items)
+                updated_scripts.append(script)                
+                        
+            scripts = updated_scripts
+            
+            scripts = " & ".join(scripts)
 
-                machine_sub_scripts = " ".join(machine_sub_scripts_list)
+            try:
+                machine["scripts"] = {machine["scripts"]} + f" & {scripts}"
+            except KeyError as e:
+                machine["scripts"] = f"source ~/.bashrc; {scripts}"
 
-            if len(machine_pub_scripts) > 0 and len(machine_sub_scripts) > 0:
-                machine_script = machine_pub_scripts + " & " + machine_sub_scripts
-            elif len(machine_pub_scripts) > 0 and len(machine_sub_scripts) == 0:
-                machine_script = machine_pub_scripts
-            elif len(machine_pub_scripts) == 0 and len(machine_sub_scripts) > 0:
-                machine_script = machine_sub_scripts
-            else:
-                machine_script = ""
+            loaded_machines_conf.append(machine)
 
-            new_machine_dict.update({"scripts": f"source ~/.bashrc; {machine_script}"})
-            machine_scripts.append(new_machine_dict)
-
-        # ? Number of machines = number of machine scripts
-        assert(len(camp_config['machines']) == len(machine_scripts))
+        for i in range(sub_machines_count):
+            machine = dict(sub_machines[i])
+            scripts = balanced_sub_scripts[i]
+            
+            perftest = machine["perftest"]
+            scripts = [f"{perftest} {script}" for script in scripts]
+            
+            updated_scripts = []
+            
+            # ? Add the home_dir path to the outputFile path.
+            for script in scripts:
+                script_items = script.split()
+                for j in range(len(script_items)):
+                    if script_items[j] == "-outputFile":
+                        # ? Avoid accessing outside of list.
+                        if j + 1 < len(script_items):
+                            output_dir = script_items[j + 1]
+                            home_dir = machine['home_dir']
+                            output_dir = os.path.join(home_dir, output_dir)
+                            script_items[j + 1] = output_dir
+                script = " ".join(script_items)
+                updated_scripts.append(script)                
+                        
+            scripts = updated_scripts
+            
+            scripts = " & ".join(scripts)
+            
+            try:
+                old_machine_scripts = machine["scripts"]
+            
+                machine["scripts"] = f"{old_machine_scripts} & {scripts}"
+            except KeyError as e:
+                machine["scripts"] = f"source ~/.bashrc; {scripts}"
+            
+            loaded_machines_conf.append(machine)
+        
+        # ? Combine any repeated machine config objects.
+        merged_machines_conf = []
+        for item in loaded_machines_conf:
+            found = False
+            for merged_item in merged_machines_conf:
+                if merged_item['name'] == item['name']:
+                    found = True
+                    merged_item['scripts'] += ' ' + item['scripts']
+                    break
+            if not found:
+                merged_machines_conf.append(item)
+        
+        loaded_machines_conf = merged_machines_conf
 
         test_scripts.append({
             "combination": test_comb,
-            "machines": machine_scripts,
+            "machines": loaded_machines_conf
         })
-
-    # ? All good here. scripts and test_comb match.
-
-    # ? Number of tests = number of scripts per test
-    assert(len(test_combs) == len(test_scripts))
-
+        
     campaign_scripts.append({
         "name": camp_name,
         "tests": test_scripts
     })
 
+
     log_debug(f"Scripts generated for {camp_name}.")
-
-# ? Number of campaigns with scripts generated = number of campaigns
-assert(len(campaign_scripts) == len(combinations))
-
+    
 # ? At this point, every campaign contains a test. Every test contains its combination and the machines involved. Every machine contains the relevant machine information as well as its scripts to run.
 """
 campaign_scripts = [{

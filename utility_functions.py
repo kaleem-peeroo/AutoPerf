@@ -142,28 +142,6 @@ def get_combination_from_title(title):
 
     return combination
 
-def share(items, bins):
-    if len(items) == 0 or bins == 0:
-        return []
-
-    if bins == 1:
-        return items
-
-    output = []
-    
-    for i in range(bins):
-        output.append([])
-    
-    while len(items) > 0:
-        for i in range(bins):
-            try:
-                output[i].append(items[0])
-                items = items[1:]
-            except Exception as e:
-                None
-            
-    return output
-
 def get_duration_from_test_name(testname):
     # ? Look for x numeric digits followed by "s_"
     durations_from_name = re.findall(r'\d*s_', testname)
@@ -352,14 +330,13 @@ def run_scripts(ssh, machine):
         error = stderr.readlines()
         
         if len(output) > 0:
-            log_debug(f"{machine['name']} stdout has content.")
-            # log_debug(f"{machine['name']} Output:\n\t{output}")
+            with open(f"{machine['name']}_stdout.txt", 'w') as f:
+                f.writelines(output)
+            log_debug(f"{machine['name']} stdout has content which has been written to {machine['name']}_stdout.txt")
 
         if len(error) > 0:
             log_debug(f"{machine['name']} stderr has content.")
-            # log_debug(f"{machine['name']} Error:")
-            # for line in error:
-            #     console.print(f"\t{line}", style="bold red")
+            
 
         return stdout, stderr
     
