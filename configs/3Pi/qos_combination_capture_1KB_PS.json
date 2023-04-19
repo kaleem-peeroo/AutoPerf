@@ -1,0 +1,38 @@
+{
+    "campaigns": [
+        {
+            "name": "QoS Combination Capture 1KB PS",
+            "repetitions": 1,
+            "settings": {
+                "duration_s": [600],
+                "datalen_bytes": [1000],
+                "pub_count": [1, 5, 10, 25, 50],
+                "sub_count": [1, 5, 10, 25, 50],
+                "reliability": [true, false],
+                "use_multicast": [true, false],
+                "durability": [0, 1, 2, 3],
+                "latency_count": [100]
+            },
+            "machines": [
+                {
+                    "name": "p1",
+                    "host": "169.254.248.55",
+                    "ssh_key": "/home/acwh025/.ssh/id_rsa",
+                    "username": "acwh025",
+                    "home_dir": "/home/acwh025/",
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
+                    "participant_allocation": "pub"
+                },
+                {
+                    "name": "p2",
+                    "host": "169.254.201.141",
+                    "ssh_key": "/home/acwh025/.ssh/id_rsa",
+                    "username": "acwh025",
+                    "home_dir": "/home/acwh025/",
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
+                    "participant_allocation": "sub"
+                }
+            ]
+        }
+    ]
+}
