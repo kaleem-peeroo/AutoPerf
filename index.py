@@ -78,7 +78,7 @@ for camp_comb in combinations:
         
         machine_scripts = []
         scripts = generate_scripts(test_comb)
-
+        
         if not validate_scripts(test_comb, scripts):
             console.print(f"[{format_now}] {ERROR} Error when validating scripts. Scripts are NOT valid.", style="bold red")
             sys.exit()
@@ -94,14 +94,17 @@ for camp_comb in combinations:
         pub_scripts = [_ for _ in scripts if '-pub' in _]
         sub_scripts = [_ for _ in scripts if '-sub' in _]
         
-        balanced_pub_scripts = share(pub_scripts, pub_machines_count)
-        balanced_sub_scripts = share(sub_scripts, sub_machines_count)
+        balanced_pub_scripts = share(pub_scripts, pub_machines_count) if pub_machines_count > 1 else [pub_scripts]
+        balanced_sub_scripts = share(sub_scripts, sub_machines_count) if sub_machines_count > 1 else [sub_scripts]
             
         loaded_machines_conf = []
                 
         for i in range(pub_machines_count):
             machine = dict(pub_machines[i])
             scripts = balanced_pub_scripts[i]
+            
+            if type(scripts) is not list:
+                scripts = [scripts]
             
             perftest = machine["perftest"]
             scripts = [f"{perftest} {script}" for script in scripts]
@@ -139,6 +142,9 @@ for camp_comb in combinations:
             
             perftest = machine["perftest"]
             scripts = [f"{perftest} {script}" for script in scripts]
+            
+            if type(scripts) is not list:
+                scripts = [scripts]
             
             updated_scripts = []
             
