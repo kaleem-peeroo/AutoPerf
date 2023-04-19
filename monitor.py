@@ -129,8 +129,13 @@ for i in track(range(len(test_dirs)), description="Analysing tests..."):
     if expected_csv_count == csv_count:
         usable_count += 1
 
-progress_json = [_ for _ in camp_files if '.json' in _][0]
-progress_json = os.path.join( ptstdir, camp_dir, progress_json )
+try:
+    json_files = [_ for _ in camp_files if ".json" in _]
+    progress_json = json_files[0]
+    progress_json = os.path.join( ptstdir, camp_dir, progress_json )
+except Exception as e:
+    console.print(f"No progress.json file found in {ptstdir}. Here are all .json files found:\n\t{json_files}", style="bold red")
+    sys.exit()
 
 # ? Read progress.json for campaign.
 progress_json = sftp.open(progress_json, 'r')
