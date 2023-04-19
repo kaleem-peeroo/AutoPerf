@@ -51,7 +51,7 @@ except Exception as e:
     console.log(f"{e}", style="bold red")
     
 # ? Find the latest output file.
-stdin, stdout, stderr = ssh.exec_command(f"cd {ptstdir}; ls -t *.txt | head -1")
+stdin, stdout, stderr = ssh.exec_command(f"cd {ptstdir}; ls -t | grep -v 'std' | grep 'txt$' | head -1")
 latest_txt_file = stdout.read().decode().strip()
     
 remote_txt_file = sftp.open(os.path.join( ptstdir, latest_txt_file ))
@@ -60,7 +60,12 @@ remote_txt_file.close()
 
 remote_txt_file_contents = remote_txt_file_contents.split("\n")
 
-total_combination_count_line = [line for line in remote_txt_file_contents[:10] if "combinations." in line][0].strip()
+try:
+    total_combination_count_line = [line for line in remote_txt_file_contents[:20] if "combinations." in line][0].strip()
+except IndexError as e:
+    console.print(f"Couldn't get the 'combinations' line in the file.", style="bold red")
+    console.print(f"{remote_txt_file_contents[:20]}", style="bold white")
+    sys.exit()
 
 total_combination_count = total_combination_count_line.split(":")[1].strip().replace(" combinations.", "")
 
