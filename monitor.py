@@ -136,10 +136,25 @@ progress_json.close()
 
 # ? Count test statuses.
 status_counts = {"punctual": 0, "prolonged": 0}
+statuses = []
 for item in progress_contents:
     status = item["status"]
     status_counts[status] +=1
+    statuses.append(item['status'])
     
+all_statuses = []
+for status in statuses:
+    if "prolonged" in status:
+        all_statuses.append("🔴")
+    else:
+        all_statuses.append("🟢")
+             
+all_statuses_output = ""
+for i, item in enumerate(all_statuses):
+    all_statuses_output += f"{item} "
+    if (i + 1) % 20 == 0:
+        all_statuses_output += "\n"
+        
 # ? Get punctual, prolonged, and total test count.
 punctual_test_count = status_counts['punctual']
 prolonged_test_count = status_counts['prolonged']
@@ -177,5 +192,6 @@ table.add_row("Completed Tests", f"{completed_test_count}/{total_combination_cou
 table.add_row("[bold green]Punctual Tests[/bold green]", f"[bold green]{punctual_test_count}/{completed_test_count} ({punctual_test_percent}%)[/bold green]")
 table.add_row("[bold red]Prolonged Tests[/bold red]", f"[bold red]{prolonged_test_count}/{completed_test_count} ({prolonged_test_percent}%)[/bold red]")
 table.add_row("[bold green]Usable Tests[/bold green]", f"[bold green]{usable_count}/{completed_test_count} ({usable_percentage}%)[/bold green]")
+table.add_row("All Test Statuses (20 per row)", f"{all_statuses_output}")
 
 console.print(table)
