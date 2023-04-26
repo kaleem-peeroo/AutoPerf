@@ -1,11 +1,11 @@
 {
     "campaigns": [
         {
-            "name": "QoS Combination Capture 100B",
+            "name": "QoS Combination Capture 1KB PPSS",
             "repetitions": 1,
             "settings": {
                 "duration_s": [600],
-                "datalen_bytes": [100],
+                "datalen_bytes": [1000],
                 "pub_count": [1, 5, 10, 25, 50],
                 "sub_count": [1, 5, 10, 25, 50],
                 "reliability": [true, false],
@@ -20,7 +20,8 @@
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
+                    "participant_allocation": "pub"
                 },
                 {
                     "name": "k3",
@@ -28,7 +29,8 @@
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
+                    "participant_allocation": "pub"
                 },
                 {
                     "name": "k4",
@@ -36,7 +38,8 @@
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
+                    "participant_allocation": "sub"
                 },
                 {
                     "name": "k5",
@@ -44,7 +47,8 @@
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
-                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+                    "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
+                    "participant_allocation": "sub"
                 }
             ]
         }

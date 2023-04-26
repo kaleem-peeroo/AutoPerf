@@ -1,13 +1,13 @@
 {
     "campaigns": [
         {
-            "name": "Example Campaign",
+            "name": "QoS Combination Capture 100B PS",
             "repetitions": 1,
             "settings": {
-                "duration_s": [30],
+                "duration_s": [600],
                 "datalen_bytes": [100],
-                "pub_count": [5, 10],
-                "sub_count": [5, 10],
+                "pub_count": [1, 5, 10, 25, 50],
+                "sub_count": [1, 5, 10, 25, 50],
                 "reliability": [true, false],
                 "use_multicast": [true, false],
                 "durability": [0, 1, 2, 3],
