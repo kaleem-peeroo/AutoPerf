@@ -6,8 +6,8 @@
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100],
-                "pub_count": [1, 5, 10, 25, 50],
-                "sub_count": [1, 5, 10, 25, 50],
+                "pub_count": [1, 5, 10, 25],
+                "sub_count": [1, 5, 10, 25],
                 "reliability": [true, false],
                 "use_multicast": [true, false],
                 "durability": [0, 1, 2, 3],
