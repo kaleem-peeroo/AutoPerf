@@ -26,20 +26,20 @@ console = Console()
 
 args = sys.argv[1:]
 
-if len(args) != 3:
-    console.log(f"3 arguments should be given. Check the README to find out how to use this.", style="bold red")
+if len(args) != 4:
+    console.log(f"4 arguments should be given. Check the README to find out how to use this.", style="bold red")
     sys.exit()
 else:
     host = args[0]
     name = args[1]
     ptstdir = args[2]
+    key_path = args[3]
 
 # ? Connect to the controller.
     
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-key_path = "/Users/kaleem/.ssh/id_rsa"
 k = paramiko.RSAKey.from_private_key_file(key_path)
 ssh.connect(host, username="acwh025", pkey = k, banner_timeout=120)
 
