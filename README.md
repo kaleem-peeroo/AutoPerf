@@ -94,12 +94,12 @@ Script used to check up on the controllers. The controllers are running PTST. `m
 
 ## How to Use
 ```bash
-python monitor.py <controller_ip> <controller_name> <path_to_ptst_on_controller>
+python monitor.py <controller_ip> <controller_name> <path_to_ptst_on_controller> <path_to_public_ssh_key>
 ```
 
 Example:
 ```bash
-python monitor.py 10.210.35.27 3pk1 "/home/acwh025/Documents/PTST"
+python monitor.py 10.210.35.27 3pk1 "/home/acwh025/Documents/PTST" "/Users/kaleem/.ssh/id_rsa"
 ```
 
 TODO:
