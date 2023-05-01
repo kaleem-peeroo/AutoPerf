@@ -1,0 +1,1 @@
+python index.py configs/3Pi/be_mc_single_sub.json 1.5 -skip-confirmation |& tee be_mc_single_sub_output.txt
