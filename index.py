@@ -293,10 +293,13 @@ for campaign in campaign_scripts:
             for machine_process in machine_processes:
                 machine_process.join(timeout=int(expected_duration_sec * buffer_multiple))
                 
-                # ? If process is still alive kill it.
+                # ? If process is still alive kill all processes.
                 if machine_process.is_alive():
-                    machine_process.terminate()
-                    console.print(f"[{format_now()}] {ERROR} {machine['name']} {test_title} timed out after a duration of {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
+                    
+                    for machine_process_j in machine_processes:
+                        machine_process_j.terminate()
+                    
+                    console.print(f"[{format_now()}] {ERROR} {machine_process_j.args[0]['name']} {test_title} timed out after a duration of {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
                     test_end_status = "prolonged"
                     
         # ? Scripts finished running at this point.
