@@ -285,12 +285,16 @@ for campaign in campaign_scripts:
 
             # ? Create processes for each machine.
             machine_processes = []
+            machine_processes_machines = []
             for machine in test['machines']:
                 machine_process = multiprocessing.Process(target=machine_process_func, args=(machine, test_dir, buffer_multiple))
                 machine_processes.append(machine_process)
+                machine_processes_machines.append(machine)
                 machine_process.start()
 
             for machine_process in machine_processes:
+                i = machine_processes.index(machine_process)
+                machine_name = machine_processes_machines[i]['name']
                 machine_process.join(timeout=int(expected_duration_sec * buffer_multiple))
                 
                 # ? If process is still alive kill all processes.
@@ -299,7 +303,7 @@ for campaign in campaign_scripts:
                     for machine_process_j in machine_processes:
                         machine_process_j.terminate()
                     
-                    console.print(f"[{format_now()}] {ERROR} {machine_process_j.args[0]['name']} {test_title} timed out after a duration of {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
+                    console.print(f"[{format_now()}] {ERROR} {machine_name} {test_title} timed out after a duration of {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
                     test_end_status = "prolonged"
                     
         # ? Scripts finished running at this point.
