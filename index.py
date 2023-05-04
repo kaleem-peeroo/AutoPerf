@@ -22,33 +22,7 @@ for camp in config["campaigns"]:
     comb_count = get_combinations_count_from_settings(camp['settings'])
     console.print(f"\t[bold blue]{name}[/bold blue]: {comb_count} combinations.")
 
-# ? Ask user for combination modification.
-if "-skip-confirmation" not in args:
-    if Confirm.ask("Would you like to remove some of the combinations?", default=False):
-        file_combs_dir = write_combinations_to_file(config)
-        
-        console.print(f"\nThe combinations of each campaign have been written to /{file_combs_dir}. ", style="bold white")
-        console.print(f"Go ahead and remove the tests you don't want and then come back here to continue.\n", style="bold green")
-
-        is_ready = Confirm.ask("Are you ready?", default=True)
-        while not is_ready:
-            is_ready = Confirm.ask("Are you ready?", default=True)
-
-        combinations = get_combinations_from_file(file_combs_dir, config)
-
-        # ? Output number of combinations for confirmation.
-        console.print(f"Here are the [bold blue]updated[/bold blue] total number of combinations for each campaign:", style="bold white")
-        for campaign in combinations:
-            camp_name = campaign['name']
-            camp_combinations = campaign['combinations']
-            camp_comb_count = len(camp_combinations)
-            
-            console.print(f"\t[bold blue]{camp_name}[/bold blue]: {camp_comb_count} combinations.", style="bold white")
-    else:
-        combinations = get_combinations_from_config(config)
-else:
-    combinations = get_combinations_from_config(config)
-
+combinations = get_combinations_from_config(config)
 
 """
 combinations = [{

@@ -12,6 +12,7 @@
                 "durability": [0],
                 "latency_count": [100]
             },
+            "custom_tests_file": "configs/custom_tests.txt",
             "machines": [
                 {
                     "name": "k2",
@@ -30,24 +31,40 @@
                     "home_dir": "/home/acwh025/",
                     "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
                     "participant_allocation": "pub"
-                },
+                }
+            ]
+        },
+        {
+            "name": "PTST Production Test",
+            "settings": {
+                "duration_s": [30],
+                "datalen_bytes": [100],
+                "pub_count": [7, 23],
+                "sub_count": [24, 19],
+                "reliability": [false],
+                "use_multicast": [false],
+                "durability": [0],
+                "latency_count": [100]
+            },
+            "custom_tests_file": "configs/custom_tests.txt",
+            "machines": [
                 {
-                    "name": "k4",
-                    "host": "169.254.251.23",
+                    "name": "k2",
+                    "host": "169.254.251.21",
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
                     "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
-                    "participant_allocation": "sub"
+                    "participant_allocation": "pub"
                 },
                 {
-                    "name": "k5",
-                    "host": "169.254.251.24",
+                    "name": "k3",
+                    "host": "169.254.251.22",
                     "ssh_key": "/home/acwh025/.ssh/id_rsa",
                     "username": "acwh025",
                     "home_dir": "/home/acwh025/",
                     "perftest": "/home/acwh025/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
-                    "participant_allocation": "sub"
+                    "participant_allocation": "pub"
                 }
             ]
         }

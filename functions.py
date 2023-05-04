@@ -87,11 +87,33 @@ def get_combinations_from_config(config):
     combs = []
 
     for campaign in config['campaigns']:
-        comb = get_combinations(campaign['settings'])
-        combs.append({
-            "name": campaign['name'],
-            "combinations": comb
-        })
+        try:
+            custom_tests_file = campaign['custom_tests_file']
+        except KeyError as e:
+            console.print(f"Error parsing config for {campaign['name']}. custom_tests_file does NOT exist.", style="bold red")
+            sys.exit()
+        
+        # ? File does not exist.
+        if not os.path.exists(custom_tests_file):
+            console.print(f"Couldn't read custom tests file: \n\t{custom_tests_file}\nManually generating all combinations instead.", style="bold red")
+            
+            comb = get_combinations(campaign['settings'])
+            
+            combs.append({
+                "name": campaign['name'],
+                "combinations": comb
+            })
+            
+        else:
+            with open(custom_tests_file, 'r') as f:
+                titles = f.readlines()
+                
+            combinations = [get_combination_from_title(title) for title in titles]
+
+            combs.append({
+                "name": campaign['name'],
+                "combinations": combinations
+            })
 
     return combs
 
@@ -358,6 +380,10 @@ def add_seconds_to_now(seconds_amount):
 
 def format_now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def has_custom_tests(config):
+    pprint(config)
+    asdf
 
 def output_test_progress(progress_json):
 
