@@ -67,9 +67,7 @@ except IndexError as e:
     console.print(f"{remote_txt_file_contents[:20]}", style="bold white")
     sys.exit()
 
-total_combination_count = total_combination_count_line.split(":")[1].strip().replace(" combinations.", "")
 
-total_combination_count = int(total_combination_count)
 
 # ? Get campaign start.
 try:
@@ -114,8 +112,11 @@ camp_dirs = [_ for _ in remote_files if camp_name.lower() in _.lower() and len(_
 
 if len(camp_dirs) > 1:
     camp_dir = [_ for _ in camp_dirs if _.lower() == camp_name.lower()][0]
-else:
+elif len(camp_dirs) == 1:
     camp_dir = camp_dirs[0]
+else:
+    console.print(f"No camp dirs found for {camp_name}.", style="bold red")
+    sys.exit()
     
 camp_files = sftp.listdir(os.path.join(ptstdir, camp_dir))
 
@@ -141,6 +142,22 @@ try:
 except Exception as e:
     console.print(f"No progress.json file found in {ptstdir}. Here are all .json files found:\n\t{json_files}", style="bold red")
     sys.exit()
+
+# ? Check if test_combinations folder exists and get total tests from that.
+test_comb_dirs = [item for item in sftp.listdir(ptstdir) if 'test_combinations' in item]
+has_test_comb_dir = len(test_comb_dirs) > 0
+
+if has_test_comb_dir:
+    test_comb_dir = os.path.join(ptstdir, test_comb_dirs[len(test_comb_dirs) - 1])
+    test_comb_txts = [file for file in sftp.listdir(test_comb_dir) if '.txt' in file]
+    test_comb_txt = os.path.join(test_comb_dir, test_comb_txts[len(test_comb_txts) - 1])
+    with sftp.open(test_comb_txt, 'r') as remote_file:
+        test_comb_count = len(remote_file.readlines())
+    total_combination_count = test_comb_count
+else:
+    total_combination_count = total_combination_count_line.split(":")[1].strip().replace(" combinations.", "")
+
+    total_combination_count = int(total_combination_count)
 
 # ? Read progress.json for campaign.
 progress_json = sftp.open(progress_json, 'r')
