@@ -15,14 +15,9 @@ from rich.bar import Bar
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
-console = Console()
+from rich.markdown import Markdown
 
-"""
-1. SSH into machine.
-2. Parse the output file to find the current campaign, campaign start and expected end of campaign.
-3. Parse the progress.json file to get punctual and prolonged test stats.
-4. Analyse the files to get usable test stats.
-"""
+console = Console()
 
 args = sys.argv[1:]
 
@@ -34,6 +29,8 @@ else:
     name = args[1]
     ptstdir = args[2]
     key_path = args[3]
+
+console.print(Markdown(f"# {name} Monitor"))
 
 # ? Connect to the controller.
     
@@ -49,78 +46,136 @@ try:
     remote_files = sftp.listdir(ptstdir)
 except Exception as e:
     console.log(f"{e}", style="bold red")
-    
-# ? Find the latest output file.
+
+# ? Find the latest output file i.e. the latest txt file.
 stdin, stdout, stderr = ssh.exec_command(f"cd {ptstdir}; ls -t | grep -vE 'stderr|stdout' | grep -E '\\.txt$' | head -1")
 latest_txt_file = stdout.read().decode().strip()
-    
 remote_txt_file = sftp.open(os.path.join( ptstdir, latest_txt_file ))
 remote_txt_file_contents = remote_txt_file.read().decode("utf-8").strip()
 remote_txt_file.close()
-
 remote_txt_file_contents = remote_txt_file_contents.split("\n")
 
-try:
-    total_combination_count_line = [line for line in remote_txt_file_contents[:20] if "combinations." in line][0].strip()
-except IndexError as e:
-    console.print(f"Couldn't get the 'combinations' line in the file.", style="bold red")
-    console.print(f"{remote_txt_file_contents[:20]}", style="bold white")
-    sys.exit()
+"""
+? All the information we need:
+- All campaigns
+    - campaign name
+    - status ('pending' - white, 'running' - blue, 'completed' - green)
+- Current campaign
+    - start date
+    - expected end date
+    - current duration
+    - expected duration
+    - completed tests
+    - punctual tests
+    - prolonged tests
+    - usable tests
+    - all tests statuses (20 per row)    
+"""
+running_camp_lines = [line for line in remote_txt_file_contents if 'Running Campaign: ' in line]
 
+# ? Get the config.
+ptst_start_lines = remote_txt_file_contents[:3]
+ptst_config = ptst_start_lines[1]
+ptst_config = ptst_config.split(": ")
+ptst_config_path = ptst_config[len(ptst_config) - 1]
+ptst_config_path = os.path.join(ptstdir, ptst_config_path)
 
+with sftp.open(ptst_config_path, 'r') as f:
+    ptst_config_contents = json.load(f)
 
-# ? Get campaign start.
-try:
-    camp_start_date_line = [line for line in remote_txt_file_contents if '[1/' in line][0]
-    timestamp = re.findall(r'\[(.*?)\]', camp_start_date_line)[0]
-    camp_start = timestamp
-    start_date = datetime.strptime(camp_start, "%Y-%m-%d %H:%M:%S")
-    now = datetime.now()
+config = ptst_config_contents['campaigns']
 
-    duration = now - start_date
+camp_names = [item['name'] for item in config]
 
-    days = duration.days
-    seconds = duration.seconds
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    seconds = seconds % 60
+# ? Get campaign statuses.
+running_camps = []
+for line in running_camp_lines:
+    running_camps.append(line.split(": ")[1])
 
-    camp_duration = f"{days} days, {hours} hours, {minutes} minutes, {seconds} seconds"
-except:
-    camp_start = f"Not found in {latest_txt_file}."
-    camp_duration = f"Not able to calculate because the campaign start was not found."
+pending_camps = []
+completed_camps = []
+
+pending_camps = list( set(camp_names) - set(running_camps) )
+
+if len(running_camps) > 1:
+    completed_camps = running_camps[:-1]    
+
+camp_status_table = Table(title="All Campaigns")
+camp_status_table.add_column("Campaign")
+camp_status_table.add_column("Status")
+
+for camp in pending_camps:
+    camp_status_table.add_row(f"[bold white]{camp}[/bold white]", "[bold white]pending[/bold white]")
     
-# ? Get campaign end.
-try:
-    camp_end = [line for line in remote_txt_file_contents if 'Campaign Expected End' in line][0].replace("Campaign Expected End Date: ", "")
-    duration = datetime.strptime(camp_end, "%Y-%m-%d %H:%M:%S") - datetime.strptime(camp_start, "%Y-%m-%d %H:%M:%S")
-
-    days = duration.days
-    seconds = duration.seconds
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    seconds = seconds % 60
-
-    expected_camp_duration = f"{days} days, {hours} hours, {minutes} minutes, {seconds} seconds"
-except:
-    camp_end = f"Not found in {latest_txt_file}."
+for camp in running_camps:
+    camp_status_table.add_row(f"[bold green]{camp}[/bold green]", "[bold green]running[/bold green]")
     
-# ? Get campaign name.
-camp_name = latest_txt_file.replace("_output", "").replace(".txt", "")
+for camp in completed_camps:
+    camp_status_table.add_row(f"[bold blue]{camp}[/bold blue]", "[bold blue]completed[/bold blue]")
 
-camp_dirs = [_ for _ in remote_files if camp_name.lower() in _.lower() and len(_.split(".")) == 1]
+console.print(camp_status_table, style="bold white")
+console.print(Markdown("---"))
 
-if len(camp_dirs) > 1:
-    camp_dir = [_ for _ in camp_dirs if _.lower() == camp_name.lower()][0]
-elif len(camp_dirs) == 1:
-    camp_dir = camp_dirs[0]
+# ? Get the current campaign.
+current_camp_name = running_camps[len(running_camps) - 1]
+camp_running_line = [line for line in running_camp_lines if current_camp_name in line][0]
+
+date_match = re.search(r"\[(\d{4}-\d{2}-\d{2})", camp_running_line)
+time_match = re.search(r"(\d{2}:\d{2})", camp_running_line)
+
+if date_match and time_match:
+    date_value = date_match.group(1)
+    time_value = time_match.group(1)
 else:
-    console.print(f"No camp dirs found for {camp_name}.", style="bold red")
+    console.print(f"Couldn't get the date from {camp_running_line}.", style="bold red")
+    sys.exit()
+
+start_date = f"{date_value} {time_value}"
+
+duration = datetime.now() - datetime.strptime(start_date, "%Y-%m-%d %H:%M")
+
+days = duration.days
+seconds = duration.seconds
+hours = seconds // 3600
+minutes = (seconds % 3600) // 60
+seconds = seconds % 60
+
+current_duration = f"{days} days, {hours} hours, {minutes} minutes, {seconds} seconds"
+
+expected_duration_line = [line for line in remote_txt_file_contents if current_camp_name in line and "Days" in line][0]
+expected_duration = re.search(r'\d+ Days, \d+ Hours, \d+ Minutes, \d+ Seconds', expected_duration_line).group()
+expected_end_date = re.search(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}', expected_duration_line).group()
+
+current_campaign_stats = {
+    "name": current_camp_name,
+    "start_date": start_date,
+    "expected_end_date": expected_end_date,
+    "current_duration": current_duration,
+    "expected_duration": expected_duration
+}
+
+current_camp_table = Table(title="Current Campaign Stats", show_lines=True, show_header=False)
+for key, value in current_campaign_stats.items():
+    stat = key.replace("_", " ").title()
+    current_camp_table.add_row(stat, value)
+    
+console.print(current_camp_table, style="bold white")
+console.print(Markdown("---"))
+
+current_camp_filename = current_camp_name.replace(" ", "_")
+current_camp_files = [file for file in remote_files if current_camp_filename == file]
+current_camp_file = current_camp_files[len(current_camp_files) - 1]
+current_campdir = os.path.join(ptstdir, current_camp_file)
+
+try:
+    sftp.stat(current_campdir)
+except IOError:
+    console.print(f"The path {current_campdir} doesn't exist.", style="bold red")
     sys.exit()
     
-camp_files = sftp.listdir(os.path.join(ptstdir, camp_dir))
+campdir_files = [os.path.join(current_campdir, file) for file in sftp.listdir(current_campdir)]
 
-test_dirs = [os.path.join(ptstdir, camp_dir, _) for _ in camp_files if '.json' not in _ and '.txt' not in _]
+test_dirs = [file for file in campdir_files if ".json" not in file and ".txt" not in file]
 
 usable_count = 0
 
@@ -135,29 +190,43 @@ for i in track(range(len(test_dirs)), description="Analysing tests..."):
     if expected_csv_count == csv_count:
         usable_count += 1
 
+json_files = [_ for _ in campdir_files if ".json" in _]
+progress_json = json_files[0]
+
+comb_table_lines = [line for line in remote_txt_file_contents if "Combinations Count Per Campaign" in line]
+comb_table_line = comb_table_lines[len(comb_table_lines) - 1]
+
+camp_dur_lines = [line for line in remote_txt_file_contents if " Campaign" in line and "Expected" in line]
+camp_dur_line = camp_dur_lines[0]
+
+comb_table_index_start = remote_txt_file_contents.index(comb_table_line) + 1
+comb_table_index_end = remote_txt_file_contents.index(camp_dur_line) - 1
+
+camp_combs_table = remote_txt_file_contents[comb_table_index_start: comb_table_index_end]
+
+camp_comb_line = [line for line in camp_combs_table if current_camp_name in line][0]
+
 try:
-    json_files = [_ for _ in camp_files if ".json" in _]
-    progress_json = json_files[0]
-    progress_json = os.path.join( ptstdir, camp_dir, progress_json )
+    current_camp_combinations = int(re.findall(r'\d+', camp_comb_line)[-1])
 except Exception as e:
-    console.print(f"No progress.json file found in {ptstdir}. Here are all .json files found:\n\t{json_files}", style="bold red")
+    console.print(f"Couldn't get the combination count from \n\t{camp_comb_line}", style="bold red")
     sys.exit()
 
-# ? Check if test_combinations folder exists and get total tests from that.
-test_comb_dirs = [item for item in sftp.listdir(ptstdir) if 'test_combinations' in item]
-has_test_comb_dir = len(test_comb_dirs) > 0
+# # ? Check if test_combinations folder exists and get total tests from that.
+# test_comb_dirs = [item for item in sftp.listdir(ptstdir) if 'test_combinations' in item]
+# has_test_comb_dir = len(test_comb_dirs) > 0
 
-if has_test_comb_dir:
-    test_comb_dir = os.path.join(ptstdir, test_comb_dirs[len(test_comb_dirs) - 1])
-    test_comb_txts = [file for file in sftp.listdir(test_comb_dir) if '.txt' in file]
-    test_comb_txt = os.path.join(test_comb_dir, test_comb_txts[len(test_comb_txts) - 1])
-    with sftp.open(test_comb_txt, 'r') as remote_file:
-        test_comb_count = len(remote_file.readlines())
-    total_combination_count = test_comb_count
-else:
-    total_combination_count = total_combination_count_line.split(":")[1].strip().replace(" combinations.", "")
+# if has_test_comb_dir:
+#     test_comb_dir = os.path.join(ptstdir, test_comb_dirs[len(test_comb_dirs) - 1])
+#     test_comb_txts = [file for file in sftp.listdir(test_comb_dir) if '.txt' in file]
+#     test_comb_txt = os.path.join(test_comb_dir, test_comb_txts[len(test_comb_txts) - 1])
+#     with sftp.open(test_comb_txt, 'r') as remote_file:
+#         test_comb_count = len(remote_file.readlines())
+#     total_combination_count = test_comb_count
+# else:
+#     total_combination_count = total_combination_count_line.split(":")[1].strip().replace(" combinations.", "")
 
-    total_combination_count = int(total_combination_count)
+#     total_combination_count = int(total_combination_count)
 
 # ? Read progress.json for campaign.
 progress_json = sftp.open(progress_json, 'r')
@@ -195,7 +264,7 @@ usable_percentage = round(usable_count / completed_test_count * 100) if complete
 punctual_test_percent = round(punctual_test_count / completed_test_count * 100) if completed_test_count > 0 else 0
 prolonged_test_percent = round(prolonged_test_count / completed_test_count * 100) if completed_test_count > 0 else 0
 
-completed_test_percent = round(completed_test_count / total_combination_count * 100) if completed_test_count > 0 else 0
+completed_test_percent = round(completed_test_count / current_camp_combinations * 100) if completed_test_count > 0 else 0
 
 punctual_bar = Bar(
     size=100,
@@ -211,15 +280,8 @@ prolonged_bar = Bar(
     color="red"
 )
 
-table = Table(title=f"{name} Monitor", show_lines=True)
-table.add_column("Stat")
-table.add_column("Value")
-table.add_row("Current Campaign", f"{camp_name}")
-table.add_row("Campaign Start", f"{camp_start}")
-table.add_row("Campaign Expected End", f"{camp_end}")
-table.add_row("Campaign Duration", f"{camp_duration}")
-table.add_row("Campaign Expected Duration", f"{expected_camp_duration}")
-table.add_row("[bold blue]Completed Tests[/bold blue]", f"[bold blue]{completed_test_count}/{total_combination_count} ({completed_test_percent}%)[/bold blue]")
+table = Table(title=f"Tests Stats for {current_camp_name}", show_lines=True, show_header=False)
+table.add_row("[bold blue]Completed Tests[/bold blue]", f"[bold blue]{completed_test_count}/{current_camp_combinations} ({completed_test_percent}%)[/bold blue]")
 table.add_row("[bold green]Punctual Tests[/bold green]", f"[bold green]{punctual_test_count}/{completed_test_count} ({punctual_test_percent}%)[/bold green]")
 table.add_row("[bold red]Prolonged Tests[/bold red]", f"[bold red]{prolonged_test_count}/{completed_test_count} ({prolonged_test_percent}%)[/bold red]")
 table.add_row("[bold green]Usable Tests[/bold green]", f"[bold green]{usable_count}/{completed_test_count} ({usable_percentage}%)[/bold green]")
