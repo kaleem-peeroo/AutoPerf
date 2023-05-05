@@ -1,7 +1,7 @@
 {
     "campaigns": [
         {
-            "name": "QoS Combination Capture Shared Rerun",
+            "name": "QoS Capture Shared Rerun",
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000, 64000],
@@ -35,7 +35,7 @@
             ]
         },
         {
-            "name": "QoS Combination Capture Dedicated PS",
+            "name": "QoS Capture Dedicated PS",
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000, 64000],
@@ -69,7 +69,7 @@
             ]
         },
         {
-            "name": "QoS Combination Capture Dedicated SP",
+            "name": "QoS Capture Dedicated SP",
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000, 64000],
