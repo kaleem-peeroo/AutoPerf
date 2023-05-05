@@ -104,18 +104,24 @@ pending_camps = list( set(camp_names) - set(running_camps) )
 if len(running_camps) > 1:
     completed_camps = running_camps[:-1]    
 
-camp_status_table = Table(title="All Campaigns")
+camp_status_table = Table(title="All Campaigns", show_lines=True)
+camp_status_table.add_column("#")
 camp_status_table.add_column("Campaign")
 camp_status_table.add_column("Status")
 
+camp_count = 1
+
 for camp in pending_camps:
-    camp_status_table.add_row(f"[bold white]{camp}[/bold white]", "[bold white]pending[/bold white]")
+    camp_status_table.add_row(f"{camp_count}", f"[bold white]{camp}[/bold white]", "[bold white]pending[/bold white]")
+    camp_count += 1
     
 for camp in running_camps:
-    camp_status_table.add_row(f"[bold green]{camp}[/bold green]", "[bold green]running[/bold green]")
+    camp_status_table.add_row(f"{camp_count}", f"[bold green]{camp}[/bold green]", "[bold green]running[/bold green]")
+    camp_count += 1
     
 for camp in completed_camps:
-    camp_status_table.add_row(f"[bold blue]{camp}[/bold blue]", "[bold blue]completed[/bold blue]")
+    camp_status_table.add_row(f"{camp_count}", f"[bold blue]{camp}[/bold blue]", "[bold blue]completed[/bold blue]")
+    camp_count += 1
 
 console.print(camp_status_table, style="bold white")
 console.print(Markdown("---"))
