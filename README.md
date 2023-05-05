@@ -9,7 +9,6 @@ Set up the config.json file. Here is an example:
     "campaigns": [
         {
             "name": "Example Campaign",
-            "repetitions": 1,
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100],
@@ -20,6 +19,7 @@ Set up the config.json file. Here is an example:
                 "durability": [0, 1, 2, 3],
                 "latency_count": [100]
             },
+            "custom_tests_file": "",
             "machines": [
                 {
                     "name": "p1",
@@ -29,7 +29,8 @@ Set up the config.json file. Here is an example:
                     "home_dir": "/path/to/home",
                     "perftest": "",
                     "perftest_publisher": "$perftest_publisher",
-                    "perftest_subscriber": "$perftest_subscriber"
+                    "perftest_subscriber": "$perftest_subscriber",
+                    "participant_allocation": "all"
                 },
                 {
                     "name": "p2",
@@ -39,7 +40,8 @@ Set up the config.json file. Here is an example:
                     "home_dir": "/path/to/home",
                     "perftest": "",
                     "perftest_publisher": "$perftest_publisher",
-                    "perftest_subscriber": "$perftest_subscriber"
+                    "perftest_subscriber": "$perftest_subscriber",
+                    "participant_allocation": "pub"
                 }
             ]
         }
@@ -65,19 +67,9 @@ For debug mode just add `debug`:
 python index.py path/to/config.json debug
 ```
 
-You can skip the restarts using `skip_restart`:
-```bash
-python index.py path/to/config.json debug skip_restart
-```
-
-If you want to save the output to a file:
-```bash
-python index.py path/to/config.json |& tee output.txt
-```
-
 TODO: 
-<!-- - [ ] Periodically zip then upload files from k1 to cloud -->
-<!-- - [ ] Show to user what the buffer duration is. -->
+- [x] Zip final results
+- [x] Show to user what the buffer duration is.
 - [x] Show how long all tests will take in total and expected end date + time.
 - [x] Record if test failed or not.
 - [x] Why are empty leftovers folders being made?
@@ -99,8 +91,5 @@ python monitor.py <controller_ip> <controller_name> <path_to_ptst_on_controller>
 
 Example:
 ```bash
-python monitor.py 10.210.35.27 3pk1 "/home/acwh025/Documents/PTST" "/Users/kaleem/.ssh/id_rsa"
+python monitor.py 10.210.35.27 3Pi "/home/acwh025/Documents/PTST" "/Users/kaleem/.ssh/id_rsa"
 ```
-
-TODO:
-- [ ] Show current test running, when it started, and when its expected to finish
