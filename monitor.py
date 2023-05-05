@@ -212,22 +212,6 @@ except Exception as e:
     console.print(f"Couldn't get the combination count from \n\t{camp_comb_line}", style="bold red")
     sys.exit()
 
-# # ? Check if test_combinations folder exists and get total tests from that.
-# test_comb_dirs = [item for item in sftp.listdir(ptstdir) if 'test_combinations' in item]
-# has_test_comb_dir = len(test_comb_dirs) > 0
-
-# if has_test_comb_dir:
-#     test_comb_dir = os.path.join(ptstdir, test_comb_dirs[len(test_comb_dirs) - 1])
-#     test_comb_txts = [file for file in sftp.listdir(test_comb_dir) if '.txt' in file]
-#     test_comb_txt = os.path.join(test_comb_dir, test_comb_txts[len(test_comb_txts) - 1])
-#     with sftp.open(test_comb_txt, 'r') as remote_file:
-#         test_comb_count = len(remote_file.readlines())
-#     total_combination_count = test_comb_count
-# else:
-#     total_combination_count = total_combination_count_line.split(":")[1].strip().replace(" combinations.", "")
-
-#     total_combination_count = int(total_combination_count)
-
 # ? Read progress.json for campaign.
 progress_json = sftp.open(progress_json, 'r')
 progress_contents = json.load(progress_json)
