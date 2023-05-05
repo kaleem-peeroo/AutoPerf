@@ -2,7 +2,6 @@
     "campaigns": [
         {
             "name": "Example Campaign",
-            "repetitions": 1,
             "settings": {
                 "duration_s": [30],
                 "datalen_bytes": [100],
@@ -13,6 +12,7 @@
                 "durability": [0, 1, 2, 3],
                 "latency_count": [100]
             },
+            "custom_tests_file": "configs/tests.txt",
             "machines": [
                 {
                     "name": "p1",
