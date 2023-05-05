@@ -1,7 +1,7 @@
 {
     "campaigns": [
         {
-            "name": "QoS Combination Capture Dedicated PSSS",
+            "name": "QoS Capture Dedicated PSSS",
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000, 64000],
@@ -53,7 +53,7 @@
             ]
         },
         {
-            "name": "QoS Combination Capture Dedicated PPSS",
+            "name": "QoS Capture Dedicated PPSS",
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000, 64000],
@@ -105,7 +105,7 @@
             ]
         },
         {
-            "name": "QoS Combination Capture Dedicated PPPS",
+            "name": "QoS Capture Dedicated PPPS",
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000, 64000],
