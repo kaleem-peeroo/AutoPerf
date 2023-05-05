@@ -197,13 +197,19 @@ def convert_seconds(seconds):
     return f"{days} Days, {hours} Hours, {minutes} Minutes, {seconds} Seconds"
 
 def calculate_total_duration(camp_scripts):
-    total_duration_s = 0
+    total_durations_per_camp = []
     for camp in camp_scripts:
+        camp_duration_s = 0
         for test in camp['tests']:
             duration_s = int(test['combination']['duration_s'])
-            total_duration_s += duration_s
+            camp_duration_s += duration_s
 
-    return total_duration_s
+        total_durations_per_camp.append({
+            'camp': camp['name'],
+            'duration_s': camp_duration_s
+        })
+
+    return total_durations_per_camp
 
 def validate_scripts(combination, scripts):
 

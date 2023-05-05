@@ -24,12 +24,14 @@ combinations = get_combinations_from_config(config)
 #     comb_count = get_combinations_count_from_settings(camp['settings'])
 #     console.print(f"\t[bold blue]{name}[/bold blue]: {comb_count} combinations.")
 
-camp_combinations_table = Table(title="Combinations Count Per Campaign")
+camp_combinations_table = Table(title="Combinations Count Per Campaign", show_lines=True)
 camp_combinations_table.add_column("#")
 camp_combinations_table.add_column("Campaign")
 camp_combinations_table.add_column("Combination Count")
 for comb in combinations:
     camp_combinations_table.add_row(str(combinations.index(comb) + 1), comb['name'], str(len(comb['combinations'])))
+
+console.print(camp_combinations_table)
 
 """
 combinations = [{
@@ -45,6 +47,7 @@ combinations = [{
 """
 campaign_scripts = []
 for camp_comb in combinations:
+    
     camp_name = camp_comb['name']
     test_combs = camp_comb['combinations']
 
@@ -206,16 +209,30 @@ campaign_scripts = [{
     ]
 }, ...]
 """
-campaign_duration_s = calculate_total_duration(campaign_scripts)
-console.print(f"\nExpected Campaign Duration: {convert_seconds(campaign_duration_s)}", style="bold white")
-
+duration_s_per_camp = calculate_total_duration(campaign_scripts)
+total_duration_s = sum(item['duration_s'] for item in duration_s_per_camp)
 current_time = datetime.now()
-campaign_expected_end_time = current_time + timedelta(seconds=campaign_duration_s)
+campaign_expected_end_time = current_time + timedelta(seconds=total_duration_s)
 campaign_expected_end_time = campaign_expected_end_time.strftime("%Y-%m-%d %H:%M:%S")
-console.print(f"Campaign Expected End Date: {campaign_expected_end_time}", style="bold white")
+
+total_duration_stats_table = Table(show_lines=True)
+total_duration_stats_table.add_column("Campaign")
+total_duration_stats_table.add_column("Expected Duration")
+total_duration_stats_table.add_column("Expected End Date")
+
+for item in duration_s_per_camp:
+    end_date = current_time + timedelta(seconds = item['duration_s'])
+    end_date = end_date.strftime("%Y-%m-%d %H:%M:%S")
+    total_duration_stats_table.add_row(item['camp'], f"{convert_seconds(item['duration_s'])}", f"{end_date}")
+
+total_duration_stats_table.add_row("Total", f"{convert_seconds(total_duration_s)}", f"{campaign_expected_end_time}")
+
+console.print(total_duration_stats_table)
 
 for campaign in campaign_scripts:
     camp_name = campaign['name']
+    
+    console.print(f"[{format_now()}] [{campaign_scripts.index(campaign) + 1}/{len(campaign_scripts)}] Running Campaign: {camp_name}", style="bold white")
     
     # ? Make a folder for the campaign.
     camp_dir = create_dir(camp_name.replace(" ", "_"))
@@ -232,7 +249,7 @@ for campaign in campaign_scripts:
     # ? Check for no tests.
     if len(tests) == 0:
         console.print(f"{WARNING} No tests found in {camp_name}.\n", style="bold white")
-        continue
+        continue    # ? Go to next loop i.e next campaign in campaign_scripts
 
     for test in tests:
         start_time = time.time()
@@ -243,49 +260,48 @@ for campaign in campaign_scripts:
         test_dir = create_dir( os.path.join(camp_dir, test_title) )
         log_debug(f"Made testdir: {test_dir}.")
 
-        with console.status(f"[{format_now()}] [{tests.index(test) + 1}/{len(tests)}] Running test: {test_title}..."):
-            console.print(f"\n[{format_now()}] [{tests.index(test) + 1}/{len(tests)}] Running test: {test_title}.")
+        console.print(f"\n[{format_now()}] [{tests.index(test) + 1}/{len(tests)}] Running Test: {test_title}")
 
-            # ? Get expected test duration in seconds.
-            expected_duration_sec = get_duration_from_test_name(test_title)
+        # ? Get expected test duration in seconds.
+        expected_duration_sec = get_duration_from_test_name(test_title)
+        
+        console.print(f"\t[{format_now()}] Expected Duration (s) for {test_title}: {expected_duration_sec} seconds.", style="bold white")
+        console.print(f"\t[{format_now()}] Expected End Date: {add_seconds_to_now(expected_duration_sec)}", style="bold white")
+        
+        console.print(f"\n\t[{format_now()}] Buffer Duration (s) for {test_title}: {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
+        console.print(f"\t[{format_now()}] Expected Buffer End Date: {add_seconds_to_now(expected_duration_sec * buffer_multiple)}", style="bold white")
+
+        if expected_duration_sec is None:
+            console.print(f"[{format_now}] {ERROR} Error calculating expected time duration in seconds for\n\t{test_title}.", style="bold white")
+            continue
+
+        # ? Write test config to file.
+        with open(os.path.join(test_dir, 'config.json'), 'w') as f:
+            json.dump(test, f, indent=4)
+        log_debug(f"Test configuration written to {os.path.join(test_dir, 'config.json')}.")
+
+        # ? Create processes for each machine.
+        machine_processes = []
+        machine_processes_machines = []
+        for machine in test['machines']:
+            machine_process = multiprocessing.Process(target=machine_process_func, args=(machine, test_dir, buffer_multiple))
+            machine_processes.append(machine_process)
+            machine_processes_machines.append(machine)
+            machine_process.start()
+
+        for machine_process in machine_processes:
+            i = machine_processes.index(machine_process)
+            machine_name = machine_processes_machines[i]['name']
+            machine_process.join(timeout=int(expected_duration_sec * buffer_multiple))
             
-            console.print(f"\t[{format_now()}] Expected Duration (s) for {test_title}: {expected_duration_sec} seconds.", style="bold white")
-            console.print(f"\t[{format_now()}] Expected End Date: {add_seconds_to_now(expected_duration_sec)}", style="bold white")
-            
-            console.print(f"\n\t[{format_now()}] Buffer Duration (s) for {test_title}: {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
-            console.print(f"\t[{format_now()}] Expected Buffer End Date: {add_seconds_to_now(expected_duration_sec * buffer_multiple)}", style="bold white")
-
-            if expected_duration_sec is None:
-                console.print(f"[{format_now}] {ERROR} Error calculating expected time duration in seconds for\n\t{test_title}.", style="bold white")
-                continue
-
-            # ? Write test config to file.
-            with open(os.path.join(test_dir, 'config.json'), 'w') as f:
-                json.dump(test, f, indent=4)
-            log_debug(f"Test configuration written to {os.path.join(test_dir, 'config.json')}.")
-
-            # ? Create processes for each machine.
-            machine_processes = []
-            machine_processes_machines = []
-            for machine in test['machines']:
-                machine_process = multiprocessing.Process(target=machine_process_func, args=(machine, test_dir, buffer_multiple))
-                machine_processes.append(machine_process)
-                machine_processes_machines.append(machine)
-                machine_process.start()
-
-            for machine_process in machine_processes:
-                i = machine_processes.index(machine_process)
-                machine_name = machine_processes_machines[i]['name']
-                machine_process.join(timeout=int(expected_duration_sec * buffer_multiple))
+            # ? If process is still alive kill all processes.
+            if machine_process.is_alive():
                 
-                # ? If process is still alive kill all processes.
-                if machine_process.is_alive():
-                    
-                    for machine_process_j in machine_processes:
-                        machine_process_j.terminate()
-                    
-                    console.print(f"[{format_now()}] {ERROR} {machine_name} {test_title} timed out after a duration of {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
-                    test_end_status = "prolonged"
+                for machine_process_j in machine_processes:
+                    machine_process_j.terminate()
+                
+                console.print(f"[{format_now()}] {ERROR} {machine_name} {test_title} timed out after a duration of {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
+                test_end_status = "prolonged"
                     
         # ? Scripts finished running at this point.
         
