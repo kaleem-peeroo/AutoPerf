@@ -2,7 +2,6 @@
     "campaigns": [
         {
             "name": "QoS Combination Capture Shared",
-            "repetitions": 1,
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000],
@@ -37,7 +36,6 @@
         },
         {
             "name": "QoS Combination Capture Dedicated PS",
-            "repetitions": 1,
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000],
@@ -72,7 +70,6 @@
         },
         {
             "name": "QoS Combination Capture Dedicated SP",
-            "repetitions": 1,
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000],

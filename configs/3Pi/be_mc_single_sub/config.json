@@ -2,7 +2,6 @@
     "campaigns": [
         {
             "name": "Shared Best Effort Multicast Single Sub",
-            "repetitions": 1,
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000],
@@ -13,6 +12,7 @@
                 "durability": [0, 1, 2, 3],
                 "latency_count": [100]
             },
+            "custom_tests_file": "",
             "machines": [
                 {
                     "name": "p1",
