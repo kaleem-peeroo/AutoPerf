@@ -22,6 +22,7 @@ from rich.markdown import Markdown
 from rich.prompt import Prompt
 from rich.prompt import Confirm
 from rich.progress import track
+from rich.table import Table
 
 # ? Uncomment for rich traceback formatting
 # from rich.traceback import install

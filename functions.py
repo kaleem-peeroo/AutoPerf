@@ -95,7 +95,13 @@ def get_combinations_from_config(config):
         
         # ? File does not exist.
         if not os.path.exists(custom_tests_file):
-            console.print(f"Couldn't read custom tests file: \n\t{custom_tests_file}\nManually generating all combinations instead.", style="bold red")
+            console.print(f"Couldn't read custom tests file: \n\t{custom_tests_file}\nCurrent Directory: {os.curdir}.\nCurrent Directory Contents:", style="bold red")
+            for item in os.listdir(os.curdir):
+                console.print(f"\t-{item}", style="bold white")
+            
+            if not Confirm.ask("Proceed with manual generation of all combinations?"):
+                console.print(f"Exiting PTST...", style="bold red")
+                sys.exit()
             
             comb = get_combinations(campaign['settings'])
             

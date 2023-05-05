@@ -15,14 +15,21 @@ log_debug("Config read.")
 # ? Read in buffer_multiple:
 buffer_multiple = float(args[1])
 
-# ? Calculate total number of combinations for each campaign.
-console.print(f"Here are the total number of combinations for each campaign:", style="bold white")
-for camp in config["campaigns"]:
-    name = camp['name']
-    comb_count = get_combinations_count_from_settings(camp['settings'])
-    console.print(f"\t[bold blue]{name}[/bold blue]: {comb_count} combinations.")
-
 combinations = get_combinations_from_config(config)
+
+# # ? Calculate total number of combinations for each campaign.
+# console.print(f"Here are the total number of combinations for each campaign:", style="bold white")
+# for camp in config["campaigns"]:
+#     name = camp['name']
+#     comb_count = get_combinations_count_from_settings(camp['settings'])
+#     console.print(f"\t[bold blue]{name}[/bold blue]: {comb_count} combinations.")
+
+camp_combinations_table = Table(title="Combinations Count Per Campaign")
+camp_combinations_table.add_column("#")
+camp_combinations_table.add_column("Campaign")
+camp_combinations_table.add_column("Combination Count")
+for comb in combinations:
+    camp_combinations_table.add_row(str(combinations.index(comb) + 1), comb['name'], str(len(comb['combinations'])))
 
 """
 combinations = [{
