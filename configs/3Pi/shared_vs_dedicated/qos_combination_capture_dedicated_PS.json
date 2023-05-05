@@ -1,7 +1,7 @@
 {
     "campaigns": [
         {
-            "name": "QoS Combination Capture Dedicated SP",
+            "name": "QoS Combination Capture Dedicated PS",
             "repetitions": 1,
             "settings": {
                 "duration_s": [600],

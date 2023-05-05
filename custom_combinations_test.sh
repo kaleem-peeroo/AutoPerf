@@ -1,0 +1,1 @@
+python index.py configs/3Pi/qos_capture/shared_config.json 1.5 |& tee custom_combinations_test.sh

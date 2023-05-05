@@ -1,18 +1,18 @@
 {
     "campaigns": [
         {
-            "name": "QoS Combination Capture 1KB AA",
-            "repetitions": 1,
+            "name": "QoS Combination Capture Shared",
             "settings": {
                 "duration_s": [600],
-                "datalen_bytes": [1000],
-                "pub_count": [1, 5, 10, 25, 50],
+                "datalen_bytes": [100, 1000, 32000, 64000],
+                "pub_count": [1, 5, 10, 25],
                 "sub_count": [1, 5, 10, 25, 50],
                 "reliability": [true, false],
                 "use_multicast": [true, false],
                 "durability": [0, 1, 2, 3],
                 "latency_count": [100]
             },
+            "custom_tests_files": "/configs/qos_capture/shared_combinations.txt",
             "machines": [
                 {
                     "name": "p1",
