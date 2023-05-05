@@ -7,6 +7,10 @@ log_debug("Validating args...")
 validate_args(args)
 log_debug("args validated.")
 
+console.print(f"Running PTST with the following arguments:", style="bold white")
+console.print(f"\tConfig: {args[0]}")
+console.print(f"\tBuffer Multiple: {args[1]}\n")
+
 # ? Read config file.
 log_debug(f"Reading config: {args[0]}...")
 config = read_config(args[0])
