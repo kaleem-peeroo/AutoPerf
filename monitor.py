@@ -19,6 +19,9 @@ from rich.markdown import Markdown
 
 console = Console()
 
+ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+# ? To use the above: ansi_escape.sub("", string)
+
 args = sys.argv[1:]
 
 if len(args) != 4:
@@ -53,6 +56,7 @@ latest_txt_file = stdout.read().decode().strip()
 remote_txt_file = sftp.open(os.path.join( ptstdir, latest_txt_file ))
 remote_txt_file_contents = remote_txt_file.read().decode("utf-8").strip()
 remote_txt_file.close()
+remote_txt_file_contents = ansi_escape.sub('', remote_txt_file_contents)
 remote_txt_file_contents = remote_txt_file_contents.split("\n")
 
 """
@@ -119,6 +123,10 @@ console.print(Markdown("---"))
 # ? Get the current campaign.
 current_camp_name = running_camps[len(running_camps) - 1]
 camp_running_line = [line for line in running_camp_lines if current_camp_name in line][0]
+
+if "[1;37m" in camp_running_line:
+    camp_running_line = ansi_escape.sub('', camp_running_line)
+    
 
 date_match = re.search(r"\[(\d{4}-\d{2}-\d{2})", camp_running_line)
 time_match = re.search(r"(\d{2}:\d{2})", camp_running_line)
