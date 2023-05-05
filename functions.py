@@ -106,13 +106,8 @@ def get_combinations_from_config(config):
         
         # ? File does not exist.
         if not os.path.exists(custom_tests_file):
-            if not "no-custom-tests" in sys.argv[1:]:
-                console.print(f"Couldn't read custom tests file: \n\t{custom_tests_file}", style="bold red")
-                
-                if not Confirm.ask("Proceed with manual generation of all combinations?"):
-                    console.print(f"Exiting PTST...", style="bold red")
-                    sys.exit()
-            
+            console.print(f"Couldn't read custom tests file: \n\t{custom_tests_file}\nProceeding with manual generation of all combinations.", style="bold red")
+
             comb = get_combinations(campaign['settings'])
             
             combs.append({
