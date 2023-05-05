@@ -11,6 +11,7 @@ import threading
 import re
 import stat
 import multiprocessing
+import zipfile
 
 from threading import Thread
 from datetime import datetime, timedelta
@@ -28,7 +29,7 @@ from rich.table import Table
 # from rich.traceback import install
 # install(show_locals=True)
 
-console = Console()
+console = Console(record=True, color_system="auto")
 
 DEBUG_MODE = "debug" in sys.argv
 SKIP_RESTART = "skip_restart" in sys.argv

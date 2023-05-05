@@ -2,6 +2,8 @@ from functions import *
 
 args = sys.argv[1:]
 
+sys.stdout = Tee(sys.stdout, open('output.txt', 'w'))
+
 # ? Validate args
 log_debug("Validating args...")
 validate_args(args)
@@ -315,3 +317,14 @@ for campaign in campaign_scripts:
         update_progress(progress_json, test_title, start_time, end_time, test_end_status)
 
         output_test_progress(progress_json)
+        
+    # ? Move the output file to the campaign folder.
+    with open("output.txt", "w") as f:
+        f.write(console.export_text())
+    
+    # ? Get latest txt file.
+    latest_txt = get_latest_txt_file("./")
+    # ? Move txt file to campaign folder.
+    shutil.move(latest_txt, camp_dir)
+    # ? Zip the campaign folder.
+    zip_folder(camp_dir)

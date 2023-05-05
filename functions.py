@@ -1,5 +1,16 @@
 from utility_functions import *
 
+class Tee(object):
+    def __init__(self, *files):
+        self.files = files
+    def write(self, obj):
+        for f in self.files:
+            f.write(obj)
+            f.flush()
+    def flush(self):
+        for f in self.files:
+            f.flush()
+
 def validate_args(args):
     # ? No args given.
     if len(args) == 0:
@@ -95,13 +106,12 @@ def get_combinations_from_config(config):
         
         # ? File does not exist.
         if not os.path.exists(custom_tests_file):
-            console.print(f"Couldn't read custom tests file: \n\t{custom_tests_file}\nCurrent Directory: {os.curdir}.\nCurrent Directory Contents:", style="bold red")
-            for item in os.listdir(os.curdir):
-                console.print(f"\t-{item}", style="bold white")
-            
-            if not Confirm.ask("Proceed with manual generation of all combinations?"):
-                console.print(f"Exiting PTST...", style="bold red")
-                sys.exit()
+            if not "no-custom-tests" in sys.argv[1:]:
+                console.print(f"Couldn't read custom tests file: \n\t{custom_tests_file}", style="bold red")
+                
+                if not Confirm.ask("Proceed with manual generation of all combinations?"):
+                    console.print(f"Exiting PTST...", style="bold red")
+                    sys.exit()
             
             comb = get_combinations(campaign['settings'])
             
@@ -393,10 +403,6 @@ def add_seconds_to_now(seconds_amount):
 def format_now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-def has_custom_tests(config):
-    pprint(config)
-    asdf
-
 def output_test_progress(progress_json):
 
     with open(progress_json, 'r') as f:
@@ -419,3 +425,20 @@ def output_test_progress(progress_json):
     assert(total_test_count == failed_test_count + good_test_count)
 
     console.print(f"[{format_now()}] {total_test_count} tests run. {failed_test_count} ({failed_percent}%) tests were prolonged. {good_test_count} ({good_percent}%) tests were punctual.")
+
+def get_latest_txt_file(dir):
+    files = os.listdir(dir)
+    txt_files = [f for f in files if f.endswith('.txt')]
+    
+    if not txt_files:
+        return None
+    
+    return max(txt_files, key=lambda x: os.path.getctime(os.path.join(dir, x)))
+
+def zip_folder(folder_path):
+    output_path = f"{folder_path}.zip"
+    zipf = zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED)
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            zipf.write(os.path.join(root, file))
+    zipf.close()
