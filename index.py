@@ -318,6 +318,6 @@ for campaign in campaign_scripts:
     # ? Get latest txt file.
     latest_txt = get_latest_txt_file("./")
     # ? Move txt file to campaign folder.
-    shutil.move(latest_txt, camp_dir)
+    shutil.copy(latest_txt, camp_dir)
     # ? Zip the campaign folder.
     zip_folder(camp_dir)
