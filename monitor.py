@@ -48,11 +48,20 @@ sftp = ssh.open_sftp()
 try:
     remote_files = sftp.listdir(ptstdir)
 except Exception as e:
-    console.log(f"{e}", style="bold red")
+    console.log(f"Exception when getting remote_files: \n\t{e}", style="bold red")
 
 # ? Find the latest output file i.e. the latest txt file.
 stdin, stdout, stderr = ssh.exec_command(f"cd {ptstdir}; ls -t | grep -vE 'stderr|stdout' | grep -E '\\.txt$' | head -1")
 latest_txt_file = stdout.read().decode().strip()
+latest_txt_file_exists = len(latest_txt_file) > 0
+if not latest_txt_file:
+    console.print(f"No output.txt files found but here are the latest zips:", style="bold red")
+    zip_files = [file for file in remote_files if '.zip' in file]
+    for file in zip_files:
+        console.print(f"\t{file}")
+    console.print("\n")
+    sys.exit()
+
 remote_txt_file = sftp.open(os.path.join( ptstdir, latest_txt_file ))
 remote_txt_file_contents = remote_txt_file.read().decode("utf-8").strip()
 remote_txt_file.close()
