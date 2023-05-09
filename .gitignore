@@ -3,7 +3,6 @@ __pycache__/
 progress.log
 debug.json
 Example_Campaign_*
-*.txt
 debug.sh
 QoS_*
 PTST_Production_Test*
