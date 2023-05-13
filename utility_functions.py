@@ -340,15 +340,15 @@ def run_scripts(ssh, machine):
         output = stdout.readlines()
         error = stderr.readlines()
         
-        if len(output) > 0:
-            with open(f"{machine['name']}_stdout.txt", 'w') as f:
-                f.writelines(output)
-            log_debug(f"{machine['name']} stdout has content which has been written to {machine['name']}_stdout.txt.")
+        # if len(output) > 0:
+        #     with open(f"{machine['name']}_stdout.txt", 'w') as f:
+        #         f.writelines(output)
+        #     log_debug(f"{machine['name']} stdout has content which has been written to {machine['name']}_stdout.txt.")
 
-        if len(error) > 0:
-            with open(f"{machine['name']}_stderr.txt", 'w') as f:
-                f.writelines(error)
-            log_debug(f"{machine['name']} stderr has content which has been written to {machine['name']}_stderr.txt.")
+        # if len(error) > 0:
+        #     with open(f"{machine['name']}_stderr.txt", 'w') as f:
+        #         f.writelines(error)
+        #     log_debug(f"{machine['name']} stderr has content which has been written to {machine['name']}_stderr.txt.")
 
         return stdout, stderr
     
