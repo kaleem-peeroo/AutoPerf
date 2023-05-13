@@ -115,7 +115,7 @@ for camp_comb in combinations:
             try:
                 machine["scripts"] = {machine["scripts"]} + f" & {scripts}"
             except KeyError as e:
-                machine["scripts"] = f"source ~/.bashrc; {scripts};"
+                machine["scripts"] = f"source ~/.bashrc; {scripts};" if len(scripts) > 0 else f"source ~/.bashrc;"
 
             loaded_machines_conf.append(machine)
 
@@ -154,7 +154,7 @@ for camp_comb in combinations:
             
                 machine["scripts"] = f"{old_machine_scripts} & {scripts}"
             except KeyError as e:
-                machine["scripts"] = f"source ~/.bashrc; {scripts};"
+                machine["scripts"] = f"source ~/.bashrc; {scripts};" if len(scripts) > 0 else f"source ~/.bashrc;"
             
             loaded_machines_conf.append(machine)
         
