@@ -276,11 +276,7 @@ for campaign in campaign_scripts:
 
         for machine in test["machines"]:
             # ? Replace "; source ~/.bashrc;" with " & " so that it executes the command in parallel instead of sequentially.
-            console.print(Markdown("# Before"), style="bold white")
-            print(machine["scripts"])
             machine['scripts'] = machine['scripts'].replace("; source ~/.bashrc;", " & ")
-            console.print(Markdown("# After"), style="bold white")
-            print(machine)
 
         # ? Write test config to file.
         with open(os.path.join(test_dir, 'config.json'), 'w') as f:
