@@ -264,10 +264,10 @@ for campaign in campaign_scripts:
         # ? Get expected test duration in seconds.
         expected_duration_sec = get_duration_from_test_name(test_title)
         
-        console.print(f"\t[{format_now()}] Expected Duration (s) for {test_title}: {expected_duration_sec} seconds.", style="bold white")
+        console.print(f"\t[{format_now()}] Expected Duration (s): {expected_duration_sec}", style="bold white")
         console.print(f"\t[{format_now()}] Expected End Date: {add_seconds_to_now(expected_duration_sec)}", style="bold white")
         
-        console.print(f"\n\t[{format_now()}] Buffer Duration (s) for {test_title}: {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
+        console.print(f"\n\t[{format_now()}] Buffer Duration (s): {int(expected_duration_sec * buffer_multiple)}", style="bold white")
         console.print(f"\t[{format_now()}] Expected Buffer End Date: {add_seconds_to_now(expected_duration_sec * buffer_multiple)}", style="bold white")
 
         if expected_duration_sec is None:
