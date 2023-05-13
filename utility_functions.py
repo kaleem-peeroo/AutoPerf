@@ -218,6 +218,7 @@ def has_leftovers(machine, ssh):
     
     except Exception as e:
         # TODO: Write to exceptions log.
+        console.print(f"Exception when checking for leftovers:\n{e}", style="bold red")
         return False
 
 def download_leftovers(machine, ssh, testdir):
@@ -263,6 +264,7 @@ def download_leftovers(machine, ssh, testdir):
 
         except Exception as e:
             # TODO: Write exception to exception log
+            console.print(f"Exception when downloading leftovers:\n{e}", style="bold red")
             return False
 
     else:
@@ -381,6 +383,7 @@ def download_csv_files(machine, ssh, testdir):
         return download_files_count
     except Exception as e:
         # TODO: Write to exceptions log.
+        console.print(f"Exception when downloading csv files:\n{e}", style="bold red")
         return 0
 
 def download_logs(machine, ssh, logs_dir):

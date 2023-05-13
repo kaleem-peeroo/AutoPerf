@@ -1,0 +1,669 @@
+Running PTST with the following arguments:
+        Config: configs/3Pi/be_mc_single_sub_extended_buffer/config.json
+        Buffer Multiple: 3
+
+Couldn't read custom tests file: 
+        
+Proceeding with manual generation of all combinations.
+                          Combinations Count Per Campaign                          
+┏━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+┃ # ┃ Campaign                                                ┃ Combination Count ┃
+┡━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+│ 1 │ Shared Best Effort Multicast Single Sub Extended Buffer │ 72                │
+└───┴─────────────────────────────────────────────────────────┴───────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+┃ Campaign                                                ┃ Expected Duration                      ┃ Expected End Date   ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+│ Shared Best Effort Multicast Single Sub Extended Buffer │ 0 Days, 12 Hours, 0 Minutes, 0 Seconds │ 2023-05-12 03:27:24 │
+├─────────────────────────────────────────────────────────┼────────────────────────────────────────┼─────────────────────┤
+│ Total                                                   │ 0 Days, 12 Hours, 0 Minutes, 0 Seconds │ 2023-05-12 03:27:24 │
+└─────────────────────────────────────────────────────────┴────────────────────────────────────────┴─────────────────────┘
+[2023-05-11 15:27:24] [1/1] Running Campaign: Shared Best Effort Multicast Single Sub Extended Buffer
+
+[2023-05-11 15:27:24] [1/72] Running Test: 600s_100B_5P_1S_be_mc_0dur_100lc
+        [2023-05-11 15:27:24] Expected Duration (s) for 600s_100B_5P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-11 15:27:24] Expected End Date: 2023-05-11 15:37:24
+
+        [2023-05-11 15:27:24] Buffer Duration (s) for 600s_100B_5P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-11 15:27:24] Expected Buffer End Date: 2023-05-11 15:57:24
+[2023-05-11 15:57:24] ERROR: p1 600s_100B_5P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 15:57:24] 1 tests run. 1 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 15:57:24] [2/72] Running Test: 600s_100B_5P_1S_be_mc_1dur_100lc
+        [2023-05-11 15:57:24] Expected Duration (s) for 600s_100B_5P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-11 15:57:24] Expected End Date: 2023-05-11 16:07:24
+
+        [2023-05-11 15:57:24] Buffer Duration (s) for 600s_100B_5P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-11 15:57:24] Expected Buffer End Date: 2023-05-11 16:27:24
+[2023-05-11 16:27:24] ERROR: p1 600s_100B_5P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 16:27:24] 2 tests run. 2 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 16:27:24] [3/72] Running Test: 600s_100B_5P_1S_be_mc_2dur_100lc
+        [2023-05-11 16:27:24] Expected Duration (s) for 600s_100B_5P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-11 16:27:24] Expected End Date: 2023-05-11 16:37:24
+
+        [2023-05-11 16:27:24] Buffer Duration (s) for 600s_100B_5P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-11 16:27:24] Expected Buffer End Date: 2023-05-11 16:57:24
+[2023-05-11 16:57:24] ERROR: p1 600s_100B_5P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 16:57:24] 3 tests run. 3 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 16:57:24] [4/72] Running Test: 600s_100B_5P_1S_be_mc_3dur_100lc
+        [2023-05-11 16:57:24] Expected Duration (s) for 600s_100B_5P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-11 16:57:24] Expected End Date: 2023-05-11 17:07:24
+
+        [2023-05-11 16:57:24] Buffer Duration (s) for 600s_100B_5P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-11 16:57:24] Expected Buffer End Date: 2023-05-11 17:27:24
+[2023-05-11 17:27:24] ERROR: p1 600s_100B_5P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 17:27:24] 4 tests run. 4 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 17:27:24] [5/72] Running Test: 600s_100B_10P_1S_be_mc_0dur_100lc
+        [2023-05-11 17:27:24] Expected Duration (s) for 600s_100B_10P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-11 17:27:24] Expected End Date: 2023-05-11 17:37:24
+
+        [2023-05-11 17:27:24] Buffer Duration (s) for 600s_100B_10P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-11 17:27:24] Expected Buffer End Date: 2023-05-11 17:57:24
+[2023-05-11 17:57:25] ERROR: p1 600s_100B_10P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 17:57:25] 5 tests run. 5 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 17:57:25] [6/72] Running Test: 600s_100B_10P_1S_be_mc_1dur_100lc
+        [2023-05-11 17:57:25] Expected Duration (s) for 600s_100B_10P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-11 17:57:25] Expected End Date: 2023-05-11 18:07:25
+
+        [2023-05-11 17:57:25] Buffer Duration (s) for 600s_100B_10P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-11 17:57:25] Expected Buffer End Date: 2023-05-11 18:27:25
+[2023-05-11 18:27:25] ERROR: p1 600s_100B_10P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 18:27:25] 6 tests run. 6 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 18:27:25] [7/72] Running Test: 600s_100B_10P_1S_be_mc_2dur_100lc
+        [2023-05-11 18:27:25] Expected Duration (s) for 600s_100B_10P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-11 18:27:25] Expected End Date: 2023-05-11 18:37:25
+
+        [2023-05-11 18:27:25] Buffer Duration (s) for 600s_100B_10P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-11 18:27:25] Expected Buffer End Date: 2023-05-11 18:57:25
+[2023-05-11 18:57:25] ERROR: p1 600s_100B_10P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 18:57:25] 7 tests run. 7 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 18:57:25] [8/72] Running Test: 600s_100B_10P_1S_be_mc_3dur_100lc
+        [2023-05-11 18:57:25] Expected Duration (s) for 600s_100B_10P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-11 18:57:25] Expected End Date: 2023-05-11 19:07:25
+
+        [2023-05-11 18:57:25] Buffer Duration (s) for 600s_100B_10P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-11 18:57:25] Expected Buffer End Date: 2023-05-11 19:27:25
+[2023-05-11 19:27:25] ERROR: p1 600s_100B_10P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 19:27:25] 8 tests run. 8 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 19:27:25] [9/72] Running Test: 600s_100B_15P_1S_be_mc_0dur_100lc
+        [2023-05-11 19:27:25] Expected Duration (s) for 600s_100B_15P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-11 19:27:25] Expected End Date: 2023-05-11 19:37:25
+
+        [2023-05-11 19:27:25] Buffer Duration (s) for 600s_100B_15P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-11 19:27:25] Expected Buffer End Date: 2023-05-11 19:57:25
+[2023-05-11 19:57:25] ERROR: p1 600s_100B_15P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 19:57:25] 9 tests run. 9 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 19:57:25] [10/72] Running Test: 600s_100B_15P_1S_be_mc_1dur_100lc
+        [2023-05-11 19:57:25] Expected Duration (s) for 600s_100B_15P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-11 19:57:25] Expected End Date: 2023-05-11 20:07:25
+
+        [2023-05-11 19:57:25] Buffer Duration (s) for 600s_100B_15P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-11 19:57:25] Expected Buffer End Date: 2023-05-11 20:27:25
+[2023-05-11 20:27:25] ERROR: p1 600s_100B_15P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 20:27:25] 10 tests run. 10 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 20:27:25] [11/72] Running Test: 600s_100B_15P_1S_be_mc_2dur_100lc
+        [2023-05-11 20:27:25] Expected Duration (s) for 600s_100B_15P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-11 20:27:25] Expected End Date: 2023-05-11 20:37:25
+
+        [2023-05-11 20:27:25] Buffer Duration (s) for 600s_100B_15P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-11 20:27:25] Expected Buffer End Date: 2023-05-11 20:57:25
+[2023-05-11 20:57:25] ERROR: p1 600s_100B_15P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 20:57:25] 11 tests run. 11 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 20:57:25] [12/72] Running Test: 600s_100B_15P_1S_be_mc_3dur_100lc
+        [2023-05-11 20:57:25] Expected Duration (s) for 600s_100B_15P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-11 20:57:25] Expected End Date: 2023-05-11 21:07:25
+
+        [2023-05-11 20:57:25] Buffer Duration (s) for 600s_100B_15P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-11 20:57:26] Expected Buffer End Date: 2023-05-11 21:27:26
+[2023-05-11 21:27:26] ERROR: p1 600s_100B_15P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 21:27:26] 12 tests run. 12 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 21:27:26] [13/72] Running Test: 600s_100B_20P_1S_be_mc_0dur_100lc
+        [2023-05-11 21:27:26] Expected Duration (s) for 600s_100B_20P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-11 21:27:26] Expected End Date: 2023-05-11 21:37:26
+
+        [2023-05-11 21:27:26] Buffer Duration (s) for 600s_100B_20P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-11 21:27:26] Expected Buffer End Date: 2023-05-11 21:57:26
+[2023-05-11 21:57:26] ERROR: p1 600s_100B_20P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 21:57:26] 13 tests run. 13 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 21:57:26] [14/72] Running Test: 600s_100B_20P_1S_be_mc_1dur_100lc
+        [2023-05-11 21:57:26] Expected Duration (s) for 600s_100B_20P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-11 21:57:26] Expected End Date: 2023-05-11 22:07:26
+
+        [2023-05-11 21:57:26] Buffer Duration (s) for 600s_100B_20P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-11 21:57:26] Expected Buffer End Date: 2023-05-11 22:27:26
+[2023-05-11 22:27:26] ERROR: p1 600s_100B_20P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 22:27:26] 14 tests run. 14 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 22:27:26] [15/72] Running Test: 600s_100B_20P_1S_be_mc_2dur_100lc
+        [2023-05-11 22:27:26] Expected Duration (s) for 600s_100B_20P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-11 22:27:26] Expected End Date: 2023-05-11 22:37:26
+
+        [2023-05-11 22:27:26] Buffer Duration (s) for 600s_100B_20P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-11 22:27:26] Expected Buffer End Date: 2023-05-11 22:57:26
+[2023-05-11 22:57:26] ERROR: p1 600s_100B_20P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 22:57:26] 15 tests run. 15 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 22:57:26] [16/72] Running Test: 600s_100B_20P_1S_be_mc_3dur_100lc
+        [2023-05-11 22:57:26] Expected Duration (s) for 600s_100B_20P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-11 22:57:26] Expected End Date: 2023-05-11 23:07:26
+
+        [2023-05-11 22:57:26] Buffer Duration (s) for 600s_100B_20P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-11 22:57:26] Expected Buffer End Date: 2023-05-11 23:27:26
+[2023-05-11 23:27:26] ERROR: p1 600s_100B_20P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 23:27:26] 16 tests run. 16 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 23:27:26] [17/72] Running Test: 600s_100B_25P_1S_be_mc_0dur_100lc
+        [2023-05-11 23:27:26] Expected Duration (s) for 600s_100B_25P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-11 23:27:26] Expected End Date: 2023-05-11 23:37:26
+
+        [2023-05-11 23:27:26] Buffer Duration (s) for 600s_100B_25P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-11 23:27:26] Expected Buffer End Date: 2023-05-11 23:57:26
+[2023-05-11 23:57:26] ERROR: p1 600s_100B_25P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-11 23:57:26] 17 tests run. 17 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-11 23:57:26] [18/72] Running Test: 600s_100B_25P_1S_be_mc_1dur_100lc
+        [2023-05-11 23:57:26] Expected Duration (s) for 600s_100B_25P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-11 23:57:26] Expected End Date: 2023-05-12 00:07:26
+
+        [2023-05-11 23:57:26] Buffer Duration (s) for 600s_100B_25P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-11 23:57:26] Expected Buffer End Date: 2023-05-12 00:27:26
+[2023-05-12 00:27:26] ERROR: p1 600s_100B_25P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 00:27:26] 18 tests run. 18 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 00:27:26] [19/72] Running Test: 600s_100B_25P_1S_be_mc_2dur_100lc
+        [2023-05-12 00:27:26] Expected Duration (s) for 600s_100B_25P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-12 00:27:26] Expected End Date: 2023-05-12 00:37:26
+
+        [2023-05-12 00:27:26] Buffer Duration (s) for 600s_100B_25P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-12 00:27:26] Expected Buffer End Date: 2023-05-12 00:57:26
+[2023-05-12 00:57:26] ERROR: p1 600s_100B_25P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 00:57:26] 19 tests run. 19 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 00:57:26] [20/72] Running Test: 600s_100B_25P_1S_be_mc_3dur_100lc
+        [2023-05-12 00:57:26] Expected Duration (s) for 600s_100B_25P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-12 00:57:26] Expected End Date: 2023-05-12 01:07:26
+
+        [2023-05-12 00:57:26] Buffer Duration (s) for 600s_100B_25P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-12 00:57:26] Expected Buffer End Date: 2023-05-12 01:27:26
+[2023-05-12 01:27:27] ERROR: p1 600s_100B_25P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 01:27:27] 20 tests run. 20 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 01:27:27] [21/72] Running Test: 600s_100B_30P_1S_be_mc_0dur_100lc
+        [2023-05-12 01:27:27] Expected Duration (s) for 600s_100B_30P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-12 01:27:27] Expected End Date: 2023-05-12 01:37:27
+
+        [2023-05-12 01:27:27] Buffer Duration (s) for 600s_100B_30P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-12 01:27:27] Expected Buffer End Date: 2023-05-12 01:57:27
+[2023-05-12 01:57:27] ERROR: p1 600s_100B_30P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 01:57:27] 21 tests run. 21 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 01:57:27] [22/72] Running Test: 600s_100B_30P_1S_be_mc_1dur_100lc
+        [2023-05-12 01:57:27] Expected Duration (s) for 600s_100B_30P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-12 01:57:27] Expected End Date: 2023-05-12 02:07:27
+
+        [2023-05-12 01:57:27] Buffer Duration (s) for 600s_100B_30P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-12 01:57:27] Expected Buffer End Date: 2023-05-12 02:27:27
+[2023-05-12 02:27:27] ERROR: p1 600s_100B_30P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 02:27:27] 22 tests run. 22 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 02:27:27] [23/72] Running Test: 600s_100B_30P_1S_be_mc_2dur_100lc
+        [2023-05-12 02:27:27] Expected Duration (s) for 600s_100B_30P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-12 02:27:27] Expected End Date: 2023-05-12 02:37:27
+
+        [2023-05-12 02:27:27] Buffer Duration (s) for 600s_100B_30P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-12 02:27:27] Expected Buffer End Date: 2023-05-12 02:57:27
+[2023-05-12 02:57:27] ERROR: p1 600s_100B_30P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 02:57:27] 23 tests run. 23 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 02:57:27] [24/72] Running Test: 600s_100B_30P_1S_be_mc_3dur_100lc
+        [2023-05-12 02:57:27] Expected Duration (s) for 600s_100B_30P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-12 02:57:27] Expected End Date: 2023-05-12 03:07:27
+
+        [2023-05-12 02:57:27] Buffer Duration (s) for 600s_100B_30P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-12 02:57:27] Expected Buffer End Date: 2023-05-12 03:27:27
+[2023-05-12 03:27:27] ERROR: p1 600s_100B_30P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 03:27:27] 24 tests run. 24 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 03:27:27] [25/72] Running Test: 600s_1000B_5P_1S_be_mc_0dur_100lc
+        [2023-05-12 03:27:27] Expected Duration (s) for 600s_1000B_5P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-12 03:27:27] Expected End Date: 2023-05-12 03:37:27
+
+        [2023-05-12 03:27:27] Buffer Duration (s) for 600s_1000B_5P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-12 03:27:27] Expected Buffer End Date: 2023-05-12 03:57:27
+[2023-05-12 03:57:27] ERROR: p1 600s_1000B_5P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 03:57:27] 25 tests run. 25 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 03:57:27] [26/72] Running Test: 600s_1000B_5P_1S_be_mc_1dur_100lc
+        [2023-05-12 03:57:27] Expected Duration (s) for 600s_1000B_5P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-12 03:57:27] Expected End Date: 2023-05-12 04:07:27
+
+        [2023-05-12 03:57:27] Buffer Duration (s) for 600s_1000B_5P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-12 03:57:27] Expected Buffer End Date: 2023-05-12 04:27:27
+[2023-05-12 04:27:27] ERROR: p1 600s_1000B_5P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 04:27:27] 26 tests run. 26 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 04:27:27] [27/72] Running Test: 600s_1000B_5P_1S_be_mc_2dur_100lc
+        [2023-05-12 04:27:27] Expected Duration (s) for 600s_1000B_5P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-12 04:27:27] Expected End Date: 2023-05-12 04:37:27
+
+        [2023-05-12 04:27:27] Buffer Duration (s) for 600s_1000B_5P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-12 04:27:27] Expected Buffer End Date: 2023-05-12 04:57:27
+[2023-05-12 04:57:28] ERROR: p1 600s_1000B_5P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 04:57:28] 27 tests run. 27 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 04:57:28] [28/72] Running Test: 600s_1000B_5P_1S_be_mc_3dur_100lc
+        [2023-05-12 04:57:28] Expected Duration (s) for 600s_1000B_5P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-12 04:57:28] Expected End Date: 2023-05-12 05:07:28
+
+        [2023-05-12 04:57:28] Buffer Duration (s) for 600s_1000B_5P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-12 04:57:28] Expected Buffer End Date: 2023-05-12 05:27:28
+[2023-05-12 05:27:28] ERROR: p1 600s_1000B_5P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 05:27:28] 28 tests run. 28 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 05:27:28] [29/72] Running Test: 600s_1000B_10P_1S_be_mc_0dur_100lc
+        [2023-05-12 05:27:28] Expected Duration (s) for 600s_1000B_10P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-12 05:27:28] Expected End Date: 2023-05-12 05:37:28
+
+        [2023-05-12 05:27:28] Buffer Duration (s) for 600s_1000B_10P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-12 05:27:28] Expected Buffer End Date: 2023-05-12 05:57:28
+[2023-05-12 05:57:28] ERROR: p1 600s_1000B_10P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 05:57:28] 29 tests run. 29 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 05:57:28] [30/72] Running Test: 600s_1000B_10P_1S_be_mc_1dur_100lc
+        [2023-05-12 05:57:28] Expected Duration (s) for 600s_1000B_10P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-12 05:57:28] Expected End Date: 2023-05-12 06:07:28
+
+        [2023-05-12 05:57:28] Buffer Duration (s) for 600s_1000B_10P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-12 05:57:28] Expected Buffer End Date: 2023-05-12 06:27:28
+[2023-05-12 06:27:28] ERROR: p1 600s_1000B_10P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 06:27:28] 30 tests run. 30 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 06:27:28] [31/72] Running Test: 600s_1000B_10P_1S_be_mc_2dur_100lc
+        [2023-05-12 06:27:28] Expected Duration (s) for 600s_1000B_10P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-12 06:27:28] Expected End Date: 2023-05-12 06:37:28
+
+        [2023-05-12 06:27:28] Buffer Duration (s) for 600s_1000B_10P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-12 06:27:28] Expected Buffer End Date: 2023-05-12 06:57:28
+[2023-05-12 06:57:28] ERROR: p1 600s_1000B_10P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 06:57:28] 31 tests run. 31 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 06:57:28] [32/72] Running Test: 600s_1000B_10P_1S_be_mc_3dur_100lc
+        [2023-05-12 06:57:28] Expected Duration (s) for 600s_1000B_10P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-12 06:57:28] Expected End Date: 2023-05-12 07:07:28
+
+        [2023-05-12 06:57:28] Buffer Duration (s) for 600s_1000B_10P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-12 06:57:28] Expected Buffer End Date: 2023-05-12 07:27:28
+[2023-05-12 07:27:28] ERROR: p1 600s_1000B_10P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 07:27:28] 32 tests run. 32 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 07:27:28] [33/72] Running Test: 600s_1000B_15P_1S_be_mc_0dur_100lc
+        [2023-05-12 07:27:28] Expected Duration (s) for 600s_1000B_15P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-12 07:27:28] Expected End Date: 2023-05-12 07:37:28
+
+        [2023-05-12 07:27:28] Buffer Duration (s) for 600s_1000B_15P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-12 07:27:28] Expected Buffer End Date: 2023-05-12 07:57:28
+[2023-05-12 07:57:28] ERROR: p1 600s_1000B_15P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 07:57:28] 33 tests run. 33 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 07:57:28] [34/72] Running Test: 600s_1000B_15P_1S_be_mc_1dur_100lc
+        [2023-05-12 07:57:28] Expected Duration (s) for 600s_1000B_15P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-12 07:57:28] Expected End Date: 2023-05-12 08:07:28
+
+        [2023-05-12 07:57:28] Buffer Duration (s) for 600s_1000B_15P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-12 07:57:28] Expected Buffer End Date: 2023-05-12 08:27:28
+[2023-05-12 08:27:28] ERROR: p1 600s_1000B_15P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 08:27:28] 34 tests run. 34 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 08:27:28] [35/72] Running Test: 600s_1000B_15P_1S_be_mc_2dur_100lc
+        [2023-05-12 08:27:28] Expected Duration (s) for 600s_1000B_15P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-12 08:27:28] Expected End Date: 2023-05-12 08:37:28
+
+        [2023-05-12 08:27:28] Buffer Duration (s) for 600s_1000B_15P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-12 08:27:28] Expected Buffer End Date: 2023-05-12 08:57:28
+[2023-05-12 08:57:29] ERROR: p1 600s_1000B_15P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 08:57:29] 35 tests run. 35 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 08:57:29] [36/72] Running Test: 600s_1000B_15P_1S_be_mc_3dur_100lc
+        [2023-05-12 08:57:29] Expected Duration (s) for 600s_1000B_15P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-12 08:57:29] Expected End Date: 2023-05-12 09:07:29
+
+        [2023-05-12 08:57:29] Buffer Duration (s) for 600s_1000B_15P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-12 08:57:29] Expected Buffer End Date: 2023-05-12 09:27:29
+[2023-05-12 09:27:29] ERROR: p1 600s_1000B_15P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 09:27:29] 36 tests run. 36 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 09:27:29] [37/72] Running Test: 600s_1000B_20P_1S_be_mc_0dur_100lc
+        [2023-05-12 09:27:29] Expected Duration (s) for 600s_1000B_20P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-12 09:27:29] Expected End Date: 2023-05-12 09:37:29
+
+        [2023-05-12 09:27:29] Buffer Duration (s) for 600s_1000B_20P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-12 09:27:29] Expected Buffer End Date: 2023-05-12 09:57:29
+[2023-05-12 09:57:29] ERROR: p1 600s_1000B_20P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 09:57:29] 37 tests run. 37 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 09:57:29] [38/72] Running Test: 600s_1000B_20P_1S_be_mc_1dur_100lc
+        [2023-05-12 09:57:29] Expected Duration (s) for 600s_1000B_20P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-12 09:57:29] Expected End Date: 2023-05-12 10:07:29
+
+        [2023-05-12 09:57:29] Buffer Duration (s) for 600s_1000B_20P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-12 09:57:29] Expected Buffer End Date: 2023-05-12 10:27:29
+[2023-05-12 10:27:29] ERROR: p1 600s_1000B_20P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 10:27:29] 38 tests run. 38 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 10:27:29] [39/72] Running Test: 600s_1000B_20P_1S_be_mc_2dur_100lc
+        [2023-05-12 10:27:29] Expected Duration (s) for 600s_1000B_20P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-12 10:27:29] Expected End Date: 2023-05-12 10:37:29
+
+        [2023-05-12 10:27:29] Buffer Duration (s) for 600s_1000B_20P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-12 10:27:29] Expected Buffer End Date: 2023-05-12 10:57:29
+[2023-05-12 10:57:29] ERROR: p1 600s_1000B_20P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 10:57:29] 39 tests run. 39 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 10:57:29] [40/72] Running Test: 600s_1000B_20P_1S_be_mc_3dur_100lc
+        [2023-05-12 10:57:29] Expected Duration (s) for 600s_1000B_20P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-12 10:57:29] Expected End Date: 2023-05-12 11:07:29
+
+        [2023-05-12 10:57:29] Buffer Duration (s) for 600s_1000B_20P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-12 10:57:29] Expected Buffer End Date: 2023-05-12 11:27:29
+[2023-05-12 11:27:29] ERROR: p1 600s_1000B_20P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 11:27:29] 40 tests run. 40 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 11:27:29] [41/72] Running Test: 600s_1000B_25P_1S_be_mc_0dur_100lc
+        [2023-05-12 11:27:29] Expected Duration (s) for 600s_1000B_25P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-12 11:27:29] Expected End Date: 2023-05-12 11:37:29
+
+        [2023-05-12 11:27:29] Buffer Duration (s) for 600s_1000B_25P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-12 11:27:29] Expected Buffer End Date: 2023-05-12 11:57:29
+[2023-05-12 11:57:30] ERROR: p1 600s_1000B_25P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 11:57:30] 41 tests run. 41 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 11:57:30] [42/72] Running Test: 600s_1000B_25P_1S_be_mc_1dur_100lc
+        [2023-05-12 11:57:30] Expected Duration (s) for 600s_1000B_25P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-12 11:57:30] Expected End Date: 2023-05-12 12:07:30
+
+        [2023-05-12 11:57:30] Buffer Duration (s) for 600s_1000B_25P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-12 11:57:30] Expected Buffer End Date: 2023-05-12 12:27:30
+[2023-05-12 12:27:30] ERROR: p1 600s_1000B_25P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 12:27:30] 42 tests run. 42 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 12:27:30] [43/72] Running Test: 600s_1000B_25P_1S_be_mc_2dur_100lc
+        [2023-05-12 12:27:30] Expected Duration (s) for 600s_1000B_25P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-12 12:27:30] Expected End Date: 2023-05-12 12:37:30
+
+        [2023-05-12 12:27:30] Buffer Duration (s) for 600s_1000B_25P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-12 12:27:30] Expected Buffer End Date: 2023-05-12 12:57:30
+[2023-05-12 12:57:30] ERROR: p1 600s_1000B_25P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 12:57:30] 43 tests run. 43 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 12:57:30] [44/72] Running Test: 600s_1000B_25P_1S_be_mc_3dur_100lc
+        [2023-05-12 12:57:30] Expected Duration (s) for 600s_1000B_25P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-12 12:57:30] Expected End Date: 2023-05-12 13:07:30
+
+        [2023-05-12 12:57:30] Buffer Duration (s) for 600s_1000B_25P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-12 12:57:30] Expected Buffer End Date: 2023-05-12 13:27:30
+[2023-05-12 13:27:30] ERROR: p1 600s_1000B_25P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 13:27:30] 44 tests run. 44 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 13:27:30] [45/72] Running Test: 600s_1000B_30P_1S_be_mc_0dur_100lc
+        [2023-05-12 13:27:30] Expected Duration (s) for 600s_1000B_30P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-12 13:27:30] Expected End Date: 2023-05-12 13:37:30
+
+        [2023-05-12 13:27:30] Buffer Duration (s) for 600s_1000B_30P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-12 13:27:30] Expected Buffer End Date: 2023-05-12 13:57:30
+[2023-05-12 13:57:30] ERROR: p1 600s_1000B_30P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 13:57:30] 45 tests run. 45 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 13:57:30] [46/72] Running Test: 600s_1000B_30P_1S_be_mc_1dur_100lc
+        [2023-05-12 13:57:30] Expected Duration (s) for 600s_1000B_30P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-12 13:57:30] Expected End Date: 2023-05-12 14:07:30
+
+        [2023-05-12 13:57:30] Buffer Duration (s) for 600s_1000B_30P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-12 13:57:30] Expected Buffer End Date: 2023-05-12 14:27:30
+[2023-05-12 14:27:30] ERROR: p1 600s_1000B_30P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 14:27:30] 46 tests run. 46 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 14:27:30] [47/72] Running Test: 600s_1000B_30P_1S_be_mc_2dur_100lc
+        [2023-05-12 14:27:30] Expected Duration (s) for 600s_1000B_30P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-12 14:27:30] Expected End Date: 2023-05-12 14:37:30
+
+        [2023-05-12 14:27:30] Buffer Duration (s) for 600s_1000B_30P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-12 14:27:30] Expected Buffer End Date: 2023-05-12 14:57:30
+[2023-05-12 14:57:30] ERROR: p1 600s_1000B_30P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 14:57:30] 47 tests run. 47 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 14:57:30] [48/72] Running Test: 600s_1000B_30P_1S_be_mc_3dur_100lc
+        [2023-05-12 14:57:30] Expected Duration (s) for 600s_1000B_30P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-12 14:57:30] Expected End Date: 2023-05-12 15:07:30
+
+        [2023-05-12 14:57:30] Buffer Duration (s) for 600s_1000B_30P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-12 14:57:30] Expected Buffer End Date: 2023-05-12 15:27:30
+[2023-05-12 15:27:30] ERROR: p1 600s_1000B_30P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 15:27:30] 48 tests run. 48 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 15:27:30] [49/72] Running Test: 600s_32000B_5P_1S_be_mc_0dur_100lc
+        [2023-05-12 15:27:30] Expected Duration (s) for 600s_32000B_5P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-12 15:27:30] Expected End Date: 2023-05-12 15:37:30
+
+        [2023-05-12 15:27:31] Buffer Duration (s) for 600s_32000B_5P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-12 15:27:31] Expected Buffer End Date: 2023-05-12 15:57:31
+[2023-05-12 15:57:31] ERROR: p1 600s_32000B_5P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 15:57:31] 49 tests run. 49 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 15:57:31] [50/72] Running Test: 600s_32000B_5P_1S_be_mc_1dur_100lc
+        [2023-05-12 15:57:31] Expected Duration (s) for 600s_32000B_5P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-12 15:57:31] Expected End Date: 2023-05-12 16:07:31
+
+        [2023-05-12 15:57:31] Buffer Duration (s) for 600s_32000B_5P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-12 15:57:31] Expected Buffer End Date: 2023-05-12 16:27:31
+[2023-05-12 16:27:31] ERROR: p1 600s_32000B_5P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 16:27:31] 50 tests run. 50 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 16:27:31] [51/72] Running Test: 600s_32000B_5P_1S_be_mc_2dur_100lc
+        [2023-05-12 16:27:31] Expected Duration (s) for 600s_32000B_5P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-12 16:27:31] Expected End Date: 2023-05-12 16:37:31
+
+        [2023-05-12 16:27:31] Buffer Duration (s) for 600s_32000B_5P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-12 16:27:31] Expected Buffer End Date: 2023-05-12 16:57:31
+[2023-05-12 16:57:31] ERROR: p1 600s_32000B_5P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 16:57:31] 51 tests run. 51 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 16:57:31] [52/72] Running Test: 600s_32000B_5P_1S_be_mc_3dur_100lc
+        [2023-05-12 16:57:31] Expected Duration (s) for 600s_32000B_5P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-12 16:57:31] Expected End Date: 2023-05-12 17:07:31
+
+        [2023-05-12 16:57:31] Buffer Duration (s) for 600s_32000B_5P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-12 16:57:31] Expected Buffer End Date: 2023-05-12 17:27:31
+[2023-05-12 17:27:31] ERROR: p1 600s_32000B_5P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 17:27:31] 52 tests run. 52 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 17:27:31] [53/72] Running Test: 600s_32000B_10P_1S_be_mc_0dur_100lc
+        [2023-05-12 17:27:31] Expected Duration (s) for 600s_32000B_10P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-12 17:27:31] Expected End Date: 2023-05-12 17:37:31
+
+        [2023-05-12 17:27:31] Buffer Duration (s) for 600s_32000B_10P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-12 17:27:31] Expected Buffer End Date: 2023-05-12 17:57:31
+[2023-05-12 17:57:31] ERROR: p1 600s_32000B_10P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 17:57:31] 53 tests run. 53 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 17:57:31] [54/72] Running Test: 600s_32000B_10P_1S_be_mc_1dur_100lc
+        [2023-05-12 17:57:31] Expected Duration (s) for 600s_32000B_10P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-12 17:57:31] Expected End Date: 2023-05-12 18:07:31
+
+        [2023-05-12 17:57:31] Buffer Duration (s) for 600s_32000B_10P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-12 17:57:31] Expected Buffer End Date: 2023-05-12 18:27:31
+[2023-05-12 18:27:31] ERROR: p1 600s_32000B_10P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 18:27:31] 54 tests run. 54 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 18:27:31] [55/72] Running Test: 600s_32000B_10P_1S_be_mc_2dur_100lc
+        [2023-05-12 18:27:31] Expected Duration (s) for 600s_32000B_10P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-12 18:27:31] Expected End Date: 2023-05-12 18:37:31
+
+        [2023-05-12 18:27:31] Buffer Duration (s) for 600s_32000B_10P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-12 18:27:31] Expected Buffer End Date: 2023-05-12 18:57:31
+[2023-05-12 18:57:31] ERROR: p1 600s_32000B_10P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 18:57:31] 55 tests run. 55 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 18:57:31] [56/72] Running Test: 600s_32000B_10P_1S_be_mc_3dur_100lc
+        [2023-05-12 18:57:31] Expected Duration (s) for 600s_32000B_10P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-12 18:57:31] Expected End Date: 2023-05-12 19:07:31
+
+        [2023-05-12 18:57:31] Buffer Duration (s) for 600s_32000B_10P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-12 18:57:31] Expected Buffer End Date: 2023-05-12 19:27:31
+[2023-05-12 19:27:31] ERROR: p1 600s_32000B_10P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 19:27:32] 56 tests run. 56 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 19:27:32] [57/72] Running Test: 600s_32000B_15P_1S_be_mc_0dur_100lc
+        [2023-05-12 19:27:32] Expected Duration (s) for 600s_32000B_15P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-12 19:27:32] Expected End Date: 2023-05-12 19:37:32
+
+        [2023-05-12 19:27:32] Buffer Duration (s) for 600s_32000B_15P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-12 19:27:32] Expected Buffer End Date: 2023-05-12 19:57:32
+[2023-05-12 19:57:32] ERROR: p1 600s_32000B_15P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 19:57:32] 57 tests run. 57 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 19:57:32] [58/72] Running Test: 600s_32000B_15P_1S_be_mc_1dur_100lc
+        [2023-05-12 19:57:32] Expected Duration (s) for 600s_32000B_15P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-12 19:57:32] Expected End Date: 2023-05-12 20:07:32
+
+        [2023-05-12 19:57:32] Buffer Duration (s) for 600s_32000B_15P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-12 19:57:32] Expected Buffer End Date: 2023-05-12 20:27:32
+[2023-05-12 20:27:32] ERROR: p1 600s_32000B_15P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 20:27:32] 58 tests run. 58 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 20:27:32] [59/72] Running Test: 600s_32000B_15P_1S_be_mc_2dur_100lc
+        [2023-05-12 20:27:32] Expected Duration (s) for 600s_32000B_15P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-12 20:27:32] Expected End Date: 2023-05-12 20:37:32
+
+        [2023-05-12 20:27:32] Buffer Duration (s) for 600s_32000B_15P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-12 20:27:32] Expected Buffer End Date: 2023-05-12 20:57:32
+[2023-05-12 20:57:32] ERROR: p1 600s_32000B_15P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 20:57:32] 59 tests run. 59 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 20:57:32] [60/72] Running Test: 600s_32000B_15P_1S_be_mc_3dur_100lc
+        [2023-05-12 20:57:32] Expected Duration (s) for 600s_32000B_15P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-12 20:57:32] Expected End Date: 2023-05-12 21:07:32
+
+        [2023-05-12 20:57:32] Buffer Duration (s) for 600s_32000B_15P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-12 20:57:32] Expected Buffer End Date: 2023-05-12 21:27:32
+[2023-05-12 21:27:32] ERROR: p1 600s_32000B_15P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 21:27:32] 60 tests run. 60 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 21:27:32] [61/72] Running Test: 600s_32000B_20P_1S_be_mc_0dur_100lc
+        [2023-05-12 21:27:32] Expected Duration (s) for 600s_32000B_20P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-12 21:27:32] Expected End Date: 2023-05-12 21:37:32
+
+        [2023-05-12 21:27:32] Buffer Duration (s) for 600s_32000B_20P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-12 21:27:32] Expected Buffer End Date: 2023-05-12 21:57:32
+[2023-05-12 21:57:32] ERROR: p1 600s_32000B_20P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 21:57:32] 61 tests run. 61 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 21:57:32] [62/72] Running Test: 600s_32000B_20P_1S_be_mc_1dur_100lc
+        [2023-05-12 21:57:32] Expected Duration (s) for 600s_32000B_20P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-12 21:57:32] Expected End Date: 2023-05-12 22:07:32
+
+        [2023-05-12 21:57:32] Buffer Duration (s) for 600s_32000B_20P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-12 21:57:32] Expected Buffer End Date: 2023-05-12 22:27:32
+[2023-05-12 22:27:32] ERROR: p1 600s_32000B_20P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 22:27:32] 62 tests run. 62 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 22:27:32] [63/72] Running Test: 600s_32000B_20P_1S_be_mc_2dur_100lc
+        [2023-05-12 22:27:32] Expected Duration (s) for 600s_32000B_20P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-12 22:27:32] Expected End Date: 2023-05-12 22:37:32
+
+        [2023-05-12 22:27:32] Buffer Duration (s) for 600s_32000B_20P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-12 22:27:32] Expected Buffer End Date: 2023-05-12 22:57:32
+[2023-05-12 22:57:32] ERROR: p1 600s_32000B_20P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 22:57:32] 63 tests run. 63 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 22:57:32] [64/72] Running Test: 600s_32000B_20P_1S_be_mc_3dur_100lc
+        [2023-05-12 22:57:32] Expected Duration (s) for 600s_32000B_20P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-12 22:57:32] Expected End Date: 2023-05-12 23:07:32
+
+        [2023-05-12 22:57:32] Buffer Duration (s) for 600s_32000B_20P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-12 22:57:32] Expected Buffer End Date: 2023-05-12 23:27:32
+[2023-05-12 23:27:33] ERROR: p1 600s_32000B_20P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 23:27:33] 64 tests run. 64 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 23:27:33] [65/72] Running Test: 600s_32000B_25P_1S_be_mc_0dur_100lc
+        [2023-05-12 23:27:33] Expected Duration (s) for 600s_32000B_25P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-12 23:27:33] Expected End Date: 2023-05-12 23:37:33
+
+        [2023-05-12 23:27:33] Buffer Duration (s) for 600s_32000B_25P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-12 23:27:33] Expected Buffer End Date: 2023-05-12 23:57:33
+[2023-05-12 23:57:33] ERROR: p1 600s_32000B_25P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-12 23:57:33] 65 tests run. 65 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-12 23:57:33] [66/72] Running Test: 600s_32000B_25P_1S_be_mc_1dur_100lc
+        [2023-05-12 23:57:33] Expected Duration (s) for 600s_32000B_25P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-12 23:57:33] Expected End Date: 2023-05-13 00:07:33
+
+        [2023-05-12 23:57:33] Buffer Duration (s) for 600s_32000B_25P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-12 23:57:33] Expected Buffer End Date: 2023-05-13 00:27:33
+[2023-05-13 00:27:33] ERROR: p1 600s_32000B_25P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-13 00:27:33] 66 tests run. 66 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-13 00:27:33] [67/72] Running Test: 600s_32000B_25P_1S_be_mc_2dur_100lc
+        [2023-05-13 00:27:33] Expected Duration (s) for 600s_32000B_25P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-13 00:27:33] Expected End Date: 2023-05-13 00:37:33
+
+        [2023-05-13 00:27:33] Buffer Duration (s) for 600s_32000B_25P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-13 00:27:33] Expected Buffer End Date: 2023-05-13 00:57:33
+[2023-05-13 00:57:33] ERROR: p1 600s_32000B_25P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-13 00:57:33] 67 tests run. 67 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-13 00:57:33] [68/72] Running Test: 600s_32000B_25P_1S_be_mc_3dur_100lc
+        [2023-05-13 00:57:33] Expected Duration (s) for 600s_32000B_25P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-13 00:57:33] Expected End Date: 2023-05-13 01:07:33
+
+        [2023-05-13 00:57:33] Buffer Duration (s) for 600s_32000B_25P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-13 00:57:33] Expected Buffer End Date: 2023-05-13 01:27:33
+[2023-05-13 01:27:33] ERROR: p1 600s_32000B_25P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-13 01:27:33] 68 tests run. 68 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-13 01:27:33] [69/72] Running Test: 600s_32000B_30P_1S_be_mc_0dur_100lc
+        [2023-05-13 01:27:33] Expected Duration (s) for 600s_32000B_30P_1S_be_mc_0dur_100lc: 600 seconds.
+        [2023-05-13 01:27:33] Expected End Date: 2023-05-13 01:37:33
+
+        [2023-05-13 01:27:33] Buffer Duration (s) for 600s_32000B_30P_1S_be_mc_0dur_100lc: 1800 seconds.
+        [2023-05-13 01:27:33] Expected Buffer End Date: 2023-05-13 01:57:33
+[2023-05-13 01:57:33] ERROR: p1 600s_32000B_30P_1S_be_mc_0dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-13 01:57:33] 69 tests run. 69 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-13 01:57:33] [70/72] Running Test: 600s_32000B_30P_1S_be_mc_1dur_100lc
+        [2023-05-13 01:57:33] Expected Duration (s) for 600s_32000B_30P_1S_be_mc_1dur_100lc: 600 seconds.
+        [2023-05-13 01:57:33] Expected End Date: 2023-05-13 02:07:33
+
+        [2023-05-13 01:57:33] Buffer Duration (s) for 600s_32000B_30P_1S_be_mc_1dur_100lc: 1800 seconds.
+        [2023-05-13 01:57:33] Expected Buffer End Date: 2023-05-13 02:27:33
+[2023-05-13 02:27:33] ERROR: p1 600s_32000B_30P_1S_be_mc_1dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-13 02:27:33] 70 tests run. 70 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-13 02:27:34] [71/72] Running Test: 600s_32000B_30P_1S_be_mc_2dur_100lc
+        [2023-05-13 02:27:34] Expected Duration (s) for 600s_32000B_30P_1S_be_mc_2dur_100lc: 600 seconds.
+        [2023-05-13 02:27:34] Expected End Date: 2023-05-13 02:37:34
+
+        [2023-05-13 02:27:34] Buffer Duration (s) for 600s_32000B_30P_1S_be_mc_2dur_100lc: 1800 seconds.
+        [2023-05-13 02:27:34] Expected Buffer End Date: 2023-05-13 02:57:34
+[2023-05-13 02:57:34] ERROR: p1 600s_32000B_30P_1S_be_mc_2dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-13 02:57:34] 71 tests run. 71 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
+
+[2023-05-13 02:57:34] [72/72] Running Test: 600s_32000B_30P_1S_be_mc_3dur_100lc
+        [2023-05-13 02:57:34] Expected Duration (s) for 600s_32000B_30P_1S_be_mc_3dur_100lc: 600 seconds.
+        [2023-05-13 02:57:34] Expected End Date: 2023-05-13 03:07:34
+
+        [2023-05-13 02:57:34] Buffer Duration (s) for 600s_32000B_30P_1S_be_mc_3dur_100lc: 1800 seconds.
+        [2023-05-13 02:57:34] Expected Buffer End Date: 2023-05-13 03:27:34
+[2023-05-13 03:27:34] ERROR: p1 600s_32000B_30P_1S_be_mc_3dur_100lc timed out after a duration of 1800 seconds.
+[2023-05-13 03:27:34] 72 tests run. 72 (100.00%) tests were prolonged. 0 (0.00%) tests were punctual.
