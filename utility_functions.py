@@ -263,7 +263,8 @@ def download_leftovers(machine, ssh, testdir):
                             sftp.remove(remote_filepath)
 
                 if download_files_count == 0:
-                    return False
+                    log_debug(f"{machine['name']} All remote csv files were empty.")
+                    return True
                 else:
                     log_debug(f"{machine['name']} {download_files_count} leftover files downloaded to {local_dir}.")
                     return True
