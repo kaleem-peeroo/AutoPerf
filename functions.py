@@ -152,7 +152,7 @@ def generate_scripts(combination):
         elif "durability" in k:
             script_base = script_base + "-durability " + str(v) + " "
         elif "latency_count" in k:
-            latency_count_output = "-LatencyCount " + str(v) + " "
+            latency_count_output = "-latencyCount " + str(v) + " "
         elif "duration" in k:
             duration_output = "-executionTime " + str(v)
     
@@ -233,7 +233,7 @@ def validate_scripts(combination, scripts):
     if not validate_setting(int(combination['durability']), 'durability', scripts, combination):
         return False
     
-    if not validate_setting(int(combination['latency_count']), 'LatencyCount', scripts, combination):
+    if not validate_setting(int(combination['latency_count']), 'latencyCount', scripts, combination):
         return False
 
     return True
@@ -300,7 +300,17 @@ def machine_process_func(machine, testdir, buffer_multiple):
     username = machine['username']
     ssh_key = machine['ssh_key']
     scripts = machine['scripts']
-
+    
+    # ? Check for and remove duplicating instances of the string "source ~/.bashrc"
+    source_bash_count = scripts.count("source ~/.bashrc;")
+    
+    if source_bash_count > 1:
+        scripts = scripts.replace("source ~/.bashrc;", "", source_bash_count - 1)
+        
+    source_bash_count = scripts.count("source ~/.bashrc;")
+        
+    assert(source_bash_count == 1)
+    
     NAME = f"[bold green]{name.upper()}:[/bold green]"
 
     ssh = paramiko.SSHClient()

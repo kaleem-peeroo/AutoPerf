@@ -112,10 +112,11 @@ for camp_comb in combinations:
             
             scripts = " & ".join(scripts)
 
-            try:
-                machine["scripts"] = {machine["scripts"]} + f" & {scripts}"
-            except KeyError as e:
+            if "scripts" not in machine:
                 machine["scripts"] = f"source ~/.bashrc; {scripts};" if len(scripts) > 0 else f"source ~/.bashrc;"
+            else:
+                old_scripts = machine["scripts"]
+                machine["scripts"] = f"{old_scripts}; {scripts};" if len(scripts) > 0 else f"{old_scripts};"
 
             loaded_machines_conf.append(machine)
 
@@ -149,13 +150,12 @@ for camp_comb in combinations:
             
             scripts = " & ".join(scripts)
             
-            try:
-                old_machine_scripts = machine["scripts"]
-            
-                machine["scripts"] = f"{old_machine_scripts} & {scripts}"
-            except KeyError as e:
+            if "scripts" not in machine:
                 machine["scripts"] = f"source ~/.bashrc; {scripts};" if len(scripts) > 0 else f"source ~/.bashrc;"
-            
+            else:
+                old_scripts = machine["scripts"]
+                machine["scripts"] = f"{old_scripts}; {scripts};" if len(scripts) > 0 else f"{old_scripts};"
+
             loaded_machines_conf.append(machine)
         
         # ? Combine any repeated machine config objects.
