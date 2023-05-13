@@ -258,9 +258,15 @@ def download_leftovers(machine, ssh, testdir):
                             sftp.get(remote_filepath, local_filepath)
                             sftp.remove(remote_filepath)
                             download_files_count += 1
+                        else:
+                            # ? Delete the csv if has no size.
+                            sftp.remove(remote_filepath)
 
-                log_debug(f"{machine['name']} {download_files_count} leftover files downloaded to {local_dir}.")
-                return True
+                if download_files_count == 0:
+                    return False
+                else:
+                    log_debug(f"{machine['name']} {download_files_count} leftover files downloaded to {local_dir}.")
+                    return True
 
         except Exception as e:
             # TODO: Write exception to exception log
