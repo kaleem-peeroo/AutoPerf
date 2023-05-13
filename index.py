@@ -274,6 +274,14 @@ for campaign in campaign_scripts:
             console.print(f"[{format_now}] {ERROR} Error calculating expected time duration in seconds for\n\t{test_title}.", style="bold white")
             continue
 
+        for machine in test["machines"]:
+            # ? Replace "; source ~/.bashrc;" with " & " so that it executes the command in parallel instead of sequentially.
+            console.print(Markdown("# Before"), style="bold white")
+            print(machine["scripts"])
+            machine['scripts'] = machine['scripts'].replace("; source ~/.bashrc;", " & ")
+            console.print(Markdown("# After"), style="bold white")
+            print(machine)
+
         # ? Write test config to file.
         with open(os.path.join(test_dir, 'config.json'), 'w') as f:
             json.dump(test, f, indent=4)

@@ -300,17 +300,7 @@ def machine_process_func(machine, testdir, buffer_multiple):
     username = machine['username']
     ssh_key = machine['ssh_key']
     scripts = machine['scripts']
-    
-    # ? Check for and remove duplicating instances of the string "source ~/.bashrc"
-    source_bash_count = scripts.count("source ~/.bashrc;")
-    
-    if source_bash_count > 1:
-        scripts = scripts.replace("source ~/.bashrc;", "", source_bash_count - 1)
-        
-    source_bash_count = scripts.count("source ~/.bashrc;")
-        
-    assert(source_bash_count == 1)
-    
+
     NAME = f"[bold green]{name.upper()}:[/bold green]"
 
     ssh = paramiko.SSHClient()
