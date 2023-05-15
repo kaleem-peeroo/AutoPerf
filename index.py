@@ -277,7 +277,14 @@ for campaign in campaign_scripts:
         for machine in test["machines"]:
             # ? Replace "; source ~/.bashrc;" with " & " so that it executes the command in parallel instead of sequentially.
             machine['scripts'] = machine['scripts'].replace("; source ~/.bashrc;", " & ")
-
+            machine["scripts"] = machine["scripts"].rstrip()
+            
+            # ? Find and replace the & at the end of the script with a ; or the script will hang forever because of that last &
+            # ? e.g. "...pub.csv &" => "...pub.csv ;"
+            if ";" not in machine["scripts"][-3:] and "&" in machine["scripts"][-3:]:
+                replaced_string = ";".join( machine["scripts"].rsplit("&", 1) )
+                machine["scripts"] = replaced_string
+        
         # ? Write test config to file.
         with open(os.path.join(test_dir, 'config.json'), 'w') as f:
             json.dump(test, f, indent=4)
