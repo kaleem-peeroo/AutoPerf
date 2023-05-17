@@ -4,7 +4,7 @@
             "name": "QoS Capture Dedicated PSSS",
             "settings": {
                 "duration_s": [600],
-                "datalen_bytes": [100, 1000, 32000, 64000],
+                "datalen_bytes": [32000, 64000],
                 "pub_count": [1, 5, 10, 25],
                 "sub_count": [1, 5, 10, 25],
                 "reliability": [true, false],
