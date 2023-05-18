@@ -437,3 +437,14 @@ def zip_folder(folder_path):
         for file in files:
             zipf.write(os.path.join(root, file))
     zipf.close()
+    
+def has_consecutive_prolonged_tests(test_statuses):
+    # ? Check if the last 5 tests were prolonged.
+    last_5_tests = test_statuses[-5:]
+    prolonged_test_count = len([test for test in last_5_tests if 'prolonged' in test['status']])
+    
+    if prolonged_test_count == 5:
+        return True
+    else:
+        return False
+    

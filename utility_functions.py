@@ -42,6 +42,12 @@ DEBUG_MODE = "debug" in sys.argv
 SKIP_RESTART = "skip_restart" in sys.argv
 TEST_MODE = "test_mode" in sys.argv
 
+# ? Get last value from sys args
+try:
+    TEST_MODE_FAIL_CHANCE = float(sys.argv[-1])
+except ValueError:
+    TEST_MODE_FAIL_CHANCE = 0.5
+
 def format_now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 

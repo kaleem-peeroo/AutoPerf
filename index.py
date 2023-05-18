@@ -236,11 +236,14 @@ for campaign in campaign_scripts:
     # ? Make a folder for the campaign.
     camp_dir = create_dir(camp_name.replace(" ", "_"))
 
+    # ? Track test statuses during run-time.
+    test_statuses = []
+
     # ? Make progress.json for the campaign.
     log_debug(f"Making progress.json for {camp_name}...")
     progress_json = os.path.join(camp_dir, 'progress.json')
     with open(progress_json, 'w') as f:
-        json.dump([], f)
+        json.dump(test_statuses, f)
     log_debug(f"progress.json made for {camp_name}.")
 
     tests = campaign['tests']
@@ -316,7 +319,7 @@ for campaign in campaign_scripts:
         else:
             # ? Test Mode: Pretend to run the test. Randomly fail or succeed.
             console.print(f"Pretending to run {test_title}.", style="bold white")
-            if random.random() < 0.5:
+            if random.random() < TEST_MODE_FAIL_CHANCE:
                 console.print(f"Fake {test_title} failed.", style="bold red")
                 test_end_status = "prolonged"
             else:
@@ -326,9 +329,28 @@ for campaign in campaign_scripts:
         # ? Scripts finished running at this point.
         end_time = time.time()
         
+        # ? Update test status.
+        test_statuses.append({
+            "test_title": test_title,
+            "end_time_raw": end_time,
+            "start_time_raw": start_time,
+            "start_time": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)),
+            "end_time": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)),
+            "status": test_end_status
+        })
+        
+        # ? Order test status by end time.
+        test_statuses = sorted(test_statuses, key=lambda k: k['end_time'])
+        
         # ? Record test start and end time.
         update_progress(progress_json, test_title, start_time, end_time, test_end_status)
 
+        # ? Analyse statuses for prolonged tests.
+        if has_consecutive_prolonged_tests(test_statuses):
+            console.print(f"The last 5 tests have been prolonged. Ending the campaign.", style="bold red")
+            # ? Check which machines are unresponsive.
+            break
+        
         output_test_progress(progress_json)
         
     # ? Move the output file to the campaign folder.
