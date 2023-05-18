@@ -12,6 +12,7 @@ import re
 import stat
 import multiprocessing
 import zipfile
+import random
 
 from threading import Thread
 from datetime import datetime, timedelta
@@ -24,6 +25,12 @@ from rich.prompt import Prompt
 from rich.prompt import Confirm
 from rich.progress import track
 from rich.table import Table
+
+# ? Ignore cryptography deprecation warnings
+import warnings
+from cryptography.utils import CryptographyDeprecationWarning
+with warnings.catch_warnings():
+    warnings.filterwarnings('ignore', category=CryptographyDeprecationWarning)
 
 # ? Uncomment for rich traceback formatting
 # from rich.traceback import install

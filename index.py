@@ -290,31 +290,40 @@ for campaign in campaign_scripts:
             json.dump(test, f, indent=4)
         log_debug(f"Test configuration written to {os.path.join(test_dir, 'config.json')}.")
 
-        # ? Create processes for each machine.
-        machine_processes = []
-        machine_processes_machines = []
-        for machine in test['machines']:
-            machine_process = multiprocessing.Process(target=machine_process_func, args=(machine, test_dir, buffer_multiple))
-            machine_processes.append(machine_process)
-            machine_processes_machines.append(machine)
-            machine_process.start()
+        if not TEST_MODE:
+            # ? Create processes for each machine.
+            machine_processes = []
+            machine_processes_machines = []
+            for machine in test['machines']:
+                machine_process = multiprocessing.Process(target=machine_process_func, args=(machine, test_dir, buffer_multiple))
+                machine_processes.append(machine_process)
+                machine_processes_machines.append(machine)
+                machine_process.start()
 
-        for machine_process in machine_processes:
-            i = machine_processes.index(machine_process)
-            machine_name = machine_processes_machines[i]['name']
-            machine_process.join(timeout=int(expected_duration_sec * buffer_multiple))
-            
-            # ? If process is still alive kill all processes.
-            if machine_process.is_alive():
+            for machine_process in machine_processes:
+                i = machine_processes.index(machine_process)
+                machine_name = machine_processes_machines[i]['name']
+                machine_process.join(timeout=int(expected_duration_sec * buffer_multiple))
                 
-                for machine_process_j in machine_processes:
-                    machine_process_j.terminate()
-                
-                console.print(f"[{format_now()}] {ERROR} {machine_name} {test_title} timed out after a duration of {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
+                # ? If process is still alive kill all processes.
+                if machine_process.is_alive():
+                    
+                    for machine_process_j in machine_processes:
+                        machine_process_j.terminate()
+                    
+                    console.print(f"[{format_now()}] {ERROR} {machine_name} {test_title} timed out after a duration of {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
+                    test_end_status = "prolonged"
+        else:
+            # ? Test Mode: Pretend to run the test. Randomly fail or succeed.
+            console.print(f"Pretending to run {test_title}.", style="bold white")
+            if random.random() < 0.5:
+                console.print(f"Fake {test_title} failed.", style="bold red")
                 test_end_status = "prolonged"
+            else:
+                console.print(f"Fake {test_title} succeeded.", style="bold green")
+                test_end_status = "punctual"
                     
         # ? Scripts finished running at this point.
-        
         end_time = time.time()
         
         # ? Record test start and end time.
