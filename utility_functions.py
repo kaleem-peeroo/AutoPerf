@@ -33,6 +33,7 @@ console = Console(record=True, color_system="auto")
 
 DEBUG_MODE = "debug" in sys.argv
 SKIP_RESTART = "skip_restart" in sys.argv
+TEST_MODE = "test_mode" in sys.argv
 
 def format_now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
