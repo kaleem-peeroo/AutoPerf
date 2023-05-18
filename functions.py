@@ -448,3 +448,54 @@ def has_consecutive_prolonged_tests(test_statuses):
     else:
         return False
     
+def get_machine_response_statuses(machines):
+    machine_statuses = []
+
+    for machine in machines:
+        name = machine['name']
+        host = machine['host']
+        username = machine['username']
+        ssh_key = machine['ssh_key']
+        
+        if not TEST_MODE:
+            response = os.system(f"ping -c 1 {host} > /dev/null 2>&1")
+            if response == 0:
+                ping_response = True
+                # ? Check if machine is accessible via SSH
+                ssh_command = f"ssh -i {ssh_key} {username}@{host} 'echo 1' > /dev/null 2>&1"
+                ssh_response = subprocess.run(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                
+                if ssh_response.returncode == 0:
+                    ssh_response = True
+                else:
+                    ssh_response = False
+                    
+            else:
+                ping_response = False
+                ssh_response = False
+                
+            machine_statuses.append({
+                'name': name,
+                'host': host,
+                'ping_response': ping_response,
+                'ssh_response': ssh_response
+            })
+        else:
+            if random.random() < (1 - TEST_MODE_FAIL_CHANCE):
+                ping_response = False
+            else:
+                ping_response = True
+                
+            if random.random() < TEST_MODE_FAIL_CHANCE:
+                ssh_response = False
+            else:
+                ssh_response = True
+                
+            machine_statuses.append({
+                'name': name,
+                'host': host,
+                'ping_response': ping_response,
+                'ssh_response': ssh_response
+            })
+        
+    return machine_statuses

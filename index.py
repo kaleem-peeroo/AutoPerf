@@ -347,8 +347,28 @@ for campaign in campaign_scripts:
 
         # ? Analyse statuses for prolonged tests.
         if has_consecutive_prolonged_tests(test_statuses):
-            console.print(f"The last 5 tests have been prolonged. Ending the campaign.", style="bold red")
+            console.print(f"The last 5 tests have been consecutively prolonged. Checking machines for response and then ending the campaign.", style="bold red")
+            
             # ? Check which machines are unresponsive.
+            machine_response_statuses = get_machine_response_statuses(test['machines'])
+            
+            machine_response_table = Table(title="Machine Response Statuses")
+            machine_response_table.add_column("Host", justify="center")
+            machine_response_table.add_column("IP", justify="center")
+            machine_response_table.add_column("Response (Ping/SSH)", justify="center")
+
+            for machine in machine_response_statuses:
+                ping_emoji = "✅" if machine['ping_response'] else "❌"
+                ssh_emoji = "✅" if machine['ssh_response'] else "❌"
+                machine_response_table.add_row(machine['name'], machine['host'], f"{ping_emoji}/{ssh_emoji}")
+
+            console.print(machine_response_table)
+            
+            # ? Write machine response statuses to json file.
+            machine_response_status_json = os.path.join(camp_dir, 'machine_status_response.json')
+            with open(machine_response_status_json, 'w') as f:
+                json.dump(test_statuses, f)
+                
             break
         
         output_test_progress(progress_json)
