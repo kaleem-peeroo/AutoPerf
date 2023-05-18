@@ -67,6 +67,15 @@ For debug mode just add `debug`:
 python index.py path/to/config.json debug
 ```
 
+For test mode just add `test_mode`:
+```bash
+python index.py path/to/config.json test_mode
+```
+
+`test_mode` is when you want to pretend like you are running tests without actually sshing into machines and running scripts.
+
+- It'll randomly produced punctual and prolonged tests
+
 ## Features
 
 ### Prolonged Tests Monitor
