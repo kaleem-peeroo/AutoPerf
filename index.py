@@ -251,6 +251,9 @@ for campaign in campaign_scripts:
     
     # ? Make a folder for the campaign.
     camp_dir = create_dir(camp_name.replace(" ", "_"))
+    
+    # ? Move the test_titles file to the new camp_dir.
+    shutil.copy(camp_name.lower().replace(" ", "_") + "_test_combinations.txt", camp_dir)
 
     # ? Track test statuses during run-time.
     test_statuses = []
