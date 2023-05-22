@@ -53,7 +53,7 @@ def main(config, buffer_multiple, uses_random_generation):
         # ? Check none of the settings have more than 2 values.
         for setting, values in config['settings'].items():
             if len(values) > 2:
-                console.print(f"Setting {setting} has more than 2 values in the config file: {config}.", style="bold red")
+                console.print(f"Setting {setting} has more than 2 values in the config file {args[0]}.", style="bold red")
                 sys.exit()
 
         camp_name = config['name']
@@ -62,6 +62,19 @@ def main(config, buffer_multiple, uses_random_generation):
         # test_history = []
         # ? Test variable for testing purpose.
         combination_histories = ["600s_100B_10P_1S_be_uc_0dur_100lc"]
+        
+        # ? Make a folder for the campaign.
+        camp_dir = create_dir(camp_name.replace(" ", "_"))
+        
+        # ? Track test statuses during run-time.
+        test_statuses = []
+        
+        # ? Make progress.json for the campaign.
+        log_debug(f"Making progress.json for {camp_name}...")
+        progress_json = os.path.join(camp_dir, 'progress.json')
+        with open(progress_json, 'w') as f:
+            json.dump(test_statuses, f)
+        log_debug(f"progress.json made for {camp_name}.")
         
         # ? Loop up to the total test count.
         for i in range(int(total_test_count)):
@@ -82,8 +95,155 @@ def main(config, buffer_multiple, uses_random_generation):
                 
             # ? Generate scripts from the combination.
             scripts = generate_scripts(combination)
-            pprint(scripts)
+            
+            machines_conf = config['machines']
+                
+            if not validate_scripts(combination, scripts):
+                console.print(f"[{format_now}] {ERROR} Error when validating scripts. Scripts are NOT valid.", style="bold red")
+                sys.exit()
+
+            pub_machines = [_ for _ in machines_conf if "pub" in _['participant_allocation'] or "all" in _['participant_allocation']]
+            sub_machines = [_ for _ in machines_conf if "sub" in _['participant_allocation'] or "all" in _['participant_allocation']]
+            
+            pub_machines_count = len(pub_machines)
+            sub_machines_count = len(sub_machines)
+            
+            pub_scripts = [_ for _ in scripts if '-pub' in _]
+            sub_scripts = [_ for _ in scripts if '-sub' in _]
+            
+            balanced_pub_scripts = share(pub_scripts, pub_machines_count) if pub_machines_count > 1 else [pub_scripts]
+            balanced_sub_scripts = share(sub_scripts, sub_machines_count) if sub_machines_count > 1 else [sub_scripts]
+            
+            loaded_machines_conf = allocate_machines(pub_machines_count, sub_machines_count, pub_machines, sub_machines, balanced_pub_scripts, balanced_sub_scripts)
+            
+            start_time = time.time()
+            test_end_status = "punctual"
+
+            # ? Make a folder for the test
+            test_dir = create_dir( os.path.join(camp_dir, test_title) )
+            log_debug(f"Made testdir: {test_dir}.")
+
+            console.print(f"\n[{format_now()}] [{i + 1}/{total_test_count}] Running Test: {test_title}")
         
+            # ? Get expected test duration in seconds.
+            expected_duration_sec = get_duration_from_test_name(test_title)
+            
+            console.print(f"\t[{format_now()}] Expected Duration (s): {expected_duration_sec}", style="bold white")
+            console.print(f"\t[{format_now()}] Expected End Date: {add_seconds_to_now(expected_duration_sec)}", style="bold white")
+            
+            console.print(f"\n\t[{format_now()}] Buffer Duration (s): {int(expected_duration_sec * buffer_multiple)}", style="bold white")
+            console.print(f"\t[{format_now()}] Expected Buffer End Date: {add_seconds_to_now(expected_duration_sec * buffer_multiple)}", style="bold white")
+            
+            for machine in loaded_machines_conf:
+                # ? Replace "; source ~/.bashrc;" with " & " so that it executes the command in parallel instead of sequentially.
+                machine['scripts'] = machine['scripts'].replace("; source ~/.bashrc;", " & ")
+                machine["scripts"] = machine["scripts"].rstrip()
+                
+                # ? Find and replace the & at the end of the script with a ; or the script will hang forever because of that last &
+                # ? e.g. "...pub.csv &" => "...pub.csv ;"
+                if ";" not in machine["scripts"][-3:] and "&" in machine["scripts"][-3:]:
+                    replaced_string = ";".join( machine["scripts"].rsplit("&", 1) )
+                    machine["scripts"] = replaced_string
+                    
+            # ? Write test config to file.
+            with open(os.path.join(test_dir, 'config.json'), 'w') as f:
+                json.dump(loaded_machines_conf, f, indent=4)
+            log_debug(f"Test configuration written to {os.path.join(test_dir, 'config.json')}.")
+
+            if not TEST_MODE:
+                # ? Create processes for each machine.
+                machine_processes = []
+                machine_processes_machines = []
+                for machine in loaded_machines_conf:
+                    machine_process = multiprocessing.Process(target=machine_process_func, args=(machine, test_dir, buffer_multiple))
+                    machine_processes.append(machine_process)
+                    machine_processes_machines.append(machine)
+                    machine_process.start()
+
+                for machine_process in machine_processes:
+                    i = machine_processes.index(machine_process)
+                    machine_name = machine_processes_machines[i]['name']
+                    machine_process.join(timeout=int(expected_duration_sec * buffer_multiple))
+                    
+                    # ? If process is still alive kill all processes.
+                    if machine_process.is_alive():
+                        
+                        for machine_process_j in machine_processes:
+                            machine_process_j.terminate()
+                        
+                        console.print(f"[{format_now()}] {ERROR} {machine_name} {test_title} timed out after a duration of {int(expected_duration_sec * buffer_multiple)} seconds.", style="bold white")
+                        test_end_status = "prolonged"
+            else:
+                # ? Test Mode: Pretend to run the test. Randomly fail or succeed.
+                console.print(f"Pretending to run {test_title}.", style="bold white")
+                if random.random() < TEST_MODE_FAIL_CHANCE:
+                    console.print(f"Fake {test_title} failed.", style="bold red")
+                    test_end_status = "prolonged"
+                else:
+                    console.print(f"Fake {test_title} succeeded.", style="bold green")
+                    test_end_status = "punctual"
+            
+            # ? Scripts finished running at this point.
+            end_time = time.time()
+            
+            # ? Update test status.
+            test_statuses.append({
+                "test_title": test_title,
+                "end_time_raw": end_time,
+                "start_time_raw": start_time,
+                "start_time": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)),
+                "end_time": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time)),
+                "status": test_end_status
+            })
+            
+            # ? Order test status by end time.
+            test_statuses = sorted(test_statuses, key=lambda k: k['end_time'])
+            
+            # ? Record test start and end time.
+            update_progress(progress_json, test_title, start_time, end_time, test_end_status)
+
+            # ? Analyse statuses for prolonged tests.
+            if has_consecutive_prolonged_tests(test_statuses):
+                console.print(f"The last 5 tests have been consecutively prolonged. Checking machines for response and then ending the campaign.", style="bold red")
+                
+                # ? Check which machines are unresponsive.
+                machine_response_statuses = get_machine_response_statuses(loaded_machines_conf)
+                
+                machine_response_table = Table(title="Machine Response Statuses")
+                machine_response_table.add_column("Host", justify="center")
+                machine_response_table.add_column("IP", justify="center")
+                machine_response_table.add_column("Response (Ping/SSH)", justify="center")
+
+                for machine in machine_response_statuses:
+                    ping_emoji = "✅" if machine['ping_response'] else "❌"
+                    ssh_emoji = "✅" if machine['ssh_response'] else "❌"
+                    machine_response_table.add_row(machine['name'], machine['host'], f"{ping_emoji}/{ssh_emoji}")
+
+                console.print(machine_response_table)
+                
+                # ? Write machine response statuses to json file.
+                machine_response_status_json = os.path.join(camp_dir, 'machine_status_response.json')
+                with open(machine_response_status_json, 'w') as f:
+                    json.dump(test_statuses, f)
+                    
+                break
+            
+            output_test_progress(progress_json)
+            
+        # ? Move the output file to the campaign folder.
+        with open("output.txt", "w") as f:
+            f.write(console.export_text())
+        
+        # ? Get latest txt file.
+        latest_txt = get_latest_txt_file("./")
+        # ? Move txt file to campaign folder.
+        shutil.copy(latest_txt, camp_dir)
+        # ? Rename the folder to <test_name>_raw
+        os.rename(camp_dir, camp_dir + "_raw")
+        camp_dir = camp_dir + "_raw"
+        # ? Zip the campaign folder.
+        zip_folder(camp_dir)
+            
     else:
     
         combinations = get_combinations_from_config(config)

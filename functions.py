@@ -128,6 +128,8 @@ def get_combinations_from_config(config):
 
     return combs
 
+
+
 def generate_scripts(combination):
     script_base = ""
     
@@ -260,27 +262,86 @@ def share(items, bins):
             
     return output
 
-def allocate_scripts_per_machine(scripts, machine_count):
+def allocate_machines(pub_machines_count, sub_machines_count, pub_machines, sub_machines, balanced_pub_scripts, balanced_sub_scripts):
+    loaded_machines_config = []
     
-    shared_pub_scripts = []
-    shared_sub_scripts = []
-    
-    if machine_count == 1:
-        return [scripts]
-    else:
-        for i in range(machine_count):
-            shared_pub_scripts.append([])
-            shared_sub_scripts.append([])
-    
-    pub_scripts = [x for x in scripts if '-pub' in x]
-    sub_scripts = [x for x in scripts if '-sub' in x]
-    
-    shared_pub_scripts = share(pub_scripts, machine_count)
-    shared_sub_scripts = share(sub_scripts, machine_count)
+    for i in range(pub_machines_count):
+        machine = dict(pub_machines[i])
+        scripts = balanced_pub_scripts[i]
+        
+        if type(scripts) is not list:
+            scripts = [scripts]
+        
+        perftest = machine["perftest"]
+        scripts = [f"{perftest} {script}" for script in scripts]
+        
+        updated_scripts = []
+        
+        # ? Add the home_dir path to the outputFile path.
+        for script in scripts:
+            script_items = script.split()
+            for j in range(len(script_items)):
+                if script_items[j] == "-outputFile":
+                    # ? Avoid accessing outside of list.
+                    if j + 1 < len(script_items):
+                        output_dir = script_items[j + 1]
+                        home_dir = machine['home_dir']
+                        output_dir = os.path.join(home_dir, output_dir)
+                        script_items[j + 1] = output_dir
+            script = " ".join(script_items)
+            updated_scripts.append(script)                
+                    
+        scripts = updated_scripts
+        
+        scripts = " & ".join(scripts)
 
-    shared_pub_scripts.reverse()
+        if "scripts" not in machine:
+            machine["scripts"] = f"source ~/.bashrc; {scripts};" if len(scripts) > 0 else f"source ~/.bashrc;"
+        else:
+            old_scripts = machine["scripts"]
+            machine["scripts"] = f"{old_scripts}; {scripts};" if len(scripts) > 0 else f"{old_scripts};"
 
-    return shared_pub_scripts, shared_sub_scripts
+        loaded_machines_config.append(machine)
+
+    for i in range(sub_machines_count):
+        machine = dict(sub_machines[i])
+        scripts = balanced_sub_scripts[i]
+        
+        perftest = machine["perftest"]
+        scripts = [f"{perftest} {script}" for script in scripts]
+        
+        if type(scripts) is not list:
+            scripts = [scripts]
+        
+        updated_scripts = []
+        
+        # ? Add the home_dir path to the outputFile path.
+        for script in scripts:
+            script_items = script.split()
+            for j in range(len(script_items)):
+                if script_items[j] == "-outputFile":
+                    # ? Avoid accessing outside of list.
+                    if j + 1 < len(script_items):
+                        output_dir = script_items[j + 1]
+                        home_dir = machine['home_dir']
+                        output_dir = os.path.join(home_dir, output_dir)
+                        script_items[j + 1] = output_dir
+            script = " ".join(script_items)
+            updated_scripts.append(script)                
+                    
+        scripts = updated_scripts
+        
+        scripts = " & ".join(scripts)
+        
+        if "scripts" not in machine:
+            machine["scripts"] = f"source ~/.bashrc; {scripts};" if len(scripts) > 0 else f"source ~/.bashrc;"
+        else:
+            old_scripts = machine["scripts"]
+            machine["scripts"] = f"{old_scripts}; {scripts};" if len(scripts) > 0 else f"{old_scripts};"
+
+        loaded_machines_config.append(machine)
+        
+    return loaded_machines_config
 
 def machine_process_func(machine, testdir, buffer_multiple):
     """
