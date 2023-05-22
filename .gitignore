@@ -4,7 +4,6 @@ progress.log
 debug.json
 Example_Campaign_*
 debug.sh
-QoS_*
 PTST_Production_Test*
 .DS_Store
 misc/
