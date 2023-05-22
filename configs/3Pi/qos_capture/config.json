@@ -1,18 +1,18 @@
 {
     "campaigns": [
         {
-            "name": "QoS Capture Shared Rerun",
+            "name": "QoS Capture Shared Prolonged Rerun",
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000, 64000],
-                "pub_count": [1, 5, 10, 25],
+                "pub_count": [1, 5, 10, 25, 50],
                 "sub_count": [1, 5, 10, 25, 50],
                 "reliability": [true, false],
                 "use_multicast": [true, false],
                 "durability": [0, 1, 2, 3],
                 "latency_count": [100]
             },
-            "custom_tests_files": "/configs/qos_capture/shared_combinations.txt",
+            "custom_tests_files": "/configs/3Pi/custom_tests/qos_capture_aa.txt",
             "machines": [
                 {
                     "name": "p1",
@@ -35,18 +35,18 @@
             ]
         },
         {
-            "name": "QoS Capture Dedicated PS",
+            "name": "QoS Capture Dedicated PS Prolonged Rerun",
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000, 64000],
-                "pub_count": [1, 5, 10, 25],
-                "sub_count": [1, 5, 10, 25],
+                "pub_count": [1, 5, 10, 25, 50],
+                "sub_count": [1, 5, 10, 25, 50],
                 "reliability": [true, false],
                 "use_multicast": [true, false],
                 "durability": [0, 1, 2, 3],
                 "latency_count": [100]
             },
-            "custom_tests_files": "",
+            "custom_tests_files": "configs/3Pi/custom_tests/qos_capture_ps.txt",
             "machines": [
                 {
                     "name": "p1",
@@ -69,18 +69,18 @@
             ]
         },
         {
-            "name": "QoS Capture Dedicated SP",
+            "name": "QoS Capture Dedicated SP Prolonged Rerun",
             "settings": {
                 "duration_s": [600],
                 "datalen_bytes": [100, 1000, 32000, 64000],
-                "pub_count": [1, 5, 10, 25],
-                "sub_count": [1, 5, 10, 25],
+                "pub_count": [1, 5, 10, 25, 50],
+                "sub_count": [1, 5, 10, 25, 50],
                 "reliability": [true, false],
                 "use_multicast": [true, false],
                 "durability": [0, 1, 2, 3],
                 "latency_count": [100]
             },
-            "custom_tests_files": "",
+            "custom_tests_files": "configs/3Pi/custom_tests/qos_capture_sp.txt",
             "machines": [
                 {
                     "name": "p1",
