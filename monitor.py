@@ -103,7 +103,7 @@ camp_names = [item['name'] for item in config]
 # ? Get campaign statuses.
 running_camps = []
 for line in running_camp_lines:
-    running_camps.append(line.split(": ")[1])
+    running_camps.append(line.split(": ")[len(line.split(": ")) - 1])
 
 pending_camps = []
 completed_camps = []
@@ -120,17 +120,18 @@ camp_status_table.add_column("Status")
 
 camp_count = 1
 
+for camp in completed_camps:
+    camp_status_table.add_row(f"{camp_count}", f"[bold blue]{camp}[/bold blue]", "[bold blue]completed[/bold blue]")
+    camp_count += 1
+
+camp_status_table.add_row(f"{camp_count}", f"[bold green]{running_camps[0]}[/bold green]", "[bold green]running[/bold green]")
+camp_count += 1
+
 for camp in pending_camps:
     camp_status_table.add_row(f"{camp_count}", f"[bold white]{camp}[/bold white]", "[bold white]pending[/bold white]")
     camp_count += 1
     
-for camp in running_camps:
-    camp_status_table.add_row(f"{camp_count}", f"[bold green]{camp}[/bold green]", "[bold green]running[/bold green]")
-    camp_count += 1
     
-for camp in completed_camps:
-    camp_status_table.add_row(f"{camp_count}", f"[bold blue]{camp}[/bold blue]", "[bold blue]completed[/bold blue]")
-    camp_count += 1
 
 console.print(camp_status_table, style="bold white")
 console.print(Markdown("---"))
