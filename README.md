@@ -108,6 +108,20 @@ I then need to simulate 10 prolonged tests in a row.
 
 - I need to add a counter and once it reaches a certain number I need code to skip the next 10 tests and record them as prolonged.
 
+### Random Combination Generation
+
+**What do I need to do?**
+
+1. Confirm the campaign is using this feature.
+2. Print out the setting boundaries.
+3. Create a log of all tests combinations run - either a file or in a list - most likely a file.
+4. Generate a random combination
+5. Check if its already been generated - if so then generate a new one.
+6. Print out the test title and its combination.
+7. Run the test.
+8. Do the usual stuff.
+9. Then generate a new test.
+
 TODO: 
 - [x] Zip final results
 - [x] Show to user what the buffer duration is.
