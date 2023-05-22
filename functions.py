@@ -101,7 +101,7 @@ def get_combinations_from_config(config):
         try:
             custom_tests_file = campaign['custom_tests_file']
         except KeyError as e:
-            console.print(f"Error parsing config for {campaign['name']}. custom_tests_file does NOT exist:\n\t{campaign['custom_tests_file']}", style="bold red")
+            console.print(f"Error parsing config for {campaign['name']}. No custom_tests_file field found.", style="bold red")
             sys.exit()
         
         # ? File does not exist.
