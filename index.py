@@ -232,6 +232,7 @@ for campaign in campaign_scripts:
     camp_name = campaign['name']
     
     console.print(f"[{format_now()}] [{campaign_scripts.index(campaign) + 1}/{len(campaign_scripts)}] Running Campaign: {camp_name}", style="bold white")
+    console.print(f"\tConfig: {args[0]}")
     
     # ? Make a folder for the campaign.
     camp_dir = create_dir(camp_name.replace(" ", "_"))
