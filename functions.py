@@ -499,3 +499,19 @@ def get_machine_response_statuses(machines):
             })
         
     return machine_statuses
+
+def generate_random_combination(settings):
+    # ? Loop through each setting
+    # ? If the setting has 2 values then generate an integer between those two values.
+    combination = {}
+        
+    for setting, values in settings.items():
+        if len(values) > 1:
+            # ? Sort values from lowest to highest.
+            values = sorted(values)
+            generated_value = random.randint(values[0], values[1])
+        else:
+            generated_value = random.choice(values)
+        combination[setting] = generated_value
+    
+    return combination        

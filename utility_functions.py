@@ -1,19 +1,20 @@
-import fnmatch
-import shutil
-import sys
-import os
-import json
-import paramiko
-import time
 import concurrent.futures
+import fnmatch
+import itertools
+import json
 import math
-import threading
-import re
-import stat
 import multiprocessing
-import zipfile
+import os
+import paramiko
 import random
+import re
+import shutil
+import stat
 import subprocess
+import sys
+import threading
+import time
+import zipfile
 
 from threading import Thread
 from datetime import datetime, timedelta
@@ -86,7 +87,7 @@ def create_dir(dirpath):
     return dirpath
 
 def get_combinations(settings):
-        return [dict( zip(settings, value)) for value in product(*settings.values()) ];
+        return [dict( zip(settings, value)) for value in product(*settings.values()) ]
 
 def get_test_title_from_combination(combination):
     title = ""
