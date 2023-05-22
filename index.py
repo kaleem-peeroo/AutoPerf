@@ -47,8 +47,6 @@ for comb in combinations:
         
     console.print(f"Test titles for {comb['name']} written to [bold blue]{filename}[/bold blue].")
     
-adsf
-
 """
 combinations = [{
     'name': 'camp_name',
