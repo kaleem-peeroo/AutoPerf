@@ -431,7 +431,7 @@ def get_latest_txt_file(dir):
     return max(txt_files, key=lambda x: os.path.getctime(os.path.join(dir, x)))
 
 def zip_folder(folder_path):
-    output_path = f"{folder_path}_raw.zip"
+    output_path = f"{folder_path}.zip"
     zipf = zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED)
     for root, dirs, files in os.walk(folder_path):
         for file in files:

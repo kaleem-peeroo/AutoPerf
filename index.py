@@ -382,5 +382,8 @@ for campaign in campaign_scripts:
     latest_txt = get_latest_txt_file("./")
     # ? Move txt file to campaign folder.
     shutil.copy(latest_txt, camp_dir)
+    # ? Rename the folder to <test_name>_raw
+    os.rename(camp_dir, camp_dir + "_raw")
+    camp_dir = camp_dir + "_raw"
     # ? Zip the campaign folder.
     zip_folder(camp_dir)
