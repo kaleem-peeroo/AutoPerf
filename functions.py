@@ -106,7 +106,7 @@ def get_combinations_from_config(config):
         
         # ? File does not exist.
         if not os.path.exists(custom_tests_file):
-            console.print(f"Couldn't read custom tests file: \n\t{custom_tests_file}\nProceeding with manual generation of all combinations.", style="bold red")
+            console.print(f"Couldn't read custom tests file. Proceeding with manual generation of all combinations.", style="bold red")
 
             comb = get_combinations(campaign['settings'])
             
