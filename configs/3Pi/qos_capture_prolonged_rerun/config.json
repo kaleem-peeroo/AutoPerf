@@ -12,7 +12,7 @@
                 "durability": [0, 1, 2, 3],
                 "latency_count": [100]
             },
-            "custom_tests_files": "configs/3Pi/custom_tests/qos_capture_aa.txt",
+            "custom_tests_file": "configs/3Pi/custom_tests/qos_capture_aa.txt",
             "machines": [
                 {
                     "name": "p1",
@@ -46,7 +46,7 @@
                 "durability": [0, 1, 2, 3],
                 "latency_count": [100]
             },
-            "custom_tests_files": "configs/3Pi/custom_tests/qos_capture_ps.txt",
+            "custom_tests_file": "configs/3Pi/custom_tests/qos_capture_ps.txt",
             "machines": [
                 {
                     "name": "p1",
@@ -80,7 +80,7 @@
                 "durability": [0, 1, 2, 3],
                 "latency_count": [100]
             },
-            "custom_tests_files": "configs/3Pi/custom_tests/qos_capture_sp.txt",
+            "custom_tests_file": "configs/3Pi/custom_tests/qos_capture_sp.txt",
             "machines": [
                 {
                     "name": "p1",
