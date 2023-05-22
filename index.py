@@ -32,6 +32,23 @@ for comb in combinations:
 
 console.print(camp_combinations_table)
 
+# ? Print out the test names per campaign.
+for comb in combinations:
+    filename = comb["name"].lower().replace(" ", "_") + "_test_combinations.txt"
+    
+    test_titles = []
+    
+    for combination in comb["combinations"]:
+        test_title = get_test_title_from_combination(combination)
+        test_titles.append(test_title)
+        
+    with open(filename, "w") as f:
+        f.write("\n".join(test_titles))
+        
+    console.print(f"Test titles for {comb['name']} written to [bold blue]{filename}[/bold blue].")
+    
+adsf
+
 """
 combinations = [{
     'name': 'camp_name',
