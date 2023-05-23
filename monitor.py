@@ -100,18 +100,24 @@ config = ptst_config_contents['campaigns']
 
 camp_names = [item['name'] for item in config]
 
+completed_camps = []
+completed_camp_count = 0
+# ? Check if all campaigns are finished.
+for camp_name in camp_names:
+    new_camp_name = camp_name.replace(" ", "_").lower() + "_raw.zip"
+    if new_camp_name in [file.lower() for file in remote_files]:
+        completed_camps.append(camp_name)
+        completed_camp_count += 1
+
 # ? Get campaign statuses.
 running_camps = []
-for line in running_camp_lines:
-    running_camps.append(line.split(": ")[len(line.split(": ")) - 1])
-
 pending_camps = []
-completed_camps = []
-
-pending_camps = list( set(camp_names) - set(running_camps) )
-
-if len(running_camps) > 1:
-    completed_camps = running_camps[:-1]    
+if len(completed_camps) != len(camp_names):
+    for line in running_camp_lines:
+        running_camps.append(line.split(": ")[len(line.split(": ")) - 1])
+    if len(running_camps) > 1:
+        completed_camps = running_camps[:-1]    
+    pending_camps = list( set(camp_names) - set(running_camps) )
 
 camp_status_table = Table(title="All Campaigns", show_lines=True)
 camp_status_table.add_column("#")
@@ -124,16 +130,22 @@ for camp in completed_camps:
     camp_status_table.add_row(f"{camp_count}", f"[bold blue]{camp}[/bold blue]", "[bold blue]completed[/bold blue]")
     camp_count += 1
 
-camp_status_table.add_row(f"{camp_count}", f"[bold green]{running_camps[0]}[/bold green]", "[bold green]running[/bold green]")
-camp_count += 1
+try:
+    camp_status_table.add_row(f"{camp_count}", f"[bold green]{running_camps[0]}[/bold green]", "[bold green]running[/bold green]")
+    camp_count += 1
+except IndexError:
+    pass
 
 for camp in pending_camps:
     camp_status_table.add_row(f"{camp_count}", f"[bold white]{camp}[/bold white]", "[bold white]pending[/bold white]")
     camp_count += 1
     
-    
-
 console.print(camp_status_table, style="bold white")
+
+if len(completed_camps) == len(camp_names):
+    console.print(Markdown(f"# All campaigns have ended."), style="bold green")
+    sys.exit()
+
 console.print(Markdown("---"))
 
 # ? Get the current campaign.
