@@ -106,110 +106,106 @@ if len(rcg_lines) > 0:
     
     if is_camp_finished:
         camp_dirname = camp_dirname + "_raw"
-        # ? Print out results.
         
-        progress_json = os.path.join(ptstdir, camp_dirname, "progress.json")
-        try:
-            sftp.stat(progress_json)
-        except FileNotFoundError:
-            console.print(f"Couldn't find progress.json for {camp_name}.", style="bold red")
-            sys.exit()
-        
-        test_dirs = [os.path.join(ptstdir, camp_dirname, file) for file in sftp.listdir(os.path.join(ptstdir, camp_dirname)) if not file.endswith(".txt") and not file.endswith(".json")]
+    progress_json = os.path.join(ptstdir, camp_dirname, "progress.json")
+    try:
+        sftp.stat(progress_json)
+    except FileNotFoundError:
+        console.print(f"Couldn't find progress.json for {camp_name}.", style="bold red")
+        sys.exit()
+    
+    test_dirs = [os.path.join(ptstdir, camp_dirname, file) for file in sftp.listdir(os.path.join(ptstdir, camp_dirname)) if not file.endswith(".txt") and not file.endswith(".json")]
 
-        if len(test_dirs) == 0:
-            console.print(f"No tests found in {camp_dirname}.", style="bold red")
-            sys.exit()
-        
-        usable_count = 0
+    if len(test_dirs) == 0:
+        console.print(f"No tests found in {camp_dirname}.", style="bold red")
+        sys.exit()
+    
+    usable_count = 0
 
-        for i in track(range(len(test_dirs)), description="Analysing tests..."):
-            test_dir = test_dirs[i]
-            split_string = os.path.basename(test_dir).split("_")
-            s_index = [i for i, s in enumerate(split_string) if 'S' in s][0]
-            s_num = int(split_string[s_index].strip('S'))
-            expected_csv_count = int(s_num) + 1
-            csv_count = len([_ for _ in sftp.listdir(test_dir) if '.csv' in _])
-            
-            if expected_csv_count == csv_count:
-                usable_count += 1
+    for i in track(range(len(test_dirs)), description="Analysing tests..."):
+        test_dir = test_dirs[i]
+        split_string = os.path.basename(test_dir).split("_")
+        s_index = [i for i, s in enumerate(split_string) if 'S' in s][0]
+        s_num = int(split_string[s_index].strip('S'))
+        expected_csv_count = int(s_num) + 1
+        csv_count = len([_ for _ in sftp.listdir(test_dir) if '.csv' in _])
         
-        # ? Read progress.json for campaign.
-        progress_json = sftp.open(progress_json, 'r')
-        progress_contents = json.load(progress_json)
-        progress_json.close()
+        if expected_csv_count == csv_count:
+            usable_count += 1
+    
+    # ? Read progress.json for campaign.
+    progress_json = sftp.open(progress_json, 'r')
+    progress_contents = json.load(progress_json)
+    progress_json.close()
 
-        # ? Count test statuses.
-        status_counts = {"punctual": 0, "prolonged": 0}
-        statuses = []
-        for item in progress_contents:
-            status = item["status"]
-            status_counts[status] +=1
-            statuses.append(item['status'])
-            
-        all_statuses = []
-        for status in statuses:
-            if "prolonged" in status:
-                all_statuses.append("🔴")
-            else:
-                all_statuses.append("🟢")
-                    
-        all_statuses_output = ""
-        for i, item in enumerate(all_statuses):
-            all_statuses_output += f"{item} "
-            if (i + 1) % 20 == 0:
-                all_statuses_output += "\n"
+    # ? Count test statuses.
+    status_counts = {"punctual": 0, "prolonged": 0}
+    statuses = []
+    for item in progress_contents:
+        status = item["status"]
+        status_counts[status] +=1
+        statuses.append(item['status'])
+        
+    all_statuses = []
+    for status in statuses:
+        if "prolonged" in status:
+            all_statuses.append("🔴")
+        else:
+            all_statuses.append("🟢")
                 
-        # ? Get punctual, prolonged, and total test count.
-        punctual_test_count = status_counts['punctual']
-        prolonged_test_count = status_counts['prolonged']
-        completed_test_count = len(progress_contents)
+    all_statuses_output = ""
+    for i, item in enumerate(all_statuses):
+        all_statuses_output += f"{item} "
+        if (i + 1) % 20 == 0:
+            all_statuses_output += "\n"
+            
+    # ? Get punctual, prolonged, and total test count.
+    punctual_test_count = status_counts['punctual']
+    prolonged_test_count = status_counts['prolonged']
+    completed_test_count = len(progress_contents)
 
-        usable_percentage = round(usable_count / completed_test_count * 100) if completed_test_count > 0 else 0
+    usable_percentage = round(usable_count / completed_test_count * 100) if completed_test_count > 0 else 0
 
-        punctual_test_percent = round(punctual_test_count / completed_test_count * 100) if completed_test_count > 0 else 0
-        prolonged_test_percent = round(prolonged_test_count / completed_test_count * 100) if completed_test_count > 0 else 0
+    punctual_test_percent = round(punctual_test_count / completed_test_count * 100) if completed_test_count > 0 else 0
+    prolonged_test_percent = round(prolonged_test_count / completed_test_count * 100) if completed_test_count > 0 else 0
 
-        completed_test_percent = round(completed_test_count / total_test_count * 100) if completed_test_count > 0 else 0
+    completed_test_percent = round(completed_test_count / total_test_count * 100) if completed_test_count > 0 else 0
 
-        punctual_bar = Bar(
-            size=100,
-            begin=0,
-            end=punctual_test_percent,
-            color="green"
-        )
+    punctual_bar = Bar(
+        size=100,
+        begin=0,
+        end=punctual_test_percent,
+        color="green"
+    )
 
-        prolonged_bar = Bar(
-            size=100,
-            begin=punctual_test_percent,
-            end=100,
-            color="red"
-        )
+    prolonged_bar = Bar(
+        size=100,
+        begin=punctual_test_percent,
+        end=100,
+        color="red"
+    )
 
-        table = Table(title=f"Tests Stats for {camp_name}", show_lines=True, show_header=False)
-        table.add_row("[bold blue]Completed Tests[/bold blue]", f"[bold blue]{completed_test_count}/{total_test_count} ({completed_test_percent}%)[/bold blue]")
-        table.add_row("[bold green]Punctual Tests[/bold green]", f"[bold green]{punctual_test_count}/{completed_test_count} ({punctual_test_percent}%)[/bold green]")
-        table.add_row("[bold red]Prolonged Tests[/bold red]", f"[bold red]{prolonged_test_count}/{completed_test_count} ({prolonged_test_percent}%)[/bold red]")
-        table.add_row("[bold green]Usable Tests[/bold green]", f"[bold green]{usable_count}/{completed_test_count} ({usable_percentage}%)[/bold green]")
-        table.add_row("All Test Statuses (20 per row)", f"{all_statuses_output}", end_section=True)
-        table.add_row("[bold underline]Settings[/bold underline]", "")
-        for key, value in camp_settings.items():
-            if isinstance(value, list) and len(value) == 2:
-                if all(isinstance(v, int) for v in value) and value != [0, 1] and value != [True, False]:
-                    table.add_row(f"[bold]{key}[/bold]", f"{value[0]} ... {value[1]}")
-                else:
-                    value_str = ", ".join(str(v) for v in value if isinstance(v, int))
-                    table.add_row(f"[bold]{key}[/bold]", value_str)
+    table = Table(title=f"Tests Stats for {camp_name}", show_lines=True, show_header=False)
+    table.add_row("[bold blue]Completed Tests[/bold blue]", f"[bold blue]{completed_test_count}/{total_test_count} ({completed_test_percent}%)[/bold blue]")
+    table.add_row("[bold green]Punctual Tests[/bold green]", f"[bold green]{punctual_test_count}/{completed_test_count} ({punctual_test_percent}%)[/bold green]")
+    table.add_row("[bold red]Prolonged Tests[/bold red]", f"[bold red]{prolonged_test_count}/{completed_test_count} ({prolonged_test_percent}%)[/bold red]")
+    table.add_row("[bold green]Usable Tests[/bold green]", f"[bold green]{usable_count}/{completed_test_count} ({usable_percentage}%)[/bold green]")
+    table.add_row("All Test Statuses (20 per row)", f"{all_statuses_output}", end_section=True)
+    table.add_row("[bold underline]Settings[/bold underline]", "")
+    for key, value in camp_settings.items():
+        if isinstance(value, list) and len(value) == 2:
+            if all(isinstance(v, int) for v in value) and value != [0, 1] and value != [True, False]:
+                table.add_row(f"[bold]{key}[/bold]", f"{value[0]} ... {value[1]}")
             else:
-                table.add_row(f"[bold]{key}[/bold]", str(value[0]))    
+                value_str = ", ".join(str(v) for v in value if isinstance(v, int))
+                table.add_row(f"[bold]{key}[/bold]", value_str)
+        else:
+            table.add_row(f"[bold]{key}[/bold]", str(value[0]))    
 
-        console.print(table)
+    console.print(table)
 
-        console.print(Markdown("# All Campaigns Finished."), style="bold green")
+    console.print(Markdown("# All Campaigns Finished."), style="bold green")
         
-    else:
-        # ? Get the current test count.
-        console.print(f"Campaign in progress.", style="bold white")
         
 else:
     """
