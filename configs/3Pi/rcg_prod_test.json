@@ -1,11 +1,13 @@
 [
     {
         "name": "PTST Production Test",
+        "random_combination_generation": true,
+        "random_combination_count": 10,
         "settings": {
             "duration_s": [10],
             "datalen_bytes": [100],
-            "pub_count": [1, 5],
-            "sub_count": [1, 5],
+            "pub_count": [1],
+            "sub_count": [1],
             "reliability": [true],
             "use_multicast": [true],
             "durability": [0],
