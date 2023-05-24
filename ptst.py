@@ -3,11 +3,34 @@ import argparse
 import os
 import json
 import sys
+import time
+import subprocess
+import signal
 
 from pprint import pprint
+from datetime import datetime
 from rich.console import Console
+from multiprocessing import Process, Manager
 
 console = Console()
+
+def ssh_to_machine(machine, script_string, timeout, machine_statuses):
+    ssh_command = f"ssh {machine['username']}@{machine['host']} '{script_string}'"
+    process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+        status = "punctual"
+    except subprocess.TimeoutExpired:
+        process.send_signal(signal.SIGINT)
+        stdout, stderr = process.communicate()
+        status = "prolonged"
+    except Exception as e:
+        status = "error"
+
+    machine_statuses.append(status)
+
+    return stdout, stderr
 
 def generate_scripts(permutation):
     script_base = ""
@@ -195,6 +218,7 @@ def distribute_scripts(scripts, machines):
         script_string = '&'.join(scripts)
         script_string = script_string.replace(';;', ';')
         script_string = script_string[:script_string.find(';')+1] + script_string[script_string.find(';')+1:].replace(';', ' & ')
+        script_string = script_string.replace(";&", ";")
         scripts_per_machine_list.append(script_string)
     
     return scripts_per_machine_list
@@ -231,24 +255,57 @@ def main():
 
         # Generate all possible permutations of settings values if random combination generation is disabled
         if not campaign.get('random_combination_generation', False):
-            permutations_list = []  # Create an empty list to store all permutations
+            permutations_list = []
+            statuses = []
             
             settings = campaign['settings']
             setting_names = list(settings.keys())
             setting_values = [settings[name] for name in setting_names]
             permutations = list(itertools.product(*setting_values))
             
-            for permutation in permutations:
+            for i, permutation in enumerate(permutations):
+                start_time = time.time()
                 permutation_name = generate_permutation_name(permutation)
+                console.print(f"[{i + 1}/{len(permutations)}] Running {permutation_name}...")
                 permutations_list.append(permutation)
                 scripts = generate_scripts(permutation)
                 machines = campaign['machines']
                 scripts_per_machine_list = distribute_scripts(scripts, machines)
                 
-                for i, machine in enumerate(machines):
-                    print(f"Machine {i+1} scripts:")
-                    print(scripts_per_machine_list[i])
-                    print()
+                with Manager() as manager:
+                    machine_statuses = manager.list()
+                    
+                    processes = []
+                    for i, machine in enumerate(machines):
+                        script_string = scripts_per_machine_list[i]
+                        duration_s = campaign.get('duration_s', 60)
+                        timeout = duration_s + buffer_duration
+                        process = Process(target=ssh_to_machine, args=(machine, script_string, timeout, machine_statuses))
+                        processes.append(process)
+                        process.start()
+
+                    for process in processes:
+                        process.join()
+
+                    # Write the statuses to a file
+                    statuses_file = campaign_name.lower().replace(" ", "_") + "_statuses.json"
+                    with open(statuses_file, 'a') as f:
+                        end_time = time.time()
+                        start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+                        end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
+                        result = {
+                            'permutation_name': permutation_name, 
+                            'machine_statuses': list(machine_statuses),
+                            'start_time': start_time_str,
+                            'end_time': end_time_str,
+                            'duration_s': int(end_time - start_time)
+                        }
+                        json.dump(result, f, indent=4)
+                        f.write(',\n')
+                        
+                console.print(f"[bold green]{permutation_name} completed in {time.time() - start_time:.2f} seconds[/bold green]")
+
+            console.print(f"[bold green]Campaign {campaign_name} completed successfully![/bold green]")
             
 
 if __name__ == '__main__':
