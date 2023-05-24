@@ -1,7 +1,7 @@
 {
     "name": "Random Settings Generation Test - Dedicated PS",
     "random_generation": true,
-    "generated_test_count": 100,
+    "generated_test_count": 10,
     "settings": {
         "duration_s": [600],
         "datalen_bytes": [1, 128000],
