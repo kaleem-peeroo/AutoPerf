@@ -64,25 +64,20 @@ Then PTST will wait up to 90 seconds (60 * 1.5) for the test to finish before in
 
 For debug mode just add `debug`:
 ```bash
-python index.py path/to/config.json debug
+python index.py path/to/config.json 1.5 debug
 ```
 
 For test mode just add `test_mode`:
 ```bash
-python index.py path/to/config.json test_mode
+python index.py path/to/config.json 1.5 test_mode
 ```
 
 `test_mode` is when you want to pretend like you are running tests without actually sshing into machines and running scripts.
-
 - It'll randomly produced punctual and prolonged tests
 
 ## Features
 
 ### Prolonged Tests Monitor
-
-**What do I need to do?**
-
-I need to implement the following functionality:
 
 1. Monitor the percentage of prolonged tests throughout the campaign.
 2. If 5 tests have finished and they have all been prolonged and the prolonged percentage doesn’t decrease then do the following:
@@ -91,22 +86,6 @@ I need to implement the following functionality:
     2. Finalise the campaign
         1. Move the output.txt and zip the results.
         2. Create file explaining which machines didn’t respond.
-
-- How should I keep track of the test progresses?
-    - Read the progress.json file or keep track in a dictionary?
-- Where do I implement the check for lack of response?
-    - After each test.
-        - Do the numbered steps above.
-
-**How can I test this?**
-
-I need to somehow simulate a series of x punctual tests and y prolonged tests.
-
-- I’ll put a randomiser in PTST to skip running the test and instead just record it as a random punctual/prolonged test.
-
-I then need to simulate 10 prolonged tests in a row.
-
-- I need to add a counter and once it reaches a certain number I need code to skip the next 10 tests and record them as prolonged.
 
 ### Random Combination Generation
 
@@ -129,7 +108,7 @@ TODO:
 - [x] Record if test failed or not.
 - [x] Why are empty leftovers folders being made?
 - [x] Show test progress.
-- [ ] Handle unresponsive machines.
+- [x] Handle unresponsive machines.
 
 # Monitor
 Script used to check up on the controllers. The controllers are running PTST. `monitor.py` will basically SSH into the controllers and return the status of the campaign. It'll basically show you the following in a table format:
