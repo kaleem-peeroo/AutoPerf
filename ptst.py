@@ -6,6 +6,7 @@ import sys
 import time
 import subprocess
 import signal
+import zipfile
 
 from pprint import pprint
 from datetime import datetime
@@ -14,22 +15,38 @@ from multiprocessing import Process, Manager
 
 console = Console()
 
+def zip_folder(folder_path):
+    output_path = folder_path + ".zip"
+    with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                zip_file.write(file_path, os.path.relpath(file_path, folder_path))
+
 def ping_machine(machine):
     ping_command = f"ping -c 1 {machine['host']}"
     process = subprocess.run(ping_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output = process.stdout.decode()
     return "1 received" in output
 
-def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, test_name, campaign_folder, max_retries=20):
+def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, test_name, campaign_folder, max_retries=10):
+    status = {
+        "host": machine['host'],
+        "name": machine['name'],
+        "status": "unknown",
+        "pings": 0,
+    }    
+    
     machine_name = machine['name']
     test_folder = os.path.join(campaign_folder, test_name)
     
     for i in range(max_retries):
         # console.print(f"Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
         if ping_machine(machine):
+            status['pings'] = i + 1
             break
         if i == max_retries - 1:
-            status = "unreachable"
+            status['status'] = "unreachable"
             return None, None
         time.sleep(1)
     
@@ -42,7 +59,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             if ping_machine(other_machine):
                 break
             if i == max_retries - 1:
-                status = f"{other_machine_name} unreachable from {machine_name}"
+                status['status'] = f"{other_machine_name} unreachable from {machine_name}"
                 return None, None
             time.sleep(1)
     
@@ -54,26 +71,24 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     while True:
         if process.poll() is not None:
             stdout, stderr = process.communicate()
-            status = "punctual"
+            status['status'] = "punctual"
             break
         elif time.time() - start_time > timeout:
             process.kill()
             stdout, stderr = process.communicate()
-            status = "prolonged"
+            status['status'] = "prolonged"
             break
         time.sleep(1)
 
-    console.print(f"{machine_name}: Status: {status}", style="bold white")
-
     os.makedirs(test_folder, exist_ok=True)
 
-    if status == "punctual":
+    if status['status'] == "punctual":
         remote_files_command = f"ssh {machine['username']}@{machine['host']} 'ls *.csv'"
         remote_files_process = subprocess.run(remote_files_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         remote_files = remote_files_process.stdout.decode().split()
         
         if len(remote_files) == 0:
-            status = "no csv files"
+            status['status'] = "no csv files"
             # console.print(f"No csv files found for {test_name} on {machine_name}.", style="bold red")
         else:
             for remote_file in remote_files:
@@ -323,6 +338,12 @@ def main():
         campaign_folder = campaign_name.lower().replace(' ', '_')
         os.makedirs(campaign_folder, exist_ok=True)
 
+        statuses_file = campaign_name.lower().replace(" ", "_") + "_statuses.json"
+        
+        # ? Start status file with [
+        with open(statuses_file, 'w') as f:
+            f.write('[')
+        
         # Generate all possible permutations of settings values if random combination generation is disabled
         if not campaign.get('random_combination_generation', False):
             permutations_list = []
@@ -364,7 +385,6 @@ def main():
                             console.print(f"Caught exception from Process: {e}", style="bold red")
 
                     # Write the statuses to a file
-                    statuses_file = campaign_name.lower().replace(" ", "_") + "_statuses.json"
                     with open(statuses_file, 'a') as f:
                         end_time = time.time()
                         start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
@@ -382,6 +402,19 @@ def main():
                 console.print(f"[bold green]{permutation_name} completed in {time.time() - start_time:.2f} seconds[/bold green]")
 
             console.print(f"[bold green]Campaign {campaign_name} completed successfully![/bold green]")
+            
+            # ? End the status file with ]
+            with open(statuses_file, 'a') as f:
+                f.write(']')
+                
+            # ? Move the status file to the campaign folder
+            os.rename(statuses_file, os.path.join(campaign_folder, statuses_file))
+            
+            # ? Rename the campaign folder to add _raw at the end
+            os.rename(campaign_folder, campaign_folder + '_raw')
+            
+            # ? Zip the campaign folder
+            zip_folder(campaign_folder)
             
 
 if __name__ == '__main__':
