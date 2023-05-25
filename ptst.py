@@ -460,13 +460,6 @@ def main():
             with open(statuses_file, 'a') as f:
                 f.write(']')
             
-            # ? Update the status file and remove the last ,
-            with open(statuses_file, 'r') as f:
-                data = f.read()
-            data = data.rstrip(',')
-            with open(statuses_file, 'w') as f:
-                f.write(data)
-                            
             # ? Move the status file to the campaign folder
             os.rename(statuses_file, os.path.join(campaign_folder, statuses_file))
             
