@@ -14,7 +14,9 @@ from multiprocessing import Process, Manager
 
 console = Console()
 
-def ssh_to_machine(machine, script_string, timeout, machine_statuses):
+def ssh_to_machine(machine, script_string, timeout, machine_statuses, test_name, campaign_folder):
+    test_folder = os.path.join(campaign_folder, test_name)
+    
     ssh_command = f"ssh {machine['username']}@{machine['host']} '{script_string}'"
     process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -27,6 +29,29 @@ def ssh_to_machine(machine, script_string, timeout, machine_statuses):
         status = "prolonged"
     except Exception as e:
         status = "error"
+
+    os.makedirs(test_folder, exist_ok=True)
+
+    if status == "punctual":
+        remote_files_command = f"ssh {machine['username']}@{machine['host']} 'ls *.csv'"
+        remote_files_process = subprocess.run(remote_files_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        remote_files = remote_files_process.stdout.decode().split()
+        
+        if len(remote_files) == 0:
+            status = "no csv files"
+            console.print(f"No csv files found for {test_name} on {machine['name']}.", style="bold red")
+        else:
+            for remote_file in remote_files:
+                remote_path = remote_file
+                local_path = os.path.join(test_folder, f"{remote_file}")
+                scp_command = f"scp {machine['username']}@{machine['host']}:{remote_path} {local_path}"
+                # ? Suppress scp output
+                with open(os.devnull, 'w') as devnull:
+                    subprocess.run(scp_command, shell=True, stdout=devnull)
+            
+            # ? Delete all csv files on remote machine
+            ssh_command = f"ssh {machine['username']}@{machine['host']} 'rm *.csv'"
+            subprocess.run(ssh_command, shell=True)
 
     machine_statuses.append(status)
 
@@ -245,7 +270,6 @@ def main():
 
     if not validate_config(config_data):
         exit()
-        
 
     # Loop through each campaign in the config file and create a folder for that campaign
     for campaign in config_data:
@@ -280,7 +304,7 @@ def main():
                         script_string = scripts_per_machine_list[i]
                         duration_s = campaign.get('duration_s', 60)
                         timeout = duration_s + buffer_duration
-                        process = Process(target=ssh_to_machine, args=(machine, script_string, timeout, machine_statuses))
+                        process = Process(target=ssh_to_machine, args=(machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder))
                         processes.append(process)
                         process.start()
 
