@@ -87,7 +87,6 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         
         if len(remote_files) == 0:
             status['status'] = "no csv files"
-            console.print(f"No csv files found for {test_name} on {machine_name}.", style="bold red")
         else:
             os.makedirs(test_folder, exist_ok=True)
             
@@ -348,6 +347,7 @@ def main():
         if not campaign.get('random_combination_generation', False):
             permutations_list = []
             statuses = []
+            retry_permutations = []
             
             settings = campaign['settings']
             setting_names = list(settings.keys())
@@ -384,24 +384,77 @@ def main():
                         except Exception as e:
                             console.print(f"Caught exception from Process: {e}", style="bold red")
 
-                    # Write the statuses to a file
-                    with open(statuses_file, 'a') as f:
-                        end_time = time.time()
-                        start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
-                        end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
-                        result = {
-                            'permutation_name': permutation_name, 
-                            'machine_statuses': list(machine_statuses),
-                            'start_time': start_time_str,
-                            'end_time': end_time_str,
-                            'duration_s': int(end_time - start_time)
-                        }
-                        json.dump(result, f, indent=4)
-                        f.write(',\n')
+                    # ? Check if all machines returned no csv files and add to retry_permutations if so
+                    all_no_csv_files = all("no csv files" in status['status'] for status in machine_statuses)
+                    if all_no_csv_files:
+                        retry_permutations.append(permutation)
+                    else:
+                        # Write the statuses to a file
+                        with open(statuses_file, 'a') as f:
+                            end_time = time.time()
+                            start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+                            end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
+                            result = {
+                                'permutation_name': permutation_name, 
+                                'machine_statuses': list(machine_statuses),
+                                'start_time': start_time_str,
+                                'end_time': end_time_str,
+                                'duration_s': int(end_time - start_time)
+                            }
+                            json.dump(result, f, indent=4)
+                            f.write(',\n')
                         
                 console.print(f"[bold green]{permutation_name} completed in {time.time() - start_time:.2f} seconds[/bold green]")
 
-            console.print(f"[bold green]Campaign {campaign_name} completed successfully![/bold green]")
+            if len(retry_permutations) > 0:
+                console.print(f"{len(retry_permutations)} tests failed. Retrying...", style="bold red")
+                # ? Check for retry_permutations and run them again
+                for i, permutation in enumerate(retry_permutations):
+                    start_time = time.time()
+                    permutation_name = generate_permutation_name(permutation)
+                    console.print(f"[{i + 1}/{len(permutations)}] Retrying {permutation_name}...")
+                    permutations_list.append(permutation)
+                    scripts = generate_scripts(permutation)
+                    machines = campaign['machines']
+                    scripts_per_machine_list = distribute_scripts(scripts, machines)
+                    
+                    with Manager() as manager:
+                        machine_statuses = manager.list()
+                        
+                        processes = []
+                        for i, machine in enumerate(machines):
+                            script_string = scripts_per_machine_list[i]
+                            duration_s = campaign.get('duration_s', 60)
+                            timeout = duration_s + buffer_duration
+                            process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder))
+                            processes.append(process)
+                            try:
+                                process.start()
+                            except Exception as e:
+                                console.print(f"Caught exception from Process: {e}", style="bold red")
+
+                        for process in processes:
+                            try:
+                                process.join()
+                            except Exception as e:
+                                console.print(f"Caught exception from Process: {e}", style="bold red")
+
+                        # Write the statuses to a file
+                        with open(statuses_file, 'a') as f:
+                            end_time = time.time()
+                            start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+                            end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
+                            result = {
+                                'permutation_name': permutation_name, 
+                                'machine_statuses': list(machine_statuses),
+                                'start_time': start_time_str,
+                                'end_time': end_time_str,
+                                'duration_s': int(end_time - start_time)
+                            }
+                            json.dump(result, f, indent=4)
+                            f.write(',\n')
+            else:
+                console.print(f"[bold green]Campaign {campaign_name} completed successfully![/bold green]")
             
             # ? End the status file with ]
             with open(statuses_file, 'a') as f:
@@ -417,8 +470,14 @@ def main():
             # ? Move the status file to the campaign folder
             os.rename(statuses_file, os.path.join(campaign_folder, statuses_file))
             
+            if os.path.exists(campaign_folder + "_raw"):
+                os.rename(campaign_folder + "_raw", campaign_folder + "_raw_1")
+                new_name = campaign_folder + "_raw_2"
+            else:
+                new_name = campaign_folder + "_raw"
+            
             # ? Rename the campaign folder to add _raw at the end
-            os.rename(campaign_folder, campaign_folder + '_raw')
+            os.rename(campaign_folder, new_name)
             
             # ? Zip the campaign folder
             zip_folder(campaign_folder)
