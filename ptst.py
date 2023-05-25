@@ -14,21 +14,56 @@ from multiprocessing import Process, Manager
 
 console = Console()
 
-def ssh_to_machine(machine, script_string, timeout, machine_statuses, test_name, campaign_folder):
+def ping_machine(machine):
+    ping_command = f"ping -c 1 {machine['host']}"
+    process = subprocess.run(ping_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output = process.stdout.decode()
+    return "1 received" in output
+
+def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, test_name, campaign_folder, max_retries=20):
+    machine_name = machine['name']
     test_folder = os.path.join(campaign_folder, test_name)
     
+    for i in range(max_retries):
+        # console.print(f"Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
+        if ping_machine(machine):
+            break
+        if i == max_retries - 1:
+            status = "unreachable"
+            return None, None
+        time.sleep(1)
+    
+    # ? Ping other machines to make sure they are good to go.
+    other_machines = [m for m in machines if m['name'] != machine_name]
+    for other_machine in other_machines:
+        other_machine_name = other_machine['name']
+        for i in range(max_retries):
+            # console.print(f"Pinging {other_machine_name} from {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
+            if ping_machine(other_machine):
+                break
+            if i == max_retries - 1:
+                status = f"{other_machine_name} unreachable from {machine_name}"
+                return None, None
+            time.sleep(1)
+    
+    # console.print(f"{machine_name}: Running scripts...", style="bold white")
     ssh_command = f"ssh {machine['username']}@{machine['host']} '{script_string}'"
     process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    try:
-        stdout, stderr = process.communicate(timeout=timeout)
-        status = "punctual"
-    except subprocess.TimeoutExpired:
-        process.send_signal(signal.SIGINT)
-        stdout, stderr = process.communicate()
-        status = "prolonged"
-    except Exception as e:
-        status = "error"
+    start_time = time.time()
+    while True:
+        if process.poll() is not None:
+            stdout, stderr = process.communicate()
+            status = "punctual"
+            break
+        elif time.time() - start_time > timeout:
+            process.kill()
+            stdout, stderr = process.communicate()
+            status = "prolonged"
+            break
+        time.sleep(1)
+
+    console.print(f"{machine_name}: Status: {status}", style="bold white")
 
     os.makedirs(test_folder, exist_ok=True)
 
@@ -39,19 +74,30 @@ def ssh_to_machine(machine, script_string, timeout, machine_statuses, test_name,
         
         if len(remote_files) == 0:
             status = "no csv files"
-            console.print(f"No csv files found for {test_name} on {machine['name']}.", style="bold red")
+            # console.print(f"No csv files found for {test_name} on {machine_name}.", style="bold red")
         else:
             for remote_file in remote_files:
                 remote_path = remote_file
                 local_path = os.path.join(test_folder, f"{remote_file}")
                 scp_command = f"scp {machine['username']}@{machine['host']}:{remote_path} {local_path}"
-                # ? Suppress scp output
+                # console.print(f"{machine_name}: Downloading csv files...", style="bold white")
                 with open(os.devnull, 'w') as devnull:
                     subprocess.run(scp_command, shell=True, stdout=devnull)
             
+            # console.print(f"{machine_name}: Deleting csv files...", style="bold white")
             # ? Delete all csv files on remote machine
             ssh_command = f"ssh {machine['username']}@{machine['host']} 'rm *.csv'"
-            subprocess.run(ssh_command, shell=True)
+            with open(os.devnull, 'w') as devnull:
+                subprocess.run(ssh_command, shell=True, stdout=devnull)
+
+    # console.print(f"{machine_name} Restarting machine...")
+    # ? Restart the machine.
+    ssh_command = f"ssh {machine['username']}@{machine['host']} 'sudo reboot'"
+    with open(os.devnull, 'w') as devnull:
+        subprocess.run(ssh_command, shell=True, stdout=devnull)
+        
+    # ? Wait some time for restart to happen.
+    time.sleep(5)
 
     machine_statuses.append(status)
 
@@ -121,7 +167,7 @@ def generate_scripts(permutation):
     return updated_scripts
 
 def generate_permutation_name(permutation):
-    duration_s = f"{permutation[0]}S"
+    duration_s = f"{permutation[0]}SEC"
     datalen_bytes = f"{permutation[1]}B"
     pub_count = f"{permutation[2]}P"
     sub_count = f"{permutation[3]}S"
@@ -304,12 +350,18 @@ def main():
                         script_string = scripts_per_machine_list[i]
                         duration_s = campaign.get('duration_s', 60)
                         timeout = duration_s + buffer_duration
-                        process = Process(target=ssh_to_machine, args=(machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder))
+                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder))
                         processes.append(process)
-                        process.start()
+                        try:
+                            process.start()
+                        except Exception as e:
+                            console.print(f"Caught exception from Process: {e}", style="bold red")
 
                     for process in processes:
-                        process.join()
+                        try:
+                            process.join()
+                        except Exception as e:
+                            console.print(f"Caught exception from Process: {e}", style="bold red")
 
                     # Write the statuses to a file
                     statuses_file = campaign_name.lower().replace(" ", "_") + "_statuses.json"
