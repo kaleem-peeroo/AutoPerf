@@ -11,9 +11,45 @@ import zipfile
 from pprint import pprint
 from datetime import datetime
 from rich.console import Console
+from rich.table import Table
 from multiprocessing import Process, Manager
 
 console = Console()
+
+def get_machine_response_statuses(machines):
+    machine_statuses = []
+
+    for machine in machines:
+        name = machine['name']
+        host = machine['host']
+        username = machine['username']
+        ssh_key = machine['ssh_key']
+        
+        response = os.system(f"ping -c 1 {host} > /dev/null 2>&1")
+        
+        if response == 0:
+            ping_response = True
+            # ? Check if machine is accessible via SSH
+            ssh_command = f"ssh -i {ssh_key} {username}@{host} 'echo 1' > /dev/null 2>&1"
+            ssh_response = subprocess.run(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+            if ssh_response.returncode == 0:
+                ssh_response = True
+            else:
+                ssh_response = False
+                
+        else:
+            ping_response = False
+            ssh_response = False
+            
+        machine_statuses.append({
+            'name': name,
+            'host': host,
+            'ping_response': ping_response,
+            'ssh_response': ssh_response
+        })
+        
+    return machine_statuses
 
 def zip_folder(folder_path):
     output_path = folder_path + ".zip"
@@ -29,12 +65,22 @@ def ping_machine(machine):
     output = process.stdout.decode()
     return "1 received" in output
 
+def test_ssh(machine):
+    ssh_command = f"ssh -o BatchMode=yes {machine['host']} echo ok"
+    process = subprocess.run(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output = process.stdout.decode()
+    if "ok" in output:
+        return True
+    else:
+        return False
+
 def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, test_name, campaign_folder, max_retries=10):
     status = {
         "host": machine['host'],
         "name": machine['name'],
         "status": "unknown",
         "pings": 0,
+        "ssh_pings": 0
     }    
     
     machine_name = machine['name']
@@ -47,6 +93,18 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             break
         if i == max_retries - 1:
             status['status'] = "unreachable"
+            machine_statuses.append(status)
+            return None, None
+        time.sleep(1)
+        
+    for i in range(max_retries):
+        console.print(f"SSH Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
+        if test_ssh(machine):
+            status['ssh_pings'] = i + 1
+            break
+        if i == max_retries - 1:
+            status['status'] = "unreachable"
+            machine_statuses.append(status)
             return None, None
         time.sleep(1)
     
@@ -60,10 +118,11 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
                 break
             if i == max_retries - 1:
                 status['status'] = f"{other_machine_name} unreachable from {machine_name}"
+                machine_statuses.append(status)
                 return None, None
             time.sleep(1)
     
-    delete_logs_command = f"find {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete"
+    delete_logs_command = f"find {machine['home_dir']} -type f \( -name \"*.log\" -o -name \"*sar_logs*\" \) -delete"
     start_logs_command = f"sar -A -o sar_logs 1 {timeout} >/dev/null 2>&1 &"
     
     # ? Delete all logs on remote machine
@@ -73,9 +132,11 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     stdout, stderr = process.communicate()
     if process.returncode != 0:
         console.print(f"{machine_name}: Delete logs failed", style="bold red")
+        console.print(ssh_command)
         console.print(stdout)
         console.print(stderr)
         status['status'] = "delete logs failed"
+        machine_statuses.append(status)
         return None, None
     
     # ? Start logging on remote machine
@@ -88,6 +149,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         console.print(stdout)
         console.print(stderr)
         status['status'] = "start logs failed"
+        machine_statuses.append(status)
         return None, None
 
     # ? Run scripts on remote machine
@@ -146,8 +208,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         console.print(ssh_command)
         console.print(stdout)
         console.print(stderr)
-        status['status'] = "parse cpu logs failed"
-        return None, None
+        status['status'] = status['status'] + "\nparse cpu logs failed"
     
     # ? Parse memory logs on remote machine
     console.print(f"{machine_name}: Parsing mem logs...", style="bold white")
@@ -158,8 +219,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         console.print(f"{machine_name}: Parse MEM logs failed", style="bold red")
         console.print(stdout)
         console.print(stderr)
-        status['status'] = "parse mem logs failed"
-        return None, None
+        status['status'] = status['status'] + "\nparse mem logs failed"
 
     # ? Parse network logs on remote machine
     console.print(f"{machine_name}: Parsing network logs...", style="bold white")
@@ -170,10 +230,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         stdout, stderr = process.communicate()
         if process.returncode != 0:
             console.print(f"{machine_name}: Parse {network_option} logs failed", style="bold red")
-            status['status'] = f"parse {network_option.lower()} logs failed"
-            console.print(stdout)
-            console.print(stderr)
-            return None, None
+            status['status'] = status['status'] + f"\nparse {network_option.lower()} logs failed"
 
     # ? Download all .logs from remote machine
     remote_files_command = f"ssh {machine['username']}@{machine['host']} 'ls *.log'"
@@ -458,6 +515,53 @@ def main():
                 machines = campaign['machines']
                 scripts_per_machine_list = distribute_scripts(scripts, machines)
                 
+                # ? Break if the last 10 tests have unreachable statuses
+                # ? Get the amount of unreachable statuses in the last 10 tests
+                last_10_statuses = statuses[-10:]
+                unreachable_count = sum(1 for status in last_10_statuses if 'unreachable' in [machine_status['status'] for machine_status in status['machine_statuses']])
+                if unreachable_count == 10:
+                    console.print(f"Machines have been [bold red]UNREACHABLE[/bold red] for the last 10 tests. Diagnosing issue.", style="bold white")
+                    
+                    machine_response_statuses = get_machine_response_statuses(machines)
+                    
+                    machine_response_table = Table(title="Machine Response Statuses")
+                    machine_response_table.add_column("Host", justify="center")
+                    machine_response_table.add_column("IP", justify="center")
+                    machine_response_table.add_column("Response (Ping/SSH)", justify="center")
+
+                    for machine in machine_response_statuses:
+                        ping_emoji = "✅" if machine['ping_response'] else "❌"
+                        ssh_emoji = "✅" if machine['ssh_response'] else "❌"
+                        machine_response_table.add_row(machine['name'], machine['host'], f"{ping_emoji}/{ssh_emoji}")
+
+                    console.print(machine_response_table)
+                    
+                    # ? Write machine response statuses to json file.
+                    machine_response_status_json = os.path.join(campaign_folder, 'machine_status_response.json')
+                    with open(machine_response_status_json, 'w') as f:
+                        json.dump(machine_response_statuses, f)
+                    
+                    # ? End the status file with ]
+                    with open(statuses_file, 'a') as f:
+                        f.write(']')
+                    
+                    # ? Move the status file to the campaign folder
+                    os.rename(statuses_file, os.path.join(campaign_folder, statuses_file))
+                    
+                    if os.path.exists(campaign_folder + "_raw"):
+                        os.rename(campaign_folder + "_raw", campaign_folder + "_raw_1")
+                        new_name = campaign_folder + "_raw_2"
+                    else:
+                        new_name = campaign_folder + "_raw"
+                    
+                    # ? Rename the campaign folder to add _raw at the end
+                    os.rename(campaign_folder, new_name)
+                    
+                    # ? Zip the campaign folder
+                    zip_folder(new_name)
+                    
+                    sys.exit()
+                
                 with Manager() as manager:
                     machine_statuses = manager.list()
                     
@@ -497,6 +601,7 @@ def main():
                                 'duration_s': int(end_time - start_time)
                             }
                             json.dump(result, f, indent=4)
+                            statuses.append(result)
                             f.write(',\n')
                         
                 console.print(f"[bold green]{permutation_name} completed in {time.time() - start_time:.2f} seconds[/bold green]")
