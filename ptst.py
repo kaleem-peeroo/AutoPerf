@@ -1,3 +1,4 @@
+import random
 import itertools
 import argparse
 import os
@@ -12,9 +13,25 @@ from pprint import pprint
 from datetime import datetime
 from rich.console import Console
 from rich.table import Table
+from rich.markdown import Markdown
 from multiprocessing import Process, Manager
 
 console = Console()
+
+def generate_random_permutation(settings):
+    permutation = {}
+    for key, value in settings.items():
+        is_boolean = value == [True, False] or value == [False, True]
+        if len(value) == 2 and isinstance(value[0], int) and isinstance(value[1], int) and not is_boolean:
+            if value[0] > value[1]:
+                raise ValueError(f"Setting {key} has invalid range: {value}")
+            permutation[key] = random.randint(value[0], value[1])
+        elif is_boolean:
+            permutation[key] = random.choice(value)
+        else:
+            permutation[key] = value[0]
+    
+    return tuple(permutation.values())
 
 def get_machine_response_statuses(machines):
     machine_statuses = []
@@ -117,7 +134,21 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             if ping_machine(other_machine):
                 break
             if i == max_retries - 1:
-                status['status'] = f"{other_machine_name} unreachable from {machine_name}"
+                status['status'] = f"{other_machine_name} unreachable from {machine_name} via ping"
+                machine_statuses.append(status)
+                return None, None
+            time.sleep(1)
+            
+    # ? SSH Ping other machines to make sure they are good to go.
+    other_machines = [m for m in machines if m['name'] != machine_name]
+    for other_machine in other_machines:
+        other_machine_name = other_machine['name']
+        for i in range(max_retries):
+            console.print(f"SSH Pinging {other_machine_name} from {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
+            if test_ssh(other_machine):
+                break
+            if i == max_retries - 1:
+                status['status'] = f"{other_machine_name} unreachable from {machine_name} via ssh"
                 machine_statuses.append(status)
                 return None, None
             time.sleep(1)
@@ -167,6 +198,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             process.kill()
             stdout, stderr = process.communicate()
             status['status'] = "prolonged"
+            status[f"{machine_name}_script"] = script_string
             break
         time.sleep(1)
 
@@ -246,7 +278,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         for remote_file in remote_files:
             remote_path = remote_file
             local_path = os.path.join(test_folder, f"{remote_file}")
-            scp_command = f"scp {machine['username']}@{machine['host']}:{remote_path} {local_path}"
+            scp_command = f"scp {machine['username']}@{machine['host']}:{remote_path} {machine['name']}_{local_path}"
             with open(os.devnull, 'w') as devnull:
                 subprocess.run(scp_command, shell=True, stdout=devnull, stderr=devnull)
         
@@ -497,7 +529,10 @@ def main():
         
         # Generate all possible permutations of settings values if random combination generation is disabled
         if not campaign.get('random_combination_generation', False):
-            permutations_list = []
+            # ? USING PRESET COMBINATION GENERATION
+            camp_index = config_data.index(campaign)
+            console.print(Markdown(f"# [{camp_index + 1}/{len(config_data)}] Running Campaign: {campaign_name}"))
+            
             statuses = []
             retry_permutations = []
             
@@ -509,8 +544,7 @@ def main():
             for i, permutation in enumerate(permutations):
                 start_time = time.time()
                 permutation_name = generate_permutation_name(permutation)
-                console.print(f"[{i + 1}/{len(permutations)}] Running {permutation_name}...")
-                permutations_list.append(permutation)
+                console.print(f"[{i + 1}/{len(permutations)}] Running Test: {permutation_name}...")
                 scripts = generate_scripts(permutation)
                 machines = campaign['machines']
                 scripts_per_machine_list = distribute_scripts(scripts, machines)
@@ -613,7 +647,195 @@ def main():
                     start_time = time.time()
                     permutation_name = generate_permutation_name(permutation)
                     console.print(f"[{i + 1}/{len(permutations)}] Retrying {permutation_name}...")
-                    permutations_list.append(permutation)
+                    scripts = generate_scripts(permutation)
+                    machines = campaign['machines']
+                    scripts_per_machine_list = distribute_scripts(scripts, machines)
+                    
+                    with Manager() as manager:
+                        machine_statuses = manager.list()
+                        
+                        processes = []
+                        for i, machine in enumerate(machines):
+                            script_string = scripts_per_machine_list[i]
+                            duration_s = campaign.get('duration_s', 60)
+                            timeout = duration_s + buffer_duration
+                            process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder))
+                            processes.append(process)
+                            try:
+                                process.start()
+                            except Exception as e:
+                                console.print(f"Caught exception from Process: {e}", style="bold red")
+
+                        for process in processes:
+                            try:
+                                process.join()
+                            except Exception as e:
+                                console.print(f"Caught exception from Process: {e}", style="bold red")
+
+                        # Write the statuses to a file
+                        with open(statuses_file, 'a') as f:
+                            end_time = time.time()
+                            start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+                            end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
+                            result = {
+                                'permutation_name': permutation_name, 
+                                'machine_statuses': list(machine_statuses),
+                                'start_time': start_time_str,
+                                'end_time': end_time_str,
+                                'duration_s': int(end_time - start_time)
+                            }
+                            json.dump(result, f, indent=4)
+                            f.write(',\n')
+            else:
+                console.print(f"[bold green]Campaign {campaign_name} completed successfully![/bold green]")
+            
+            # ? End the status file with ]
+            with open(statuses_file, 'a') as f:
+                f.write(']')
+            
+            # ? Move the status file to the campaign folder
+            os.rename(statuses_file, os.path.join(campaign_folder, statuses_file))
+            
+            if os.path.exists(campaign_folder + "_raw"):
+                os.rename(campaign_folder + "_raw", campaign_folder + "_raw_1")
+                new_name = campaign_folder + "_raw_2"
+            else:
+                new_name = campaign_folder + "_raw"
+            
+            # ? Rename the campaign folder to add _raw at the end
+            os.rename(campaign_folder, new_name)
+            
+            # ? Zip the campaign folder
+            zip_folder(new_name)
+            
+        else:
+            # ? USING RANDOM COMBINATION GENERATION
+            camp_index = config_data.index(campaign)
+            console.print(Markdown(f"# [{camp_index + 1}/{len(config_data)}] Running Campaign: {campaign_name}"))
+            
+            # ? Get number of tests from config
+            total_test_count = campaign['random_combination_count']
+            settings = campaign['settings']
+            
+            for key, value in settings.items():
+                if len(value) > 3:
+                    raise ValueError(f"Setting {key} has more than three values: {value}")
+            
+            retry_permutations = []
+            statuses = []
+            
+            permutation_history = []
+            for i in range(total_test_count):
+                permutation = generate_random_permutation(settings)
+                while permutation in permutation_history:
+                    permutation = generate_random_permutation(settings)
+                permutation_history.append(permutation)
+                
+                start_time = time.time()
+                permutation_name = generate_permutation_name(permutation)
+                console.print(f"[{i + 1}/{total_test_count}] Running Test: {permutation_name}...")
+                scripts = generate_scripts(permutation)
+                machines = campaign['machines']
+                scripts_per_machine_list = distribute_scripts(scripts, machines)
+                
+                # ? Break if the last 10 tests have unreachable statuses
+                # ? Get the amount of unreachable statuses in the last 10 tests
+                last_10_statuses = statuses[-10:]
+                unreachable_count = sum(1 for status in last_10_statuses if 'unreachable' in [machine_status['status'] for machine_status in status['machine_statuses']])
+                if unreachable_count == 10:
+                    console.print(f"Machines have been [bold red]UNREACHABLE[/bold red] for the last 10 tests. Diagnosing issue.", style="bold white")
+                    
+                    machine_response_statuses = get_machine_response_statuses(machines)
+                    
+                    machine_response_table = Table(title="Machine Response Statuses")
+                    machine_response_table.add_column("Host", justify="center")
+                    machine_response_table.add_column("IP", justify="center")
+                    machine_response_table.add_column("Response (Ping/SSH)", justify="center")
+
+                    for machine in machine_response_statuses:
+                        ping_emoji = "✅" if machine['ping_response'] else "❌"
+                        ssh_emoji = "✅" if machine['ssh_response'] else "❌"
+                        machine_response_table.add_row(machine['name'], machine['host'], f"{ping_emoji}/{ssh_emoji}")
+
+                    console.print(machine_response_table)
+                    
+                    # ? Write machine response statuses to json file.
+                    machine_response_status_json = os.path.join(campaign_folder, 'machine_status_response.json')
+                    with open(machine_response_status_json, 'w') as f:
+                        json.dump(machine_response_statuses, f)
+                    
+                    # ? End the status file with ]
+                    with open(statuses_file, 'a') as f:
+                        f.write(']')
+                    
+                    # ? Move the status file to the campaign folder
+                    os.rename(statuses_file, os.path.join(campaign_folder, statuses_file))
+                    
+                    if os.path.exists(campaign_folder + "_raw"):
+                        os.rename(campaign_folder + "_raw", campaign_folder + "_raw_1")
+                        new_name = campaign_folder + "_raw_2"
+                    else:
+                        new_name = campaign_folder + "_raw"
+                    
+                    # ? Rename the campaign folder to add _raw at the end
+                    os.rename(campaign_folder, new_name)
+                    
+                    # ? Zip the campaign folder
+                    zip_folder(new_name)
+                    
+                    sys.exit()
+                
+                with Manager() as manager:
+                    machine_statuses = manager.list()
+                    
+                    processes = []
+                    for i, machine in enumerate(machines):
+                        script_string = scripts_per_machine_list[i]
+                        duration_s = campaign.get('duration_s', 60)
+                        timeout = duration_s + buffer_duration
+                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder))
+                        processes.append(process)
+                        try:
+                            process.start()
+                        except Exception as e:
+                            console.print(f"Caught exception from Process: {e}", style="bold red")
+
+                    for process in processes:
+                        try:
+                            process.join()
+                        except Exception as e:
+                            console.print(f"Caught exception from Process: {e}", style="bold red")
+
+                    # ? Check if all machines returned no csv files and add to retry_permutations if so
+                    all_no_csv_files = all("no csv files" in status['status'] for status in machine_statuses)
+                    if all_no_csv_files:
+                        retry_permutations.append(permutation)
+                    else:
+                        # Write the statuses to a file
+                        with open(statuses_file, 'a') as f:
+                            end_time = time.time()
+                            start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+                            end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
+                            result = {
+                                'permutation_name': permutation_name, 
+                                'machine_statuses': list(machine_statuses),
+                                'start_time': start_time_str,
+                                'end_time': end_time_str,
+                                'duration_s': int(end_time - start_time)
+                            }
+                            json.dump(result, f, indent=4)
+                            statuses.append(result)
+                            f.write(',\n')
+                        
+                console.print(f"[bold green]{permutation_name} completed in {time.time() - start_time:.2f} seconds[/bold green]")
+            
+            if len(retry_permutations) > 0:
+                # console.print(f"{len(retry_permutations)} tests failed. Retrying...", style="bold red")
+                # ? Check for retry_permutations and run them again
+                for i, permutation in enumerate(retry_permutations):
+                    start_time = time.time()
+                    permutation_name = generate_permutation_name(permutation)
+                    console.print(f"[{i + 1}/{len(permutations)}] Retrying {permutation_name}...")
                     scripts = generate_scripts(permutation)
                     machines = campaign['machines']
                     scripts_per_machine_list = distribute_scripts(scripts, machines)

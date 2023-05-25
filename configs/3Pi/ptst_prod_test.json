@@ -2,12 +2,12 @@
     {
         "name": "PTST Production Test",
         "settings": {
-            "duration_s": [10],
+            "duration_s": [5],
             "datalen_bytes": [100],
             "pub_count": [1, 5],
             "sub_count": [1, 5],
-            "reliability": [true],
-            "use_multicast": [true],
+            "reliability": [true, false],
+            "use_multicast": [true, false],
             "durability": [0],
             "latency_count": [100]
         },
