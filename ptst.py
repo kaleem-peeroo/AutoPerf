@@ -646,7 +646,7 @@ def main():
                 for i, permutation in enumerate(retry_permutations):
                     start_time = time.time()
                     permutation_name = generate_permutation_name(permutation)
-                    console.print(f"[{i + 1}/{len(permutations)}] Retrying {permutation_name}...")
+                    console.print(f"[{i + 1}/{len(retry_permutations)}] Retrying {permutation_name}...")
                     scripts = generate_scripts(permutation)
                     machines = campaign['machines']
                     scripts_per_machine_list = distribute_scripts(scripts, machines)
@@ -835,7 +835,7 @@ def main():
                 for i, permutation in enumerate(retry_permutations):
                     start_time = time.time()
                     permutation_name = generate_permutation_name(permutation)
-                    console.print(f"[{i + 1}/{len(permutations)}] Retrying {permutation_name}...")
+                    console.print(f"[{i + 1}/{len(retry_permutations)}] Retrying {permutation_name}...")
                     scripts = generate_scripts(permutation)
                     machines = campaign['machines']
                     scripts_per_machine_list = distribute_scripts(scripts, machines)
