@@ -41,7 +41,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     test_folder = os.path.join(campaign_folder, test_name)
     
     for i in range(max_retries):
-        # console.print(f"Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
+        console.print(f"Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
         if ping_machine(machine):
             status['pings'] = i + 1
             break
@@ -55,7 +55,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     for other_machine in other_machines:
         other_machine_name = other_machine['name']
         for i in range(max_retries):
-            # console.print(f"Pinging {other_machine_name} from {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
+            console.print(f"Pinging {other_machine_name} from {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
             if ping_machine(other_machine):
                 break
             if i == max_retries - 1:
@@ -63,9 +63,9 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
                 return None, None
             time.sleep(1)
     
-    # console.print(f"{machine_name}: Running scripts...", style="bold white")
+    console.print(f"{machine_name}: Running scripts...", style="bold white")
     ssh_command = f"ssh {machine['username']}@{machine['host']} '{script_string}'"
-    process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     start_time = time.time()
     while True:
@@ -80,8 +80,6 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             break
         time.sleep(1)
 
-    os.makedirs(test_folder, exist_ok=True)
-
     if status['status'] == "punctual":
         remote_files_command = f"ssh {machine['username']}@{machine['host']} 'ls *.csv'"
         remote_files_process = subprocess.run(remote_files_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -89,27 +87,29 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         
         if len(remote_files) == 0:
             status['status'] = "no csv files"
-            # console.print(f"No csv files found for {test_name} on {machine_name}.", style="bold red")
+            console.print(f"No csv files found for {test_name} on {machine_name}.", style="bold red")
         else:
+            os.makedirs(test_folder, exist_ok=True)
+            
+            console.print(f"{machine_name}: Downloading csv files...", style="bold white")
             for remote_file in remote_files:
                 remote_path = remote_file
                 local_path = os.path.join(test_folder, f"{remote_file}")
                 scp_command = f"scp {machine['username']}@{machine['host']}:{remote_path} {local_path}"
-                # console.print(f"{machine_name}: Downloading csv files...", style="bold white")
                 with open(os.devnull, 'w') as devnull:
-                    subprocess.run(scp_command, shell=True, stdout=devnull)
+                    subprocess.run(scp_command, shell=True, stdout=devnull, stderr=devnull)
             
-            # console.print(f"{machine_name}: Deleting csv files...", style="bold white")
+            console.print(f"{machine_name}: Deleting csv files...", style="bold white")
             # ? Delete all csv files on remote machine
             ssh_command = f"ssh {machine['username']}@{machine['host']} 'rm *.csv'"
             with open(os.devnull, 'w') as devnull:
                 subprocess.run(ssh_command, shell=True, stdout=devnull)
 
-    # console.print(f"{machine_name} Restarting machine...")
+    console.print(f"{machine_name} Restarting machine...", style="bold white")
     # ? Restart the machine.
     ssh_command = f"ssh {machine['username']}@{machine['host']} 'sudo reboot'"
     with open(os.devnull, 'w') as devnull:
-        subprocess.run(ssh_command, shell=True, stdout=devnull)
+        subprocess.run(ssh_command, shell=True, stdout=devnull, stderr=devnull)
         
     # ? Wait some time for restart to happen.
     time.sleep(5)
@@ -406,7 +406,14 @@ def main():
             # ? End the status file with ]
             with open(statuses_file, 'a') as f:
                 f.write(']')
-                
+            
+            # ? Update the status file and remove the last ,
+            with open(statuses_file, 'r') as f:
+                data = f.read()
+            data = data.rstrip(',')
+            with open(statuses_file, 'w') as f:
+                f.write(data)
+                            
             # ? Move the status file to the campaign folder
             os.rename(statuses_file, os.path.join(campaign_folder, statuses_file))
             
