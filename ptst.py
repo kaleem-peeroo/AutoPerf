@@ -63,6 +63,34 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
                 return None, None
             time.sleep(1)
     
+    delete_logs_command = f"find {machine['home_dir']} -type f \\( -name '*log*' -o -name '*sar_logs*' \\) -delete"
+    start_logs_command = f"sar -A -o sar_logs 1 {timeout} >/dev/null 2>&1 &"
+    
+    # ? Delete all logs on remote machine
+    console.print("Deleting logs...", style="bold white")
+    ssh_command = f"ssh {machine['username']}@{machine['host']} \'{delete_logs_command}\'"
+    process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        console.print(f"{machine_name}: Delete logs failed", style="bold red")
+        console.print(stdout)
+        console.print(stderr)
+        status['status'] = "delete logs failed"
+        return None, None
+    
+    # ? Start logging on remote machine
+    console.print("Starting system logs...", style="bold white")
+    ssh_command = f"ssh {machine['username']}@{machine['host']} \'{start_logs_command}\'"
+    process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        console.print(f"{machine_name}: Start logs failed", style="bold red")
+        console.print(stdout)
+        console.print(stderr)
+        status['status'] = "start logs failed"
+        return None, None
+
+    # ? Run scripts on remote machine
     console.print(f"{machine_name}: Running scripts...", style="bold white")
     ssh_command = f"ssh {machine['username']}@{machine['host']} '{script_string}'"
     process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -103,6 +131,73 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             ssh_command = f"ssh {machine['username']}@{machine['host']} 'rm *.csv'"
             with open(os.devnull, 'w') as devnull:
                 subprocess.run(ssh_command, shell=True, stdout=devnull)
+
+    parse_cpu_logs_command = f"sar -f sar_logs > cpu.log"
+    parse_mem_logs_command = f"sar -r -f sar_logs > mem.log"
+    network_options = ["DEV", "EDEV", "NFS", "NFSD", "SOCK", "IP", "EIP", "ICMP", "EICMP", "TCP", "ETCP", "UDP", "SOCK6", "IP6", "EIP6", "ICMP6", "EICMP6", "UDP6"]
+    
+    # ? Parse cpu logs on remote machine
+    console.print(f"{machine_name}: Parsing cpu logs...", style="bold white")
+    ssh_command = f"ssh {machine['username']}@{machine['host']} \'{parse_cpu_logs_command}\'"
+    process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        console.print(f"{machine_name}: Parse CPU logs failed", style="bold red")
+        console.print(ssh_command)
+        console.print(stdout)
+        console.print(stderr)
+        status['status'] = "parse cpu logs failed"
+        return None, None
+    
+    # ? Parse memory logs on remote machine
+    console.print(f"{machine_name}: Parsing mem logs...", style="bold white")
+    ssh_command = f"ssh {machine['username']}@{machine['host']} \'{parse_mem_logs_command}\'"
+    process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        console.print(f"{machine_name}: Parse MEM logs failed", style="bold red")
+        console.print(stdout)
+        console.print(stderr)
+        status['status'] = "parse mem logs failed"
+        return None, None
+
+    # ? Parse network logs on remote machine
+    console.print(f"{machine_name}: Parsing network logs...", style="bold white")
+    for network_option in network_options:
+        parse_command = f"sar -n {network_option} -f sar_logs > {network_option.lower()}.log"
+        ssh_command = f"ssh {machine['username']}@{machine['host']} \'{parse_command}\'"
+        process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        if process.returncode != 0:
+            console.print(f"{machine_name}: Parse {network_option} logs failed", style="bold red")
+            status['status'] = f"parse {network_option.lower()} logs failed"
+            console.print(stdout)
+            console.print(stderr)
+            return None, None
+
+    # ? Download all .logs from remote machine
+    remote_files_command = f"ssh {machine['username']}@{machine['host']} 'ls *.log'"
+    remote_files_process = subprocess.run(remote_files_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    remote_files = remote_files_process.stdout.decode().split()
+    
+    if len(remote_files) == 0:
+        status['status'] = "no log files"
+    else:
+        os.makedirs(test_folder, exist_ok=True)
+        
+        console.print(f"{machine_name}: Downloading log files...", style="bold white")
+        for remote_file in remote_files:
+            remote_path = remote_file
+            local_path = os.path.join(test_folder, f"{remote_file}")
+            scp_command = f"scp {machine['username']}@{machine['host']}:{remote_path} {local_path}"
+            with open(os.devnull, 'w') as devnull:
+                subprocess.run(scp_command, shell=True, stdout=devnull, stderr=devnull)
+        
+        console.print(f"{machine_name}: Deleting log files...", style="bold white")
+        # ? Delete all csv files on remote machine
+        ssh_command = f"ssh {machine['username']}@{machine['host']} 'rm *.log'"
+        with open(os.devnull, 'w') as devnull:
+            subprocess.run(ssh_command, shell=True, stdout=devnull)
 
     console.print(f"{machine_name} Restarting machine...", style="bold white")
     # ? Restart the machine.
@@ -407,7 +502,7 @@ def main():
                 console.print(f"[bold green]{permutation_name} completed in {time.time() - start_time:.2f} seconds[/bold green]")
 
             if len(retry_permutations) > 0:
-                console.print(f"{len(retry_permutations)} tests failed. Retrying...", style="bold red")
+                # console.print(f"{len(retry_permutations)} tests failed. Retrying...", style="bold red")
                 # ? Check for retry_permutations and run them again
                 for i, permutation in enumerate(retry_permutations):
                     start_time = time.time()
@@ -473,7 +568,7 @@ def main():
             os.rename(campaign_folder, new_name)
             
             # ? Zip the campaign folder
-            zip_folder(campaign_folder)
+            zip_folder(new_name)
             
 
 if __name__ == '__main__':
