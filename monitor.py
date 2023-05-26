@@ -109,34 +109,41 @@ Individual tests:
 """
 
 table = Table(title=f"Stats for {current_campaign_name} ({len(latest_json)} tests)", show_header=True)
+table.add_column("#", justify="left", no_wrap=True)
 table.add_column("Test", justify="left", no_wrap=True)
 table.add_column("Start", justify="left", no_wrap=True)
 table.add_column("End", justify="left", no_wrap=True)
 table.add_column("Duration", justify="left", no_wrap=True)
 table.add_column("Pings", justify="left", no_wrap=True)
 table.add_column("SSH Pings", justify="left", no_wrap=True)
-table.add_column("Statuses", justify="left", no_wrap=True)
+table.add_column("Statuses", justify="left", no_wrap=False)
 
 for test in latest_json:
+    index = latest_json.index(test) + 1
     test_name = test["permutation_name"]
     start_time = test["start_time"]
     end_time = test["end_time"]
     duration = format_duration(test["duration_s"])
-    statuses = [machine['status'] for machine in test["machine_statuses"]]
-    pings = [machine['pings'] for machine in test["machine_statuses"]]
-    ssh_pings = [machine['ssh_pings'] for machine in test["machine_statuses"]]
     
-    if "unreachable" in statuses:
+    raw_statuses = [machine["status"] for machine in test["machine_statuses"]]
+    
+    statuses = [f"{machine['name']}: {machine['status']}" for machine in test["machine_statuses"]]
+    pings = [f"{machine['name']}: {machine['pings']}" for machine in test["machine_statuses"]]
+    ssh_pings = [f"{machine['name']}: {machine['ssh_pings']}" for machine in test["machine_statuses"]]
+    
+    if "unreachable" in raw_statuses:
         color = "bold red"
-    elif "prolonged" in statuses:
+    elif "prolonged" in raw_statuses:
         color = "bold #FFA500"
-    else:
+    elif "punctual" in raw_statuses:
         color = "bold green"
+    else:
+        color = "bold #FFA500"
     
     statuses = ", ".join(statuses)
     pings = ", ".join(str(x) for x in pings)
     ssh_pings = ", ".join(str(x) for x in ssh_pings)
     
-    table.add_row(test_name, start_time, end_time, duration, pings, ssh_pings, statuses, style=color)
+    table.add_row(str(index), test_name, start_time, end_time, duration, pings, ssh_pings, statuses, style=color)
 
 console.print(table)
