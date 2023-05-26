@@ -1,3 +1,4 @@
+import filecmp
 import colorsys
 import random
 import itertools
@@ -139,6 +140,15 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     machine_name = machine['name']
     test_folder = os.path.join(campaign_folder, test_name)
     
+    console.print(f"{machine_name} Restarting machine...", style="bold " + color)
+    # ? Restart the machine.
+    ssh_command = f"ssh {machine['username']}@{machine['host']} 'sudo reboot'"
+    with open(os.devnull, 'w') as devnull:
+        subprocess.run(ssh_command, shell=True, stdout=devnull, stderr=devnull)
+        
+    # ? Wait some time for restart to happen.
+    time.sleep(5)
+    
     for i in range(max_retries):
         console.print(f"Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold " + color)
         if ping_machine(machine):
@@ -276,7 +286,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         console.print(ssh_command)
         console.print(stdout)
         console.print(stderr)
-        status['status'] = status['status'] + "\nparse cpu logs failed"
+        status['status'] = status['status'] + ". Parse cpu logs failed"
     
     # ? Parse memory logs on remote machine
     console.print(f"{machine_name}: Parsing mem logs...", style="bold " + color)
@@ -287,7 +297,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         console.print(f"{machine_name}: Parse MEM logs failed", style="bold red")
         console.print(stdout)
         console.print(stderr)
-        status['status'] = status['status'] + "\nparse mem logs failed"
+        status['status'] = status['status'] + ". Parse mem logs failed"
 
     # ? Parse network logs on remote machine
     console.print(f"{machine_name}: Parsing network logs...", style="bold " + color)
@@ -298,17 +308,16 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         stdout, stderr = process.communicate()
         if process.returncode != 0:
             console.print(f"{machine_name}: Parse {network_option} logs failed", style="bold red")
-            status['status'] = status['status'] + f"\nparse {network_option.lower()} logs failed"
+            console.print(stdout)
+            console.print(stderr)
+            status['status'] = status['status'] + f". Parse {network_option.lower()} logs failed"
 
     # ? Download all .logs from remote machine
     remote_files_command = f"ssh {machine['username']}@{machine['host']} 'ls *.log'"
     remote_files_process = subprocess.run(remote_files_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     remote_files = remote_files_process.stdout.decode().split()
     
-    
     if len(remote_files) == 0:
-        pprint(remote_files)
-        pprint(len(remote_files))
         status['status'] = "no log files"
     else:
         os.makedirs(test_folder, exist_ok=True)
@@ -317,15 +326,28 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         for remote_file in remote_files:
             remote_path = remote_file
             local_path = os.path.join(test_folder, f"{remote_file}")
-            scp_command = f"scp {machine['username']}@{machine['host']}:{remote_path} {machine['name']}_{local_path}"
+            # console.print(f"{machine_name}: Downloading: {remote_path} -> {local_path}", style="bold " + color)
+            scp_command = f"scp {machine['username']}@{machine['host']}:{remote_path} {local_path}"
             with open(os.devnull, 'w') as devnull:
-                subprocess.run(scp_command, shell=True, stdout=devnull, stderr=devnull)
+                process = subprocess.run(scp_command, shell=True, stdout=devnull, stderr=subprocess.PIPE)
+                if process.stderr:
+                    console.print(f"{machine_name}: Downloading {remote_file} failed", style="bold red")
+                    console.print(process.stderr)
+                    continue
+            
+            # ? Rename the file to include the machine name
+            os.rename(local_path, os.path.join(test_folder, f"{machine_name}_{remote_file}"))
         
         console.print(f"{machine_name}: Deleting log files...", style="bold " + color)
         # ? Delete all csv files on remote machine
         ssh_command = f"ssh {machine['username']}@{machine['host']} 'rm *.log'"
         with open(os.devnull, 'w') as devnull:
             subprocess.run(ssh_command, shell=True, stdout=devnull)
+
+    # ? Look for logs in the test_folder.
+    downloaded_log_files = [file for file in os.listdir(test_folder) if file.endswith(".log")]
+    if len(downloaded_log_files) == 0:
+        status['status'] = status['status'] + f". No log files downloaded."
 
     console.print(f"{machine_name} Restarting machine...", style="bold " + color)
     # ? Restart the machine.
@@ -644,7 +666,7 @@ def main():
                         # ? Pick a random color for the machine text output
                         random_color = random.choice(COLORS)
                         if random_color in used_colors:
-                            random_color = pick_contrasting_color(color, used_colors)
+                            random_color = pick_contrasting_color(random_color)
                         used_colors.add(random_color)
                         script_string = scripts_per_machine_list[i]
                         duration_s = campaign.get('duration_s', 60)
@@ -705,7 +727,7 @@ def main():
                             # ? Pick a random color for the machine text output
                             random_color = random.choice(COLORS)
                             if random_color in used_colors:
-                                random_color = pick_contrasting_color(color, used_colors)
+                                random_color = pick_contrasting_color(random_color)
                             used_colors.add(random_color)
                             script_string = scripts_per_machine_list[i]
                             duration_s = campaign.get('duration_s', 60)
@@ -845,7 +867,7 @@ def main():
                         # ? Pick a random color for the machine text output
                         random_color = random.choice(COLORS)
                         if random_color in used_colors:
-                            random_color = pick_contrasting_color(color, used_colors)
+                            random_color = pick_contrasting_color(random_color)
                         used_colors.add(random_color)
                         script_string = scripts_per_machine_list[i]
                         duration_s = campaign.get('duration_s', 60)
@@ -908,7 +930,7 @@ def main():
                             # ? Pick a random color for the machine text output
                             random_color = random.choice(COLORS)
                             if random_color in used_colors:
-                                random_color = pick_contrasting_color(color, used_colors)
+                                random_color = pick_contrasting_color(random_color)
                             used_colors.add(random_color)
                             
                             script_string = scripts_per_machine_list[i]
