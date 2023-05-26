@@ -1,3 +1,4 @@
+import colorsys
 import random
 import itertools
 import argparse
@@ -17,6 +18,41 @@ from rich.markdown import Markdown
 from multiprocessing import Process, Manager
 
 console = Console()
+
+def generate_color_list(color_count):
+    colors = []
+    for i in range(color_count):
+        # Generate a random hue and saturation
+        hue = random.random()
+        saturation = random.uniform(0.8, 1.0)
+        
+        # Set the value to maximum
+        value = 1.0
+        
+        # Convert the HSV values to RGB values
+        r, g, b = tuple(round(i * 255) for i in colorsys.hsv_to_rgb(hue, saturation, value))
+        
+        # Add the color to the list
+        colors.append(f"#{r:02X}{g:02X}{b:02X}")
+    
+    return colors
+
+COLORS = generate_color_list(100)
+
+def pick_contrasting_color(color):
+    # Convert the color to RGB values
+    r, g, b = tuple(int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    
+    # Calculate the luminance of the color
+    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    
+    # Pick a random color that has a contrasting luminance
+    while True:
+        new_color = random.choice(COLORS)
+        new_r, new_g, new_b = tuple(int(new_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        new_luminance = (0.299 * new_r + 0.587 * new_g + 0.114 * new_b) / 255
+        if abs(new_luminance - luminance) > 0.5:
+            return new_color
 
 def generate_random_permutation(settings):
     permutation = {}
@@ -91,7 +127,7 @@ def test_ssh(machine):
     else:
         return False
 
-def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, test_name, campaign_folder, max_retries=10):
+def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, test_name, campaign_folder, color, max_retries=10):
     status = {
         "host": machine['host'],
         "name": machine['name'],
@@ -104,7 +140,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     test_folder = os.path.join(campaign_folder, test_name)
     
     for i in range(max_retries):
-        console.print(f"Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
+        console.print(f"Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold " + color)
         if ping_machine(machine):
             status['pings'] = i + 1
             break
@@ -115,7 +151,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         time.sleep(1)
         
     for i in range(max_retries):
-        console.print(f"SSH Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
+        console.print(f"SSH Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold " + color)
         if test_ssh(machine):
             status['ssh_pings'] = i + 1
             break
@@ -130,11 +166,11 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     for other_machine in other_machines:
         other_machine_name = other_machine['name']
         for i in range(max_retries):
-            console.print(f"Pinging {other_machine_name} from {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
+            console.print(f"{machine_name}: Pinging {other_machine_name} (attempt {i+1}/{max_retries})...", style="bold " + color)
             if ping_machine(other_machine):
                 break
             if i == max_retries - 1:
-                status['status'] = f"{other_machine_name} unreachable from {machine_name} via ping"
+                status['status'] = f"{machine_name}: {other_machine_name} unreachable via ping"
                 machine_statuses.append(status)
                 return None, None
             time.sleep(1)
@@ -144,11 +180,11 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     for other_machine in other_machines:
         other_machine_name = other_machine['name']
         for i in range(max_retries):
-            console.print(f"SSH Pinging {other_machine_name} from {machine_name} (attempt {i+1}/{max_retries})...", style="bold white")
+            console.print(f"{machine_name}: SSH Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold " + color)
             if test_ssh(other_machine):
                 break
             if i == max_retries - 1:
-                status['status'] = f"{other_machine_name} unreachable from {machine_name} via ssh"
+                status['status'] = f"{machine_name}: {other_machine_name} unreachable via ssh"
                 machine_statuses.append(status)
                 return None, None
             time.sleep(1)
@@ -157,7 +193,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     start_logs_command = f"sar -A -o sar_logs 1 {timeout} >/dev/null 2>&1 &"
     
     # ? Delete all logs on remote machine
-    console.print("Deleting logs...", style="bold white")
+    console.print(f"{machine_name}: Deleting leftover logs...", style="bold " + color)
     ssh_command = f"ssh {machine['username']}@{machine['host']} \'{delete_logs_command}\'"
     process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
@@ -171,7 +207,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         return None, None
     
     # ? Start logging on remote machine
-    console.print("Starting system logs...", style="bold white")
+    console.print(f"{machine_name}: Starting system logs...", style="bold " + color)
     ssh_command = f"ssh {machine['username']}@{machine['host']} \'{start_logs_command}\'"
     process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
@@ -184,7 +220,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         return None, None
 
     # ? Run scripts on remote machine
-    console.print(f"{machine_name}: Running scripts...", style="bold white")
+    console.print(f"{machine_name}: Running scripts...", style="bold " + color)
     ssh_command = f"ssh {machine['username']}@{machine['host']} '{script_string}'"
     process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -212,7 +248,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         else:
             os.makedirs(test_folder, exist_ok=True)
             
-            console.print(f"{machine_name}: Downloading csv files...", style="bold white")
+            console.print(f"{machine_name}: Downloading csv files...", style="bold " + color)
             for remote_file in remote_files:
                 remote_path = remote_file
                 local_path = os.path.join(test_folder, f"{remote_file}")
@@ -220,7 +256,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
                 with open(os.devnull, 'w') as devnull:
                     subprocess.run(scp_command, shell=True, stdout=devnull, stderr=devnull)
             
-            console.print(f"{machine_name}: Deleting csv files...", style="bold white")
+            console.print(f"{machine_name}: Deleting csv files...", style="bold " + color)
             # ? Delete all csv files on remote machine
             ssh_command = f"ssh {machine['username']}@{machine['host']} 'rm *.csv'"
             with open(os.devnull, 'w') as devnull:
@@ -231,7 +267,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     network_options = ["DEV", "EDEV", "NFS", "NFSD", "SOCK", "IP", "EIP", "ICMP", "EICMP", "TCP", "ETCP", "UDP", "SOCK6", "IP6", "EIP6", "ICMP6", "EICMP6", "UDP6"]
     
     # ? Parse cpu logs on remote machine
-    console.print(f"{machine_name}: Parsing cpu logs...", style="bold white")
+    console.print(f"{machine_name}: Parsing cpu logs...", style="bold " + color)
     ssh_command = f"ssh {machine['username']}@{machine['host']} \'{parse_cpu_logs_command}\'"
     process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
@@ -243,7 +279,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         status['status'] = status['status'] + "\nparse cpu logs failed"
     
     # ? Parse memory logs on remote machine
-    console.print(f"{machine_name}: Parsing mem logs...", style="bold white")
+    console.print(f"{machine_name}: Parsing mem logs...", style="bold " + color)
     ssh_command = f"ssh {machine['username']}@{machine['host']} \'{parse_mem_logs_command}\'"
     process = subprocess.Popen(ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
@@ -254,7 +290,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         status['status'] = status['status'] + "\nparse mem logs failed"
 
     # ? Parse network logs on remote machine
-    console.print(f"{machine_name}: Parsing network logs...", style="bold white")
+    console.print(f"{machine_name}: Parsing network logs...", style="bold " + color)
     for network_option in network_options:
         parse_command = f"sar -n {network_option} -f sar_logs > {network_option.lower()}.log"
         ssh_command = f"ssh {machine['username']}@{machine['host']} \'{parse_command}\'"
@@ -274,7 +310,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     else:
         os.makedirs(test_folder, exist_ok=True)
         
-        console.print(f"{machine_name}: Downloading log files...", style="bold white")
+        console.print(f"{machine_name}: Downloading log files...", style="bold " + color)
         for remote_file in remote_files:
             remote_path = remote_file
             local_path = os.path.join(test_folder, f"{remote_file}")
@@ -282,13 +318,13 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             with open(os.devnull, 'w') as devnull:
                 subprocess.run(scp_command, shell=True, stdout=devnull, stderr=devnull)
         
-        console.print(f"{machine_name}: Deleting log files...", style="bold white")
+        console.print(f"{machine_name}: Deleting log files...", style="bold " + color)
         # ? Delete all csv files on remote machine
         ssh_command = f"ssh {machine['username']}@{machine['host']} 'rm *.log'"
         with open(os.devnull, 'w') as devnull:
             subprocess.run(ssh_command, shell=True, stdout=devnull)
 
-    console.print(f"{machine_name} Restarting machine...", style="bold white")
+    console.print(f"{machine_name} Restarting machine...", style="bold " + color)
     # ? Restart the machine.
     ssh_command = f"ssh {machine['username']}@{machine['host']} 'sudo reboot'"
     with open(os.devnull, 'w') as devnull:
@@ -376,9 +412,9 @@ def generate_permutation_name(permutation):
     return f"{duration_s}_{datalen_bytes}_{pub_count}_{sub_count}_{reliability}_{use_multicast}_{durability}_{latency_count}"
 
 def validate_config(config_data):
-    # Check if config_data is a list with a single dictionary element
-    if not isinstance(config_data, list) or len(config_data) != 1 or not isinstance(config_data[0], dict):
-        console.print("Error: config file must contain a list with a single dictionary element.")
+    # Check if config_data is a list
+    if not isinstance(config_data, list) or len(config_data) == 0 or not isinstance(config_data[0], dict):
+        console.print("Error: config file must contain a list with at least a dictionary element.")
         return False
 
     # Check if required keys are present in the dictionary
@@ -600,11 +636,17 @@ def main():
                     machine_statuses = manager.list()
                     
                     processes = []
+                    used_colors = set()
                     for i, machine in enumerate(machines):
+                        # ? Pick a random color for the machine text output
+                        random_color = random.choice(COLORS)
+                        if random_color in used_colors:
+                            random_color = pick_contrasting_color(color, used_colors)
+                        used_colors.add(random_color)
                         script_string = scripts_per_machine_list[i]
                         duration_s = campaign.get('duration_s', 60)
                         timeout = duration_s + buffer_duration
-                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder))
+                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder, random_color))
                         processes.append(process)
                         try:
                             process.start()
@@ -655,11 +697,17 @@ def main():
                         machine_statuses = manager.list()
                         
                         processes = []
+                        used_colors = set()
                         for i, machine in enumerate(machines):
+                            # ? Pick a random color for the machine text output
+                            random_color = random.choice(COLORS)
+                            if random_color in used_colors:
+                                random_color = pick_contrasting_color(color, used_colors)
+                            used_colors.add(random_color)
                             script_string = scripts_per_machine_list[i]
                             duration_s = campaign.get('duration_s', 60)
                             timeout = duration_s + buffer_duration
-                            process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder))
+                            process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder, random_color))
                             processes.append(process)
                             try:
                                 process.start()
@@ -789,11 +837,17 @@ def main():
                     machine_statuses = manager.list()
                     
                     processes = []
+                    used_colors = set()
                     for i, machine in enumerate(machines):
+                        # ? Pick a random color for the machine text output
+                        random_color = random.choice(COLORS)
+                        if random_color in used_colors:
+                            random_color = pick_contrasting_color(color, used_colors)
+                        used_colors.add(random_color)
                         script_string = scripts_per_machine_list[i]
                         duration_s = campaign.get('duration_s', 60)
                         timeout = duration_s + buffer_duration
-                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder))
+                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder, random_color))
                         processes.append(process)
                         try:
                             process.start()
@@ -843,12 +897,21 @@ def main():
                     with Manager() as manager:
                         machine_statuses = manager.list()
                         
+                        used_colors = set()
+                        
                         processes = []
+                        machine_colors = {}
                         for i, machine in enumerate(machines):
+                            # ? Pick a random color for the machine text output
+                            random_color = random.choice(COLORS)
+                            if random_color in used_colors:
+                                random_color = pick_contrasting_color(color, used_colors)
+                            used_colors.add(random_color)
+                            
                             script_string = scripts_per_machine_list[i]
                             duration_s = campaign.get('duration_s', 60)
                             timeout = duration_s + buffer_duration
-                            process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder))
+                            process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder, random_color))
                             processes.append(process)
                             try:
                                 process.start()
