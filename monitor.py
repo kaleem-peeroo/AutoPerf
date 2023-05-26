@@ -82,7 +82,7 @@ if latest_file is None:
     console.print(Markdown("# No tests in progress."), style="bold red")
     sys.exit()
 
-current_campaign_name = os.path.basename(latest_file).replace(".json", "").replace("_", " ").upper()
+current_campaign_name = os.path.basename(latest_file).replace(".json", "").replace("_", " ").replace("statuses", "").upper().strip()
     
 # ? Get the contents of the latest json file.
 with sftp.open(latest_file, "r") as f:
