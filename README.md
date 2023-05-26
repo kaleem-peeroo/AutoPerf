@@ -53,3 +53,7 @@ Set up the config.json file. Here is an example:
     ]
 }
 ```
+
+TODO:
+- [ ] Implement custom tests
+- [ ] Copy test config to campaign output

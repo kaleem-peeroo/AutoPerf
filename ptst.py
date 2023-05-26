@@ -305,7 +305,10 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     remote_files_process = subprocess.run(remote_files_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     remote_files = remote_files_process.stdout.decode().split()
     
+    
     if len(remote_files) == 0:
+        pprint(remote_files)
+        pprint(len(remote_files))
         status['status'] = "no log files"
     else:
         os.makedirs(test_folder, exist_ok=True)
