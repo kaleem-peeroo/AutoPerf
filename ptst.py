@@ -359,15 +359,6 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     if len(downloaded_log_files) == 0:
         status['status'] = status['status'] + f". No log files downloaded."
 
-    console.print(f"{machine_name} Restarting machine...", style="bold " + color)
-    # ? Restart the machine.
-    ssh_command = f"ssh {machine['username']}@{machine['host']} 'sudo reboot'"
-    with open(os.devnull, 'w') as devnull:
-        subprocess.run(ssh_command, shell=True, stdout=devnull, stderr=devnull)
-        
-    # ? Wait some time for restart to happen.
-    time.sleep(5)
-
     machine_statuses.append(status)
 
     return stdout, stderr
@@ -600,15 +591,27 @@ def main():
 
     # Loop through each campaign in the config file and create a folder for that campaign
     for campaign in config_data:
+        resumption_mode = False
         campaign_name = campaign['name']
         campaign_folder = campaign_name.lower().replace(' ', '_')
-        os.makedirs(campaign_folder, exist_ok=True)
-
         statuses_file = campaign_name.lower().replace(" ", "_") + "_statuses.json"
         
-        # ? Start status file with [
-        with open(statuses_file, 'w') as f:
-            f.write('[')
+        # ? Check if the folder already exists and enter resumption mode
+        if os.path.exists(campaign_folder):
+            resumption_mode = True
+            # ? Get the last status from the statuses file
+            with open(statuses_file, 'r') as f:
+                statuses = f.read()
+            statuses = ", ".join(statuses.split(",")[:-1]) + "]"
+            statuses = json.loads(statuses)
+            last_status = statuses[-1]
+            last_permutation = parse_permutation_name(last_status['permutation_name'])
+            console.print(f"{campaign_folder} already exists. Resuming {campaign_name} from {last_status['permutation_name']} instead of running from the start.", style="bold green")
+        else:
+            os.makedirs(campaign_folder, exist_ok=True)
+            # ? Start status file with [
+            with open(statuses_file, 'w') as f:
+                f.write('[')
         
         # Generate all possible permutations of settings values if random combination generation is disabled
         if not campaign.get('random_combination_generation', False):
@@ -638,16 +641,24 @@ def main():
                 setting_names = list(settings.keys())
                 setting_values = [settings[name] for name in setting_names]
                 permutations = list(itertools.product(*setting_values))
+                
+            if resumption_mode:
+                # ? Get all permutations after the last permutation (inclusive)
+                last_permutation_index = permutations.index(last_permutation)
+                permutations = permutations[last_permutation_index:]
+                start_index = last_permutation_index + 1
+            else:
+                start_index = 1
             
             statuses = []
             retry_permutations = []
             
             write_permutations_to_file(os.path.join(campaign_folder, 'tests.txt'), permutations)
             
-            for i, permutation in enumerate(permutations):
+            for i, permutation in enumerate(permutations, start=start_index):
                 start_time = time.time()
                 permutation_name = generate_permutation_name(permutation)
-                console.print(f"[{i + 1}/{len(permutations)}] Running Test: {permutation_name}...")
+                console.print(f"[{i}/{len(permutations)}] Running Test: {permutation_name}...")
                 scripts = generate_scripts(permutation)
                 machines = campaign['machines']
                 scripts_per_machine_list = distribute_scripts(scripts, machines)
@@ -711,7 +722,7 @@ def main():
                             random_color = pick_contrasting_color(random_color)
                         used_colors.add(random_color)
                         script_string = scripts_per_machine_list[i]
-                        duration_s = campaign.get('duration_s', 60)
+                        duration_s = permutation[0]
                         timeout = duration_s + buffer_duration
                         process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder, random_color))
                         processes.append(process)
