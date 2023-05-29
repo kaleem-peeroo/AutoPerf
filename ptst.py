@@ -20,6 +20,16 @@ from multiprocessing import Process, Manager
 
 console = Console()
 
+def write_permutations_to_file(file, permutations):
+    console.print(f"Writing permutations to {file}.", style="bold white")
+    with open(file, 'w') as f:
+        f.write("")
+    
+    for permutation in permutations:
+        perm_name = generate_permutation_name(permutation)
+        with open(file, "a") as f:
+            f.write(f"{perm_name} \n")
+
 def generate_color_list(color_count):
     colors = []
     for i in range(color_count):
@@ -601,6 +611,8 @@ def main():
             setting_names = list(settings.keys())
             setting_values = [settings[name] for name in setting_names]
             permutations = list(itertools.product(*setting_values))
+            
+            write_permutations_to_file(os.path.join(campaign_folder, 'tests.txt'), permutations)
             
             for i, permutation in enumerate(permutations):
                 start_time = time.time()
