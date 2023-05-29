@@ -11,7 +11,7 @@
             "durability": [0],
             "latency_count": [100]
         },
-        "custom_tests_file": "",
+        "custom_tests_file": "configs/3Pi/ptst_prod_custom_tests.txt",
         "machines": [
             {
                 "name": "p1",
@@ -36,7 +36,7 @@
     {
         "name": "PTST Refactored RCG Test PS",
         "random_combination_generation": true,
-        "random_combination_count": 10,
+        "random_combination_count": 1,
         "settings": {
             "duration_s": [60],
             "datalen_bytes": [100],
