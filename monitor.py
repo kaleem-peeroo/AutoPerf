@@ -23,7 +23,7 @@ console = Console()
 ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 # ? To use the above: ansi_escape.sub("", string)
 
-def format_duration(duration):
+def format_duration(duration, units):
     days = duration // (24 * 3600)
     duration = duration % (24 * 3600)
     hours = duration // 3600
@@ -32,7 +32,27 @@ def format_duration(duration):
     duration %= 60
     seconds = duration
 
-    return f"{hours} Hours, {minutes} Minutes, {seconds} Seconds"
+    days = int(days)
+    hours = int(hours)
+    minutes = int(minutes)
+    seconds = int(seconds)
+
+    days_str = f"{days} Days, " if days > 0 else ""
+    hours_str = f"{hours} Hrs, " if hours > 0 else ""
+    minutes_str = f"{minutes} Mins, " if minutes > 0 else ""
+    seconds_str = f"{seconds} Secs" if seconds > 0 else ""
+    
+    output_str = ""
+    if "d" in units:
+        output_str += days_str
+    if "h" in units:
+        output_str += hours_str
+    if "m" in units:
+        output_str += minutes_str
+    if "s" in units:
+        output_str += seconds_str
+
+    return output_str
 
 args = sys.argv[1:]
 
@@ -94,42 +114,33 @@ except json.decoder.JSONDecodeError as e:
     console.print(Markdown(f"# The first test of {current_campaign_name} is still running. Please wait until it finishes."), style="bold red")
     sys.exit()
 
-"""
-What stats do we want to show?
-- # of tests finished
-
-Individual tests:
-- start time
-- end time
-- duration
-- statuses
-- pings
-- ssh pings
-
-"""
-
 table = Table(title=f"Stats for {current_campaign_name} ({len(latest_json)} tests)", show_header=True)
-table.add_column("#", justify="left", no_wrap=True)
+table.add_column("#", justify="left", no_wrap=True, min_width=5)
 table.add_column("Test", justify="left", no_wrap=True)
 table.add_column("Start", justify="left", no_wrap=True)
 table.add_column("End", justify="left", no_wrap=True)
-table.add_column("Duration", justify="left", no_wrap=True)
+table.add_column("Duration", justify="left", no_wrap=True, min_width=15)
 table.add_column("Pings", justify="left", no_wrap=True)
 table.add_column("SSH Pings", justify="left", no_wrap=True)
-table.add_column("Statuses", justify="left", no_wrap=False)
+table.add_column("Statuses", justify="left", no_wrap=True)
 
-for test in latest_json:
+# ? Limit to the last 20 tests.
+table.add_row("...", "...", "...", "...", "...", "...", "...", "...", style="bold green")
+for test in latest_json[-10:]:
     index = latest_json.index(test) + 1
     test_name = test["permutation_name"]
     start_time = test["start_time"]
     end_time = test["end_time"]
-    duration = format_duration(test["duration_s"])
-    
+    duration = format_duration(test["duration_s"], "hms")
+
     raw_statuses = [machine["status"] for machine in test["machine_statuses"]]
     
     statuses = [f"{machine['name']}: {machine['status']}" for machine in test["machine_statuses"]]
     pings = [f"{machine['name']}: {machine['pings']}" for machine in test["machine_statuses"]]
     ssh_pings = [f"{machine['name']}: {machine['ssh_pings']}" for machine in test["machine_statuses"]]
+    
+    avg_ping = str(int(sum([machine['pings'] for machine in test["machine_statuses"]]) / len([machine['pings'] for machine in test["machine_statuses"]])))
+    avg_ssh_ping = str(int(sum([machine['ssh_pings'] for machine in test["machine_statuses"]]) / len([machine['ssh_pings'] for machine in test["machine_statuses"]])))
     
     if "unreachable" in raw_statuses:
         color = "bold red"
@@ -144,6 +155,28 @@ for test in latest_json:
     pings = ", ".join(str(x) for x in pings)
     ssh_pings = ", ".join(str(x) for x in ssh_pings)
     
-    table.add_row(str(index), test_name, start_time, end_time, duration, pings, ssh_pings, statuses, style=color)
+    table.add_row(str(index), test_name, start_time, end_time, duration, avg_ping, avg_ssh_ping, statuses, style=color)
 
 console.print(table)
+
+# ? Check how long ago the last test ended.
+last_end_time = datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S')
+current_time = datetime.now()
+time_elapsed = current_time - last_end_time
+time_elapsed_secs = time_elapsed.total_seconds()
+time_elapsed = format_duration(time_elapsed_secs, "dhms")
+
+# ? Get the duration from the test name
+match = re.search(r'(\d+)SEC', test_name)
+if match:
+    test_duration_secs = int(match.group(1))
+else:
+    test_duration_secs = 86400 / 2
+
+# ? Make red if been longer than a day.
+if time_elapsed_secs > (test_duration_secs * 2):
+    color = "bold red"
+else:
+    color = "bold green"
+
+console.print(Markdown(f"# Last Test Ended {time_elapsed} Ago"), style=color)
