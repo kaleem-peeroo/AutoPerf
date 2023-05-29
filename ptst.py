@@ -641,12 +641,16 @@ def main():
                 setting_names = list(settings.keys())
                 setting_values = [settings[name] for name in setting_names]
                 permutations = list(itertools.product(*setting_values))
+            
+            total_permutations = len(permutations)
                 
             if resumption_mode:
                 # ? Get all permutations after the last permutation (inclusive)
                 last_permutation_index = permutations.index(last_permutation)
                 permutations = permutations[last_permutation_index:]
                 start_index = last_permutation_index + 1
+                
+                # ? Calculate total number of permutations
             else:
                 start_index = 1
             
@@ -658,7 +662,7 @@ def main():
             for i, permutation in enumerate(permutations, start=start_index):
                 start_time = time.time()
                 permutation_name = generate_permutation_name(permutation)
-                console.print(f"[{i}/{len(permutations)}] Running Test: {permutation_name}...")
+                console.print(f"[{i}/{total_permutations}] Running Test: {permutation_name}...")
                 scripts = generate_scripts(permutation)
                 machines = campaign['machines']
                 scripts_per_machine_list = distribute_scripts(scripts, machines)
