@@ -136,6 +136,7 @@ for test in latest_json[-10:]:
     raw_statuses = [machine["status"] for machine in test["machine_statuses"]]
     
     statuses = [f"{machine['name']}: {machine['status']}" for machine in test["machine_statuses"]]
+    statuses = sorted(statuses, key=lambda x: x.split(":")[0])
     pings = [f"{machine['name']}: {machine['pings']}" for machine in test["machine_statuses"]]
     ssh_pings = [f"{machine['name']}: {machine['ssh_pings']}" for machine in test["machine_statuses"]]
     
