@@ -200,7 +200,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     for other_machine in other_machines:
         other_machine_name = other_machine['name']
         for i in range(max_retries):
-            console.print(f"{machine_name}: SSH Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold " + color)
+            console.print(f"{machine_name}: SSH Pinging {other_machine_name} (attempt {i+1}/{max_retries})...", style="bold " + color)
             if test_ssh(other_machine):
                 break
             if i == max_retries - 1:
@@ -435,6 +435,18 @@ def generate_scripts(permutation):
            
     return updated_scripts
 
+def parse_permutation_name(name):
+    parts = name.split('_')
+    duration = int(parts[0][:-3])
+    datalen = int(parts[1][:-1])
+    pub_count = int(parts[2][:-1])
+    sub_count = int(parts[3][:-1])
+    reliability = parts[4] == "REL"
+    use_multicast = parts[5] == "MC"
+    durability = int(parts[6][:-3])
+    latency_count = int(parts[7][:-2])
+    return (duration, datalen, pub_count, sub_count, reliability, use_multicast, durability, latency_count)
+
 def generate_permutation_name(permutation):
     duration_s = f"{permutation[0]}SEC"
     datalen_bytes = f"{permutation[1]}B"
@@ -604,13 +616,31 @@ def main():
             camp_index = config_data.index(campaign)
             console.print(Markdown(f"# [{camp_index + 1}/{len(config_data)}] Running Campaign: {campaign_name}"))
             
+            # ? Check for custom_tests_file
+            custom_tests_file = campaign.get('custom_tests_file', '')
+            
+            if custom_tests_file != '':
+                # ? Check if file path exists
+                if not os.path.exists(custom_tests_file):
+                    console.print(f"Error: {custom_tests_file} does not exist.")
+                    sys.exit()
+                
+                # ? Read custom tests file
+                with open(custom_tests_file, 'r') as f:
+                    custom_tests = f.readlines()
+                    
+                # ? Remove all \n from custom tests and strip whitespace
+                custom_tests = [test.replace('\n', '').strip() for test in custom_tests]
+                    
+                permutations = [parse_permutation_name(test) for test in custom_tests]
+            else:
+                settings = campaign['settings']
+                setting_names = list(settings.keys())
+                setting_values = [settings[name] for name in setting_names]
+                permutations = list(itertools.product(*setting_values))
+            
             statuses = []
             retry_permutations = []
-            
-            settings = campaign['settings']
-            setting_names = list(settings.keys())
-            setting_values = [settings[name] for name in setting_names]
-            permutations = list(itertools.product(*setting_values))
             
             write_permutations_to_file(os.path.join(campaign_folder, 'tests.txt'), permutations)
             
