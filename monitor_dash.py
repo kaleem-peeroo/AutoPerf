@@ -199,6 +199,9 @@ def check(machine):
         return machine
     
     tests = latest_json
+    for test in tests:
+        test['index'] = tests.index(test)
+
     machine['current_campaign']['tests'] = tests
     
     machine['current_campaign']['completed_tests'] = len(tests)
@@ -287,8 +290,8 @@ def get_col(machine):
     time_since_last_test = format_duration(machine['current_campaign']['last_test']['time_elapsed_seconds'], "dhms")
     
     recent_tests = machine['current_campaign']['tests'][-25:]
-    recent_tests = sorted(recent_tests, key=lambda x: x['permutation_name'])
-    reversed_recent_tests = list(reversed([get_tr_for_test(test, machine['current_campaign']['tests']) for test in recent_tests]))
+    recent_tests = sorted(recent_tests, key=lambda x: x['index'], reverse=True)
+    recent_tests = [get_tr_for_test(test, machine['current_campaign']['tests']) for test in recent_tests]
     
     return dbc.Col([
         dbc.Card([
@@ -345,7 +348,7 @@ def get_col(machine):
                             html.Th("SSH Pings"),
                             html.Th("Statuses"),
                         ]),
-                        html.Tbody(reversed_recent_tests if recent_tests else html.Tr([html.Td("No tests yet")]))
+                        html.Tbody(recent_tests if recent_tests else html.Tr([html.Td("No tests yet")]))
                     ], bordered=True, hover=True, responsive=False)
                 ])
             ], style={"overflow-y": "scroll"})
