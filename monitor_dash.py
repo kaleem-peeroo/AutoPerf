@@ -142,6 +142,18 @@ def get_unreachable_tests(tests):
             unreachable_tests.append(test)
     return unreachable_tests
 
+def get_missing_files_tests(tests):
+    missing_files_tests = []
+    for test in tests:
+        has_missing_files = False
+        for machine_status in test['machine_statuses']:
+            if "no csv files" in machine_status['status']:
+                has_missing_files = True
+                break
+        if has_missing_files:
+            missing_files_tests.append(test)
+    return missing_files_tests
+
 def check(machine):
     host = machine['ip']
     key_path = machine['ssh_key']
@@ -199,6 +211,7 @@ def check(machine):
         return machine
     
     tests = latest_json
+    
     for test in tests:
         test['index'] = tests.index(test)
 
@@ -209,10 +222,12 @@ def check(machine):
     punctual_test_count = len(get_punctual_tests(tests))
     prolonged_test_count = len(get_prolonged_tests(tests))
     unreachable_test_count = len(get_unreachable_tests(tests))
+    missing_files_test_count = len(get_missing_files_tests(tests))
     
     machine['current_campaign']['punctual_tests'] = punctual_test_count
     machine['current_campaign']['prolonged_tests'] = prolonged_test_count
     machine['current_campaign']['unreachable_tests'] = unreachable_test_count
+    machine['current_campaign']['missing_files_tests'] = missing_files_test_count
     
     # ? Check how long ago the last test ended.
     test_name = tests[-1]['permutation_name']
@@ -257,15 +272,26 @@ def get_tr_for_test(test, tests):
             color = "#ffc107"
         elif "unreachable" in status:
             color = "#dc3545"
+        elif "no csv files" in status:
+            color = "#6c757d"
 
         status_elements.append(html.P(status, style={"font-family": "monospace", "color": color}))
+    
+    color = "#28a745"  # default to green
+
+    for status in raw_statuses:
+        if "unreachable" in status:
+            color = "#dc3545"  # set to red
+            break  # no need to check further
+        elif "prolonged" in status or "no csv files" in status:
+            color = "#ffc107"  # set to orange
     
     ping_elements = [html.P(ping, style={"font-family": "monospace"}) for ping in raw_pings]
     ssh_ping_elements = [html.P(ssh_ping, style={"font-family": "monospace"}) for ssh_ping in raw_ssh_pings]
     
     tr = html.Tr([
         html.Td(index),
-        html.Td(test_name[:25] + "...", id=test_name),
+        html.Td(test_name[:25] + "...", id=test_name, style={"color": color}),
         dbc.Tooltip(test_name, target=test_name),
         html.Td([html.P(split_start_time[0]), html.P(split_start_time[1])], style={"font-family": "monospace"}),
         html.Td([html.P(split_end_time[0]), html.P(split_end_time[1])], style={"font-family": "monospace"}),
@@ -289,7 +315,7 @@ def get_col(machine):
     
     time_since_last_test = format_duration(machine['current_campaign']['last_test']['time_elapsed_seconds'], "dhms")
     
-    recent_tests = machine['current_campaign']['tests'][-25:]
+    recent_tests = machine['current_campaign']['tests'][-100:]
     recent_tests = sorted(recent_tests, key=lambda x: x['index'], reverse=True)
     recent_tests = [get_tr_for_test(test, machine['current_campaign']['tests']) for test in recent_tests]
     
@@ -320,10 +346,10 @@ def get_col(machine):
                         dbc.Tooltip("Punctual tests", target="punctual-target")
                     ], style={"color": "#007bff"}),
                     html.Div([
-                        html.I(className="fa fa-check", style={"margin-right": "0.5vw"}),
-                        html.Span(machine['current_campaign']["usable_tests"], id="usable-target"),
-                        dbc.Tooltip("Usable tests", target="usable-target")
-                    ], style={"color": "#28a745"}),
+                        html.I(className="fas fa-hourglass-end", style={"margin-right": "0.5vw"}),
+                        html.Span(machine['current_campaign']["missing_files_tests"], id="missing-files-target"),
+                        dbc.Tooltip("Missing Files tests", target="missing-files-target")
+                    ], style={"color": "#6c757d"}),
                     html.Div([
                         html.I(className="fas fa-hourglass-end", style={"margin-right": "0.5vw"}),
                         html.Span(machine['current_campaign']["prolonged_tests"], id="prolonged-target"),
@@ -336,7 +362,7 @@ def get_col(machine):
                     ], style={"color": "#dc3545"})
                 ], style={"display": "flex", "justify-content": "space-between", "align-items": "center", "margin": "1vh 0"}),
                 html.Div([
-                    html.H3("Last 25 Tests"),
+                    # html.H3("Last 25 Tests"),
                     dbc.Table([
                         html.Thead([
                             html.Th("#"),
@@ -351,7 +377,7 @@ def get_col(machine):
                         html.Tbody(recent_tests if recent_tests else html.Tr([html.Td("No tests yet")]))
                     ], bordered=True, hover=True, responsive=False)
                 ])
-            ], style={"overflow-y": "scroll"})
+            ], style={"overflow-x": "scroll"})
         ])
     ], width=6)
     
