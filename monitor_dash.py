@@ -75,6 +75,10 @@ machines = [
     }
 ]
 
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+k = paramiko.RSAKey.from_private_key_file("/Users/kaleem/.ssh/id_rsa")
+
 def format_duration(duration, units):
     days = duration // (24 * 3600)
     duration = duration % (24 * 3600)
@@ -159,10 +163,7 @@ def check(machine):
     key_path = machine['ssh_key']
     ptstdir = machine['ptstdir']
     
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-    k = paramiko.RSAKey.from_private_key_file(key_path)
+    
     ssh.connect(host, username="acwh025", pkey = k, banner_timeout=120)
 
     # ? Check if ptstdir is valid.
