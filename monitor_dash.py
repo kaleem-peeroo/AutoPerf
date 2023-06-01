@@ -430,17 +430,20 @@ def click_force_restart(machine_name):
         # Resume screen
         stdin, stdout, stderr = ssh.exec_command('screen -r', get_pty=True)
 
+        time.sleep(1)
         print("terminating current process")
         # Terminate current process
         stdin.write('\x03')  # Send ctrl+c
         stdin.flush()
+        time.sleep(1)
         stdin.write('exit\n')  # Send exit command
         stdin.flush()
-
+        time.sleep(1)
         print("rerunning last command")
         # Rerun last command
         stdin.write('!!\n')
         stdin.flush()
+        time.sleep(1)
 
         terminal_output = stdout.read().decode('utf-8')
 
@@ -448,6 +451,7 @@ def click_force_restart(machine_name):
         # Leave screen
         stdin.write('\x01\x04')  # Send ctrl+a+d
         stdin.flush()
+        time.sleep(1)
         
         print("all done")
         ssh.close()
