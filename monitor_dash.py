@@ -305,9 +305,8 @@ def get_tr_for_test(test, tests):
     ], style={'font-size': "0.8rem"})
     
     return tr
-    
+  
 def get_col(machine):
-    
     time_since_last_test = machine['current_campaign']['last_test']['time_elapsed_seconds']
     last_test_duration = machine['current_campaign']['last_test']['duration']
     
@@ -321,6 +320,13 @@ def get_col(machine):
     recent_tests = machine['current_campaign']['tests'][-100:]
     recent_tests = sorted(recent_tests, key=lambda x: x['index'], reverse=True)
     recent_tests = [get_tr_for_test(test, machine['current_campaign']['tests']) for test in recent_tests]
+    
+    last_test_alert = dbc.Alert([
+        html.Div([
+            "Last test finished ", 
+            html.Strong(f"{time_since_last_test} ago."),
+        ]),
+    ], color=last_test_color, style={"margin-bottom": "0.5vh", "display": "flex", "justify-content": "space-between", "align-items": "center"})
     
     return dbc.Col([
         dbc.Card([
@@ -341,7 +347,7 @@ def get_col(machine):
             ], style={"display": "flex", "justify-content": "space-between", "align-items": "center"}),
             dbc.CardBody([
                 dbc.Alert("<br>".join(machine['errors']), color="danger", dismissable=True, style={"margin-bottom": "0.5vh"}) if len(machine['errors']) > 0 else None,
-                dbc.Alert(["Last test finished ", html.Strong(f"{time_since_last_test} ago.")], color=last_test_color, style={"margin-bottom": "0.5vh"}),
+                last_test_alert,
                 html.Div([
                     html.Div([
                         html.I(className="far fa-clock", style={"margin-right": "0.5vw"}),
@@ -400,14 +406,97 @@ def update_metrics(n):
     
     return output
 
+@app.callback(
+    dash.dependencies.Output('restart-loading-output', 'children'),
+    dash.dependencies.Input('force-restart-dropdown', 'value')
+)
+def click_force_restart(machine_name):
+    if machine_name not in [machine['name'] for machine in machines]:
+        return None
+    
+    success_output = [
+        html.I(className="fas fa-check", style={"margin": "0 0.5vw 0 0 ", "color": "#f0fff0"}), 
+        html.Span(f"{machine_name} restarted.", style={"color": "#f0fff0"})
+    ]
+    output = success_output
+    
+    # ? Get machine with same name
+    machine = [machine for machine in machines if machine['name'] == machine_name][0]
+    ip = machine['ip']
+    
+    try:
+        ssh.connect(ip, username="acwh025", pkey = k, banner_timeout=120)
+    
+        # Resume screen
+        stdin, stdout, stderr = ssh.exec_command('screen -r', get_pty=True)
+
+        print("terminating current process")
+        # Terminate current process
+        stdin.write('\x03')  # Send ctrl+c
+        stdin.flush()
+        stdin.write('exit\n')  # Send exit command
+        stdin.flush()
+
+        print("rerunning last command")
+        # Rerun last command
+        stdin.write('!!\n')
+        stdin.flush()
+
+        terminal_output = stdout.read().decode('utf-8')
+
+        print("leaving screen")
+        # Leave screen
+        stdin.write('\x01\x04')  # Send ctrl+a+d
+        stdin.flush()
+        
+        print("all done")
+        ssh.close()
+    except Exception as e:
+        output = [
+            html.I(className="fas fa-times", style={"margin": "0 0.5vw 0 0 ", "color": "#f0fff0"}),
+            html.Span(f"{machine_name} failed to restart: {e}", style={"color": "#f0fff0"})
+        ]
+    
+    return output
+
 if __name__ == '__main__':
     app.layout = dbc.Container([
-        dbc.Row(id="root"),
+        html.Div([
+            html.P("PTST Monitor", style={"font-size": "2rem", "font-weight": "bold", "color": "white"}),
+            html.Div([
+                html.Span("Force Restart: ", style={"margin-right": "1vw"}),
+                dcc.Dropdown(
+                    options=[machine['name'] for machine in machines], 
+                    placeholder='Force Restart',
+                    id="force-restart-dropdown", 
+                    style={"max-width": "25vw", "min-width": "15vw", "color": "black", "margin-right": "3vw"}
+                ),
+                dcc.Loading(
+                    id="restart-loading", 
+                    children=[html.Div(id="restart-loading-output")], 
+                    style={"width": "fit-content", "margin-right": "3vw"},
+                    # graph, cube, circle, dot
+                    type="dot",
+                    color="white"
+                ),
+            ], style={"display": "flex", "justify-content": "space-between", "align-items": "center"}),
+        ], style={
+            "width": "100vw", 
+            "height": "10vh", 
+            "display": "flex", 
+            "justify-content": "space-between", 
+            "align-items": "center",
+            "padding": "0 2vw",
+            "background-color": "#1E90FF",
+            "color": "white"
+        }
+        ),
+        dbc.Row(id="root", style={"padding": "2vh 2vw"}),
         dcc.Interval(
             id='interval-component',
             interval=30*1000, # in milliseconds
             n_intervals=0
         )
-    ], fluid=True, style={'padding': '2vh 2vw'})
+    ], fluid=True, style={"padding": "0"})
     
     app.run_server(debug=True, port=8051, host="127.0.0.1")
