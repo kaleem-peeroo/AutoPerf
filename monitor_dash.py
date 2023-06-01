@@ -250,6 +250,8 @@ def check(machine):
     machine['current_campaign']['last_test']['duration'] = test_duration_secs
     machine['current_campaign']['last_test']['time_elapsed_seconds'] = time_elapsed_secs
     
+    ssh.close()
+    
     return machine
     
 def get_tr_for_test(test, tests):
@@ -403,7 +405,7 @@ if __name__ == '__main__':
         dbc.Row(id="root"),
         dcc.Interval(
             id='interval-component',
-            interval=10*1000, # in milliseconds
+            interval=30*1000, # in milliseconds
             n_intervals=0
         )
     ], fluid=True, style={'padding': '2vh 2vw'})
