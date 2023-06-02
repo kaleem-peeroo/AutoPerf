@@ -11,7 +11,7 @@
             "durability": [0],
             "latency_count": [100]
         },
-        "custom_tests_file": "",
+        "custom_tests_file": "configs/5Pi/rel_impact_100B_UC_0DUR_custom_tests.txt",
         "machines": [
                 {
                     "name": "k2",
