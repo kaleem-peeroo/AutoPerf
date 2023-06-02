@@ -6,6 +6,7 @@ import paramiko
 import zipfile
 import pandas as pd
 import shutil
+import numpy as np
 
 from pprint import pprint
 from rich.console import Console
@@ -26,6 +27,10 @@ remote_dir = '/home/acwh025/Documents/PTST/'
 local_dir = '/Volumes/kaleem_ssd/phd_data/5Pi/ML_DP_DATA/'
 backup_local_dir = "./ML_DP_DATA/"
 
+if not os.path.exists(local_dir):
+    console.print(f"Couldn't access {local_dir}. Using backup {backup_local_dir}.", style="bold red")
+    local_dir = backup_local_dir
+
 # Define the time interval to check for new zip files (in seconds)
 interval = 120
 
@@ -38,21 +43,30 @@ def get_settings_from_testname(test):
     datalen_bytes = re.findall("\d*B", test)[0].replace("B", "")
     pub_count = re.findall("\d*P", test)[0].replace("P", "")
     sub_count = re.findall("\d*S", test)[0].replace("S", "")
-    best_effort = 1 if len(re.findall("_be_", test)) > 0 else 0
-    multicast = 1 if len(re.findall("_mc_", test)) > 0 else 0
-    durability = re.findall("\ddur", test)[0].replace("dur", "")
+    best_effort = 1 if len(re.findall("_BE_", test)) > 0 else 0
+    multicast = 1 if len(re.findall("_MC_", test)) > 0 else 0
+    durability = re.findall("\dDUR", test)[0].replace("DUR", "")
 
     return datalen_bytes, pub_count, sub_count, best_effort, multicast, durability
 
 def get_metric_per_sub(sub_file, metric):
     df = pd.read_csv(sub_file, on_bad_lines='skip', skiprows=2, skipfooter=3, engine='python')
-    sub_head = [x for x in df.columns if metric in x.lower()][0]
-    df = df[sub_head]
-    df.rename(os.path.basename(sub_file).replace(".csv", ""), inplace=True)
-    # ? Take off the last number because its an average produced by perftest
-    df = df[:-2]
     
-    return df
+    sub_head = [x for x in df.columns if metric in x.lower()][0]
+    
+    series = df[sub_head].iloc[:-2]
+    
+    series.rename(os.path.basename(sub_file).replace(".csv", ""), inplace=True)
+    
+    # Check if Series contains non-float values
+    if not series.dtype == 'float64':
+        # Filter out non-float values
+        float_mask = series.apply(lambda x: np.isreal(x))
+        series = series[float_mask]
+        # Convert non-float values to float
+        series = series.astype(float)
+    
+    return series
 
 def get_participant_allocation_per_machine(type, test):
     config = os.path.join(test, 'config.json')
@@ -125,7 +139,7 @@ def test_summary_exists(test, summaries_dir):
 
 def get_expected_csv_count_from_testname(testname):
     split = testname.split("_")
-    sub_split = [_ for _ in split if "S" in _]
+    sub_split = [_ for _ in split if "S" in _ and "SEC" not in _]
     sub_value = sub_split[0].replace("S", "")
     sub_value = int(sub_value)
     
@@ -159,7 +173,7 @@ while True:
         if not os.path.exists(extracted_dir):
             with console.status("Extracting " + local_file):
                 with zipfile.ZipFile(local_file, 'r') as zip_ref:
-                    zip_ref.extractall(local_dir)
+                    zip_ref.extractall(local_file.replace(".zip", ""))
         
 
     camp_dirs = [os.path.join(local_dir, camp_dir) for camp_dir in os.listdir(local_dir) if os.path.isdir(os.path.join(local_dir, camp_dir)) and "usable" not in camp_dir and "summaries" not in camp_dir]
@@ -170,6 +184,10 @@ while True:
         
         # ? Get usable tests
         test_dirs = [os.path.join(camp_dir, test_dir) for test_dir in os.listdir(camp_dir) if os.path.isdir(os.path.join(camp_dir, test_dir))]
+        
+        if len(test_dirs) == 0:
+            console.print(f"No tests found in {camp_dir}.", style="bold red")
+            continue
         
         usable_test_dirs = []
         
@@ -204,8 +222,12 @@ while True:
             
             log_dir = os.path.join(test, "logs")
             
-            log_files = os.listdir(log_dir)
-            logs = [os.path.join(log_dir, file) for file in log_files if '_cpu.log' in file or '_mem.log' in file or '_dev.log' in file or '_edev.log' in file]
+            if os.path.exists(log_dir):
+                log_files = os.listdir(log_dir)
+                logs = [os.path.join(log_dir, file) for file in log_files if '_cpu.log' in file or '_mem.log' in file or '_dev.log' in file or '_edev.log' in file]
+            else:
+                logs = [os.path.join(test, file) for file in os.listdir(test) if file.endswith(".log")]
+                
             logs = sorted(logs)
             
             log_cols = []
@@ -280,8 +302,14 @@ while True:
             total_sample_rate = get_total_sub_metric(sub_files, "samples/s").rename("total_sample_rate")
             total_samples_received = pd.Series([get_total_sub_metric(sub_files, "total samples").max()]).rename("total_samples_received")
             total_samples_lost = pd.Series([get_total_sub_metric(sub_files, "lost samples").max()]).rename("total_samples_lost")
-            pub_allocation_per_machine = pd.Series(get_participant_allocation_per_machine('pub', test)).rename("pub_allocation_per_machine")
-            sub_allocation_per_machine = pd.Series(get_participant_allocation_per_machine('sub', test)).rename("sub_allocation_per_machine")
+            
+            pub_allocation_per_machine = get_participant_allocation_per_machine('pub', test)
+            if pub_allocation_per_machine is not []:
+                pub_allocation_per_machine = pd.Series(get_participant_allocation_per_machine('pub', test)).rename("pub_allocation_per_machine")
+            
+            sub_allocation_per_machine = get_participant_allocation_per_machine('sub', test)
+            if sub_allocation_per_machine is not []:
+                sub_allocation_per_machine = pd.Series(get_participant_allocation_per_machine('sub', test)).rename("sub_allocation_per_machine")
 
             test_df = pd.concat([
                 latencies,
@@ -328,10 +356,10 @@ while True:
     
     summaries_dirs = [os.path.join(local_dir, camp_dir) for camp_dir in os.listdir(local_dir) if os.path.isdir(os.path.join(local_dir, camp_dir)) and "summaries" in camp_dir]
     
-    filename = os.path.basename(summaries_dir).replace("_summaries", "_df.csv")
-    filename = os.path.join(local_dir, filename)
+    output_filename = os.path.basename(summaries_dir).replace("_summaries", "_df.csv")
+    output_filename = os.path.join(local_dir, output_filename)
     
-    if not os.path.exists(filename):
+    if not os.path.exists(output_filename):
     
         camp_dfs = []
 
@@ -553,13 +581,12 @@ while True:
                 camp_dfs.append(camp_df)
                 
         
-        
         df = pd.concat(camp_dfs, ignore_index=True)
         df.drop_duplicates(inplace=True)
         print(f"Has NaNs: {df.isnull().values.any()}")
         with console.status("Writin df to file..."):
-            df.to_csv(filename, index=False)
-        console.print(f"New df printed to {filename}", style="bold green")
+            df.to_csv(output_filename, index=False)
+        console.print(f"New df printed to {output_filename}", style="bold green")
     
     console.print(f"Waiting for {interval} seconds...", style="bold blue")
     time.sleep(interval)
