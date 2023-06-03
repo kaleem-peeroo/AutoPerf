@@ -50,7 +50,12 @@ def get_settings_from_testname(test):
     return datalen_bytes, pub_count, sub_count, best_effort, multicast, durability
 
 def get_metric_per_sub(sub_file, metric):
-    df = pd.read_csv(sub_file, on_bad_lines='skip', skiprows=2, skipfooter=3, engine='python')
+    try:
+        df = pd.read_csv(sub_file, on_bad_lines='skip', skiprows=2, skipfooter=3, engine='python')
+    except Exception as e:
+        console.print(f"Error when getting data from {sub_file}:", style="bold red")
+        console.print(f"\t{e}", style="bold red")
+        return None
     
     sub_head = [x for x in df.columns if metric in x.lower()][0]
     
@@ -325,9 +330,17 @@ while True:
             for sub_file in sub_files:
                 sub_i = sub_files.index(sub_file)
                 
-                throughput_mbps = get_metric_per_sub(sub_file, "mbps").rename(f"sub_{sub_i}_throughput_mbps")
+                mbps_metrics = get_metric_per_sub(sub_file, "mbps")
+                if mbps_metrics is None:
+                    continue
                 
-                sample_rate = get_metric_per_sub(sub_file, "samples/s").rename(f"sub_{sub_i}_sample_rate")
+                throughput_mbps = mbps_metrics.rename(f"sub_{sub_i}_throughput_mbps")
+                
+                sample_rate_metrics = get_metric_per_sub(sub_file, "samples/s")
+                if sample_rate_metrics is None:
+                    continue
+                
+                sample_rate = sample_rate_metrics.rename(f"sub_{sub_i}_sample_rate")
                 
                 total_samples_received = pd.Series([get_metric_per_sub(sub_file, "total samples").max()])
                 total_samples_received = total_samples_received.rename(f"sub_{sub_i}_total_samples_received")
