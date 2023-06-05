@@ -727,19 +727,23 @@ def main():
                         used_colors.add(random_color)
                         script_string = scripts_per_machine_list[i]
                         duration_s = permutation[0]
-                        timeout = duration_s + buffer_duration
-                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder, random_color))
+                        timeout_s = duration_s + buffer_duration
+                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout_s, machine_statuses, permutation_name, campaign_folder, random_color))
                         processes.append(process)
                         try:
                             process.start()
                         except Exception as e:
                             console.print(f"Caught exception from Process: {e}", style="bold red")
 
+                    # wait for the processes to finish or timeout_s
+                    start_time = time.time()
                     for process in processes:
-                        try:
-                            process.join()
-                        except Exception as e:
-                            console.print(f"Caught exception from Process: {e}", style="bold red")
+                        while process.is_alive():
+                            if time.time() - start_time > timeout_s:
+                                process.terminate()
+                                console.print(f"Process {process.pid} timed out and was terminated", style="bold red")
+                                break
+                        process.join()
 
                     # ? Check if all machines returned no csv files and add to retry_permutations if so
                     all_no_csv_files = all("no csv files" in status['status'] for status in machine_statuses)
