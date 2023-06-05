@@ -269,13 +269,16 @@ def get_tr_for_test(test, tests):
     
     status_elements = []
     for status in raw_statuses:
-        if "punctual" in status:
+        if "punctual" in status.lower():
             color = "#28a745"
-        elif "prolonged" in status or "no csv file" in status:
+        elif "prolonged" in status.lower() or "no csv file" in status.lower():
             color = "#ffc107"
-        elif "unreachable" in status:
+        elif "unreachable" in status.lower():
             color = "#dc3545"
-        elif "no csv files" in status:
+        elif "no csv files" in status.lower():
+            color = "#6c757d"
+        else:
+            pprint(status.lower())
             color = "#6c757d"
 
         status_elements.append(html.P(status, style={"font-family": "monospace", "color": color}))

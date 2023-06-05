@@ -142,7 +142,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     status = {
         "host": machine['host'],
         "name": machine['name'],
-        "status": "unknown",
+        "status": "",
         "pings": 0,
         "ssh_pings": 0
     }    
