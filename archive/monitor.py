@@ -7,7 +7,6 @@ with warnings.catch_warnings():
 import json
 import os
 import re
-import subprocess
 import sys
 
 from datetime import datetime
@@ -22,37 +21,6 @@ console = Console()
 
 ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 # ? To use the above: ansi_escape.sub("", string)
-
-def format_duration(duration, units):
-    days = duration // (24 * 3600)
-    duration = duration % (24 * 3600)
-    hours = duration // 3600
-    duration %= 3600
-    minutes = duration // 60
-    duration %= 60
-    seconds = duration
-
-    days = int(days)
-    hours = int(hours)
-    minutes = int(minutes)
-    seconds = int(seconds)
-
-    days_str = f"{days} Days, " if days > 0 else ""
-    hours_str = f"{hours} Hrs, " if hours > 0 else ""
-    minutes_str = f"{minutes} Mins, " if minutes > 0 else ""
-    seconds_str = f"{seconds} Secs" if seconds > 0 else ""
-    
-    output_str = ""
-    if "d" in units:
-        output_str += days_str
-    if "h" in units:
-        output_str += hours_str
-    if "m" in units:
-        output_str += minutes_str
-    if "s" in units:
-        output_str += seconds_str
-
-    return output_str
 
 args = sys.argv[1:]
 
@@ -82,10 +50,16 @@ try:
 except Exception as e:
     console.log(f"Exception when getting remote_files: \n\t{e}", style="bold red")
 
-remote_jsons = [file for file in remote_files if file.endswith(".json")]
-
-if len(remote_jsons) == 0:
-    console.print(Markdown("# No tests in progress."), style="bold red")
+# ? Find the latest output file i.e. the latest txt file.
+stdin, stdout, stderr = ssh.exec_command(f"cd {ptstdir}; ls -t | grep -vE 'stderr|stdout' | grep -E '\\.txt$' | head -1")
+latest_txt_file = stdout.read().decode().strip()
+latest_txt_file_exists = len(latest_txt_file) > 0
+if not latest_txt_file:
+    console.print(f"No output.txt files found but here are the latest zips:", style="bold red")
+    zip_files = [file for file in remote_files if '.zip' in file]
+    for file in zip_files:
+        console.print(f"\t{file}")
+    console.print("\n")
     sys.exit()
 
 remote_txt_file = sftp.open(os.path.join( ptstdir, latest_txt_file ))
