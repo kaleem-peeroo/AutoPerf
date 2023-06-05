@@ -752,22 +752,22 @@ def main():
                     all_no_csv_files = all("no csv files" in status['status'] for status in machine_statuses)
                     if all_no_csv_files:
                         retry_permutations.append(permutation)
-                    else:
-                        # Write the statuses to a file
-                        with open(statuses_file, 'a') as f:
-                            end_time = time.time()
-                            start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
-                            end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
-                            result = {
-                                'permutation_name': permutation_name, 
-                                'machine_statuses': list(machine_statuses),
-                                'start_time': start_time_str,
-                                'end_time': end_time_str,
-                                'duration_s': int(end_time - start_time)
-                            }
-                            json.dump(result, f, indent=4)
-                            statuses.append(result)
-                            f.write(',\n')
+                    
+                    # Write the statuses to a file
+                    with open(statuses_file, 'a') as f:
+                        end_time = time.time()
+                        start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+                        end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
+                        result = {
+                            'permutation_name': permutation_name, 
+                            'machine_statuses': list(machine_statuses),
+                            'start_time': start_time_str,
+                            'end_time': end_time_str,
+                            'duration_s': int(end_time - start_time)
+                        }
+                        json.dump(result, f, indent=4)
+                        statuses.append(result)
+                        f.write(',\n')
                         
                 console.print(f"[bold green]{permutation_name} completed in {time.time() - start_time:.2f} seconds[/bold green]")
 
@@ -794,7 +794,7 @@ def main():
                                 random_color = pick_contrasting_color(random_color)
                             used_colors.add(random_color)
                             script_string = scripts_per_machine_list[i]
-                            duration_s = campaign.get('duration_s', 60)
+                            duration_s = permutation[0]
                             timeout_s = duration_s + buffer_duration
                             process = Process(target=ssh_to_machine, args=(machines, machine, script_string, duration_s, machine_statuses, permutation_name, campaign_folder, random_color))
                             processes.append(process)
@@ -940,7 +940,7 @@ def main():
                             random_color = pick_contrasting_color(random_color)
                         used_colors.add(random_color)
                         script_string = scripts_per_machine_list[i]
-                        duration_s = campaign.get('duration_s', 60)
+                        duration_s = permutation[0]
                         timeout_s = duration_s + buffer_duration
                         process = Process(target=ssh_to_machine, args=(machines, machine, script_string, duration_s, machine_statuses, permutation_name, campaign_folder, random_color))
                         processes.append(process)
@@ -965,22 +965,22 @@ def main():
                     all_no_csv_files = all("no csv files" in status['status'] for status in machine_statuses)
                     if all_no_csv_files:
                         retry_permutations.append(permutation)
-                    else:
-                        # Write the statuses to a file
-                        with open(statuses_file, 'a') as f:
-                            end_time = time.time()
-                            start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
-                            end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
-                            result = {
-                                'permutation_name': permutation_name, 
-                                'machine_statuses': list(machine_statuses),
-                                'start_time': start_time_str,
-                                'end_time': end_time_str,
-                                'duration_s': int(end_time - start_time)
-                            }
-                            json.dump(result, f, indent=4)
-                            statuses.append(result)
-                            f.write(',\n')
+
+                    # Write the statuses to a file
+                    with open(statuses_file, 'a') as f:
+                        end_time = time.time()
+                        start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+                        end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
+                        result = {
+                            'permutation_name': permutation_name, 
+                            'machine_statuses': list(machine_statuses),
+                            'start_time': start_time_str,
+                            'end_time': end_time_str,
+                            'duration_s': int(end_time - start_time)
+                        }
+                        json.dump(result, f, indent=4)
+                        statuses.append(result)
+                        f.write(',\n')
                         
                 console.print(f"[bold green]{permutation_name} completed in {time.time() - start_time:.2f} seconds[/bold green]")
             
