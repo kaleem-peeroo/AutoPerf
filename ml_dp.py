@@ -98,27 +98,31 @@ def get_total_sub_metric(sub_files, metric):
     for file in sub_files:
         try:
             df = pd.read_csv(file, on_bad_lines="skip", skiprows=2, skipfooter=3, engine="python")
-        except Exception as e:
-            console.print(f"Error when getting data from {file}:", style="bold red")
-            console.print(f"\t{e}", style="bold red")
+        except pd.errors.ParserError as e:
+            print(f"Error when getting data from {file}:")
+            print(f"\t{e}")
             continue
+        
         sub_head = [x for x in df.columns if metric in x.lower()][0]
         df = df[sub_head]
-        df.rename(os.path.basename(file).replace(".csv", ""), inplace=True)
-        sub_dfs.append(df)
+        
+        df = pd.DataFrame(df)  # Convert Series to DataFrame
+        
+        numeric_cols = df.select_dtypes(include=[np.number])
+        total = numeric_cols.sum()
+        
+        file_name = os.path.splitext(os.path.basename(file))[0]
+        total.rename(file_name, inplace=True)
+        
+        sub_dfs.append(total)
         
     if sub_dfs:
         sub_df = pd.concat(sub_dfs, axis=1)
-    
-        # ? Add up all columns to create total column
-        sub_df["total_" + metric] = sub_df[list(sub_df.columns)].sum(axis=1)
-        
-        # ? Take off the last number because its an average produced by perftest
-        sub_df = sub_df[:-2]
-        
+        sub_df["total_" + metric] = sub_df.sum(axis=1)
+        sub_df = sub_df.iloc[:-2]
         return sub_df["total_" + metric][:-1]
     else:
-        console.print(f"Couldn't get any data from {sub_files}.", style="bold red")
+        print(f"Couldn't get any data from {sub_files}.")
 
 def get_latencies(pubfile):
     try:
@@ -310,11 +314,13 @@ while True:
             
             pub_allocation_per_machine = get_participant_allocation_per_machine('pub', test)
             if pub_allocation_per_machine is not []:
-                pub_allocation_per_machine = pd.Series(get_participant_allocation_per_machine('pub', test)).rename("pub_allocation_per_machine")
+                pub_allocation_per_machine = pd.Series(pub_allocation_per_machine, dtype="float64")
+                pub_allocation_per_machine = pub_allocation_per_machine.rename("pub_allocation_per_machine")
             
             sub_allocation_per_machine = get_participant_allocation_per_machine('sub', test)
             if sub_allocation_per_machine is not []:
-                sub_allocation_per_machine = pd.Series(get_participant_allocation_per_machine('sub', test)).rename("sub_allocation_per_machine")
+                sub_allocation_per_machine = pd.Series(sub_allocation_per_machine, dtype="float64")
+                sub_allocation_per_machine = sub_allocation_per_machine.rename("sub_allocation_per_machine")
 
             test_df = pd.concat([
                 latencies,
