@@ -741,6 +741,9 @@ def main():
                         while process.is_alive():
                             if time.time() - start_time > timeout_s:
                                 process.terminate()
+                                # ? Set status to prolonged for each machine status
+                                for machine_status in machine_statuses:
+                                    machine_status['status'] = 'prolonged'
                                 console.print(f"Process {process.pid} timed out and was terminated", style="bold red")
                                 break
                         process.join()
