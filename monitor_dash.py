@@ -346,7 +346,7 @@ def get_col(machine):
                 ),
             ], style={"display": "flex", "justify-content": "space-between", "align-items": "center"}),
             dbc.CardBody([
-                dbc.Alert("<br>".join(machine['errors']), color="danger", dismissable=True, style={"margin-bottom": "0.5vh"}) if len(machine['errors']) > 0 else None,
+                dbc.Alert("".join(f"{machine['name']}: {machine['errors']}"), color="danger", dismissable=True, style={"margin-bottom": "0.5vh"}) if len(machine['errors']) > 0 else None,
                 last_test_alert,
                 html.Div([
                     html.Div([
