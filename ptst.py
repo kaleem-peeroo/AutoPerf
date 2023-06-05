@@ -138,7 +138,7 @@ def test_ssh(machine):
     else:
         return False
 
-def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, test_name, campaign_folder, color, max_retries=10):
+def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, test_name, campaign_folder, color, max_retries=20):
     status = {
         "host": machine['host'],
         "name": machine['name'],
@@ -717,6 +717,7 @@ def main():
                 with Manager() as manager:
                     machine_statuses = manager.list()
                     
+                    machine_process_map = []
                     processes = []
                     used_colors = set()
                     for i, machine in enumerate(machines):
@@ -729,6 +730,7 @@ def main():
                         duration_s = permutation[0]
                         timeout_s = duration_s + buffer_duration
                         process = Process(target=ssh_to_machine, args=(machines, machine, script_string, duration_s, machine_statuses, permutation_name, campaign_folder, random_color))
+                        machine_process_map.append((machine, process))
                         processes.append(process)
                         try:
                             process.start()
@@ -742,9 +744,20 @@ def main():
                             if time.time() - start_time > timeout_s:
                                 process.terminate()
                                 # ? Set status to prolonged for each machine status
-                                for machine_status in machine_statuses:
-                                    machine_status['status'] = 'prolonged'
-                                console.print(f"Process {process.pid} timed out and was terminated", style="bold red")
+
+                                machine_from_process = [machine for machine, p in machine_process_map if p == process][0]
+
+                                status = {
+                                    "host": machine_from_process['host'],
+                                    "name": machine_from_process['name'],
+                                    "status": "Prolonged.",
+                                    "pings": 0,
+                                    "ssh_pings": 0
+                                }
+                                
+                                machine_statuses.append(status)
+                                
+                                console.print(f"{machine_from_process['name']} timed out after {timeout_s} seconds and was terminated", style="bold red")
                                 break
                         process.join()
 
@@ -753,6 +766,7 @@ def main():
                     if all_no_csv_files:
                         retry_permutations.append(permutation)
                     
+                    console.print("Writing test status to file...", style="bold white")
                     # Write the statuses to a file
                     with open(statuses_file, 'a') as f:
                         end_time = time.time()
@@ -809,9 +823,20 @@ def main():
                                 if time.time() - start_time > timeout_s:
                                     process.terminate()
                                     # ? Set status to prolonged for each machine status
-                                    for machine_status in machine_statuses:
-                                        machine_status['status'] = 'prolonged'
-                                    console.print(f"Process {process.pid} timed out and was terminated", style="bold red")
+
+                                    machine_from_process = [machine for machine, p in machine_process_map if p == process][0]
+
+                                    status = {
+                                        "host": machine_from_process['host'],
+                                        "name": machine_from_process['name'],
+                                        "status": "Prolonged.",
+                                        "pings": 0,
+                                        "ssh_pings": 0
+                                    }
+                                    
+                                    machine_statuses.append(status)
+                                    
+                                    console.print(f"{machine_from_process['name']} timed out after {timeout_s} seconds and was terminated", style="bold red")
                                     break
                             process.join()
 
@@ -955,9 +980,20 @@ def main():
                             if time.time() - start_time > timeout_s:
                                 process.terminate()
                                 # ? Set status to prolonged for each machine status
-                                for machine_status in machine_statuses:
-                                    machine_status['status'] = 'prolonged'
-                                console.print(f"Process {process.pid} timed out and was terminated", style="bold red")
+
+                                machine_from_process = [machine for machine, p in machine_process_map if p == process][0]
+
+                                status = {
+                                    "host": machine_from_process['host'],
+                                    "name": machine_from_process['name'],
+                                    "status": "Prolonged.",
+                                    "pings": 0,
+                                    "ssh_pings": 0
+                                }
+                                
+                                machine_statuses.append(status)
+                                
+                                console.print(f"{machine_from_process['name']} timed out after {timeout_s} seconds and was terminated", style="bold red")
                                 break
                         process.join()
 
@@ -1025,9 +1061,20 @@ def main():
                                 if time.time() - start_time > timeout_s:
                                     process.terminate()
                                     # ? Set status to prolonged for each machine status
-                                    for machine_status in machine_statuses:
-                                        machine_status['status'] = 'prolonged'
-                                    console.print(f"Process {process.pid} timed out and was terminated", style="bold red")
+
+                                    machine_from_process = [machine for machine, p in machine_process_map if p == process][0]
+
+                                    status = {
+                                        "host": machine_from_process['host'],
+                                        "name": machine_from_process['name'],
+                                        "status": "Prolonged.",
+                                        "pings": 0,
+                                        "ssh_pings": 0
+                                    }
+                                    
+                                    machine_statuses.append(status)
+                                    
+                                    console.print(f"{machine_from_process['name']} timed out after {timeout_s} seconds and was terminated", style="bold red")
                                     break
                             process.join()
 
