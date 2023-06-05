@@ -165,7 +165,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             status['pings'] = i + 1
             break
         if i == max_retries - 1:
-            status['status'] = "unreachable"
+            status['status'] = status["status"] + "Unreachable."
             machine_statuses.append(status)
             return None, None
         time.sleep(1)
@@ -176,7 +176,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             status['ssh_pings'] = i + 1
             break
         if i == max_retries - 1:
-            status['status'] = "unreachable"
+            status['status'] = status["status"] + "Unreachable."
             machine_statuses.append(status)
             return None, None
         time.sleep(1)
@@ -190,7 +190,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             if ping_machine(other_machine):
                 break
             if i == max_retries - 1:
-                status['status'] = f"{machine_name}: {other_machine_name} unreachable via ping"
+                status['status'] = status["status"] + f"{machine_name}: {other_machine_name} unreachable via ping. "
                 machine_statuses.append(status)
                 return None, None
             time.sleep(1)
@@ -204,7 +204,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             if test_ssh(other_machine):
                 break
             if i == max_retries - 1:
-                status['status'] = f"{machine_name}: {other_machine_name} unreachable via ssh"
+                status['status'] = status['status'] + f"{machine_name}: {other_machine_name} unreachable via ssh. "
                 machine_statuses.append(status)
                 return None, None
             time.sleep(1)
@@ -222,7 +222,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         console.print(ssh_command)
         console.print(stdout)
         console.print(stderr)
-        status['status'] = "delete logs failed"
+        status['status'] = status["status"] + "Delete logs failed. "
         machine_statuses.append(status)
         return None, None
     
@@ -235,7 +235,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         console.print(f"{machine_name}: Start logs failed", style="bold red")
         console.print(stdout)
         console.print(stderr)
-        status['status'] = "start logs failed"
+        status['status'] = status['status'] + "Start logs failed. "
         machine_statuses.append(status)
         return None, None
 
@@ -248,12 +248,12 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     while True:
         if process.poll() is not None:
             stdout, stderr = process.communicate()
-            status['status'] = "punctual"
+            status['status'] = status['status'] + "Punctual. "
             break
         elif time.time() - start_time > timeout:
             process.kill()
             stdout, stderr = process.communicate()
-            status['status'] = "prolonged"
+            status['status'] = status['status'] + "Prolonged. "
             status[f"{machine_name}_script"] = script_string
             break
         time.sleep(1)
@@ -264,7 +264,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         remote_files = remote_files_process.stdout.decode().split()
         
         if len(remote_files) == 0:
-            status['status'] = "no csv files"
+            status['status'] = status['status'] + "No csv files found. "
         else:
             os.makedirs(test_folder, exist_ok=True)
             
@@ -296,7 +296,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         console.print(ssh_command)
         console.print(stdout)
         console.print(stderr)
-        status['status'] = status['status'] + ". Parse cpu logs failed"
+        status['status'] = status['status'] + "Parse cpu logs failed. "
     
     # ? Parse memory logs on remote machine
     console.print(f"{machine_name}: Parsing mem logs...", style="bold " + color)
@@ -307,7 +307,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         console.print(f"{machine_name}: Parse MEM logs failed", style="bold red")
         console.print(stdout)
         console.print(stderr)
-        status['status'] = status['status'] + ". Parse mem logs failed"
+        status['status'] = status['status'] + "Parse mem logs failed. "
 
     # ? Parse network logs on remote machine
     console.print(f"{machine_name}: Parsing network logs...", style="bold " + color)
@@ -320,7 +320,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             console.print(f"{machine_name}: Parse {network_option} logs failed", style="bold red")
             console.print(stdout)
             console.print(stderr)
-            status['status'] = status['status'] + f". Parse {network_option.lower()} logs failed"
+            status['status'] = status['status'] + f"Parse {network_option.lower()} logs failed. "
 
     # ? Download all .logs from remote machine
     remote_files_command = f"ssh {machine['username']}@{machine['host']} 'ls *.log'"
@@ -328,7 +328,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     remote_files = remote_files_process.stdout.decode().split()
     
     if len(remote_files) == 0:
-        status['status'] = "no log files"
+        status['status'] = status['status'] + "No log files. "
     else:
         os.makedirs(test_folder, exist_ok=True)
         
@@ -357,7 +357,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     # ? Look for logs in the test_folder.
     downloaded_log_files = [file for file in os.listdir(test_folder) if file.endswith(".log")]
     if len(downloaded_log_files) == 0:
-        status['status'] = status['status'] + f". No log files downloaded."
+        status['status'] = status['status'] + f"No log files downloaded. "
 
     machine_statuses.append(status)
 
@@ -728,7 +728,7 @@ def main():
                         script_string = scripts_per_machine_list[i]
                         duration_s = permutation[0]
                         timeout_s = duration_s + buffer_duration
-                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout_s, machine_statuses, permutation_name, campaign_folder, random_color))
+                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, duration_s, machine_statuses, permutation_name, campaign_folder, random_color))
                         processes.append(process)
                         try:
                             process.start()
@@ -795,19 +795,25 @@ def main():
                             used_colors.add(random_color)
                             script_string = scripts_per_machine_list[i]
                             duration_s = campaign.get('duration_s', 60)
-                            timeout = duration_s + buffer_duration
-                            process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder, random_color))
+                            timeout_s = duration_s + buffer_duration
+                            process = Process(target=ssh_to_machine, args=(machines, machine, script_string, duration_s, machine_statuses, permutation_name, campaign_folder, random_color))
                             processes.append(process)
                             try:
                                 process.start()
                             except Exception as e:
                                 console.print(f"Caught exception from Process: {e}", style="bold red")
 
+                        start_time = time.time()
                         for process in processes:
-                            try:
-                                process.join()
-                            except Exception as e:
-                                console.print(f"Caught exception from Process: {e}", style="bold red")
+                            while process.is_alive():
+                                if time.time() - start_time > timeout_s:
+                                    process.terminate()
+                                    # ? Set status to prolonged for each machine status
+                                    for machine_status in machine_statuses:
+                                        machine_status['status'] = 'prolonged'
+                                    console.print(f"Process {process.pid} timed out and was terminated", style="bold red")
+                                    break
+                            process.join()
 
                         # Write the statuses to a file
                         with open(statuses_file, 'a') as f:
@@ -935,19 +941,25 @@ def main():
                         used_colors.add(random_color)
                         script_string = scripts_per_machine_list[i]
                         duration_s = campaign.get('duration_s', 60)
-                        timeout = duration_s + buffer_duration
-                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder, random_color))
+                        timeout_s = duration_s + buffer_duration
+                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, duration_s, machine_statuses, permutation_name, campaign_folder, random_color))
                         processes.append(process)
                         try:
                             process.start()
                         except Exception as e:
                             console.print(f"Caught exception from Process: {e}", style="bold red")
 
+                    start_time = time.time()
                     for process in processes:
-                        try:
-                            process.join()
-                        except Exception as e:
-                            console.print(f"Caught exception from Process: {e}", style="bold red")
+                        while process.is_alive():
+                            if time.time() - start_time > timeout_s:
+                                process.terminate()
+                                # ? Set status to prolonged for each machine status
+                                for machine_status in machine_statuses:
+                                    machine_status['status'] = 'prolonged'
+                                console.print(f"Process {process.pid} timed out and was terminated", style="bold red")
+                                break
+                        process.join()
 
                     # ? Check if all machines returned no csv files and add to retry_permutations if so
                     all_no_csv_files = all("no csv files" in status['status'] for status in machine_statuses)
@@ -999,19 +1011,25 @@ def main():
                             
                             script_string = scripts_per_machine_list[i]
                             duration_s = campaign.get('duration_s', 60)
-                            timeout = duration_s + buffer_duration
-                            process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout, machine_statuses, permutation_name, campaign_folder, random_color))
+                            timeout_s = duration_s + buffer_duration
+                            process = Process(target=ssh_to_machine, args=(machines, machine, script_string, duration_s, machine_statuses, permutation_name, campaign_folder, random_color))
                             processes.append(process)
                             try:
                                 process.start()
                             except Exception as e:
                                 console.print(f"Caught exception from Process: {e}", style="bold red")
 
+                        start_time = time.time()
                         for process in processes:
-                            try:
-                                process.join()
-                            except Exception as e:
-                                console.print(f"Caught exception from Process: {e}", style="bold red")
+                            while process.is_alive():
+                                if time.time() - start_time > timeout_s:
+                                    process.terminate()
+                                    # ? Set status to prolonged for each machine status
+                                    for machine_status in machine_statuses:
+                                        machine_status['status'] = 'prolonged'
+                                    console.print(f"Process {process.pid} timed out and was terminated", style="bold red")
+                                    break
+                            process.join()
 
                         # Write the statuses to a file
                         with open(statuses_file, 'a') as f:
