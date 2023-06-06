@@ -262,7 +262,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         elif time.time() - start_time > timeout:
             process.kill()
             stdout, stderr = process.communicate()
-            status['status'] = status['status'] + "Prolonged. "
+            status['status'] = status['status'] + "Script prolonged. "
             status[f"{machine_name}_script"] = script_string
             break
         time.sleep(1)
