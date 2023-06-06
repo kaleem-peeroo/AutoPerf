@@ -1,0 +1,12 @@
+[
+    {
+        "name": "3Pi",
+        "ip": "10.210.35.27",
+        "ptstdir": "/home/acwh025/Documents/PTST"
+    },
+    {
+        "name": "5Pi",
+        "ip": "10.210.58.126",
+        "ptstdir": "/home/acwh025/Documents/PTST"
+    }
+]
