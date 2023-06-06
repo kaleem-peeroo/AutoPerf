@@ -373,9 +373,6 @@ navbar = dbc.NavbarSimple(
             placeholder="Controllers",
             id='controllers-dropdown', 
             style={"min-width": "10vw"},
-            # Temporarily set the value to the first controller in the list.
-            # TODO: Delete when done testing.
-            value="10.210.35.27"
         ),
     ],
     brand="PTST Monitor",
