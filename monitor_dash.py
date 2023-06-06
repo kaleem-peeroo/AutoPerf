@@ -163,7 +163,6 @@ def check(machine):
     key_path = machine['ssh_key']
     ptstdir = machine['ptstdir']
     
-    
     ssh.connect(host, username="acwh025", pkey = k, banner_timeout=120)
 
     # ? Check if ptstdir is valid.
@@ -269,14 +268,14 @@ def get_tr_for_test(test, tests):
     
     status_elements = []
     for status in raw_statuses:
-        if "punctual" in status.lower():
-            color = "#28a745"
+        if "unreachable" in status.lower():
+            color = "#dc3545"
         elif "prolonged" in status.lower() or "no csv file" in status.lower():
             color = "#ffc107"
-        elif "unreachable" in status.lower():
-            color = "#dc3545"
         elif "no csv files" in status.lower():
             color = "#6c757d"
+        elif "punctual" in status.lower():
+            color = "#28a745"
         else:
             pprint(status.lower())
             color = "#6c757d"
@@ -286,10 +285,10 @@ def get_tr_for_test(test, tests):
     color = "#28a745"  # default to green
 
     for status in raw_statuses:
-        if "unreachable" in status:
+        if "unreachable" in status.lower():
             color = "#dc3545"  # set to red
             break  # no need to check further
-        elif "prolonged" in status or "no csv files" in status:
+        elif "prolonged" in status.lower() or "no csv files" in status.lower():
             color = "#ffc107"  # set to orange
     
     ping_elements = [html.P(ping, style={"font-family": "monospace"}) for ping in raw_pings]

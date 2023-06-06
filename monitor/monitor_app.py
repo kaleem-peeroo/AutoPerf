@@ -14,7 +14,7 @@ from dash.dependencies import Output, Input
 
 console = Console()
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.FONT_AWESOME])
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -76,6 +76,101 @@ def generate_error_message(error):
         dismissable=True,
         is_open=True,
     ))
+
+def generate_machine_status_cards(statuses):
+    """
+    csv_count, log_count, time_to_script_s, script_exec_s, post_script_time_s, status, name, pings, ssh_pings
+    """
+    
+    cards = []
+    
+    statuses = sorted(statuses, key=lambda x: x['name'])
+    
+    for status in statuses:
+        if not isinstance(status, dict):
+            console.print(f"Status is not a dict: {status}", style="bold red")
+            return ""
+        
+        machine_name = status['name']
+        machine_status = status['status']
+        pings = status['pings']
+        ssh_pings = status['ssh_pings']
+        try:
+            log_count = status['log_count']
+        except KeyError:
+            log_count = 0
+        try:
+            csv_count = status['csv_count']
+        except KeyError:
+            csv_count = 0
+        try:
+            time_to_scripts_s = int(status['time_to_scripts_s'])
+        except KeyError:
+            time_to_scripts_s = 0
+        try:
+            script_exec_s = int(status['script_exec_s'])
+        except KeyError:
+            script_exec_s = 0
+        try:
+            post_script_time_s = int(status['post_script_time_s'])
+        except KeyError:
+            post_script_time_s = 0
+    
+        if "no csv" in machine_status.lower():
+            status_color = "#ffc107"
+            bootstrap_color = "#ffc107"
+        elif "punctual" in machine_status.lower():
+            status_color = "#28a745"
+            bootstrap_color = "#28a745"
+        elif "prolonged" in machine_status.lower():
+            status_color = "#ffc107"
+            bootstrap_color = "#ffc107"
+        elif "unreachable" in machine_status.lower():
+            status_color = "#dc3545"
+            bootstrap_color = "#dc3545"
+        else:
+            status_color = "white"
+            bootstrap_color = "white"
+    
+        total_duration_s = time_to_scripts_s + script_exec_s + post_script_time_s
+        
+        if total_duration_s == 0:
+            duration_bar = None
+        else:
+            duration_bar = dbc.Progress(
+                [
+                    dbc.Progress(value=int(time_to_scripts_s), label=int(time_to_scripts_s), color="info", striped=True, bar=True, max=total_duration_s, min=0),
+                    dbc.Progress(value=int(script_exec_s), label=int(script_exec_s), color="warning", striped=True, bar=True, max=total_duration_s, min=0),
+                    dbc.Progress(value=int(post_script_time_s), label=int(post_script_time_s), color="success", striped=True, bar=True, max=total_duration_s, min=0),
+                ]
+            )
+
+        file_count = html.Div([
+            html.Span(f"CSVs: {csv_count}"),
+            html.Span(f"LOGs: {csv_count}"),
+            html.Span(f"Pings: {pings}"),
+            html.Span(f"SSH Pings: {ssh_pings}"),
+        ], style={"margin-top": "1vh", "display": "flex", "justify-content": "space-between", "align-items": "center", "color": "white"})
+
+        card = dbc.Card([
+            dbc.CardHeader(
+                [
+                  html.Span(f"{machine_name} Status", style={"max-width": "50%", "color": "white"}),
+                  html.Span(f"{machine_status}", style={"max-width": "50%", "font-family": "monospace", "color": status_color, "background-color": "#444", "padding": "0 1vw"}),
+                ],
+                style={"font-family": "monospace", "display": "flex", "justify-content": "space-between", "align-items": "center"}
+            ),
+            dbc.CardBody([
+                duration_bar, 
+                file_count
+            ])
+        ], color=bootstrap_color, outline=True, style={"width": "100%", "margin-bottom": "1vh"})
+    
+        cards.append(card)
+
+    cards_container = html.Div(cards, style={"display": "flex", "justify-content": "space-between", "flex-wrap": "wrap"})
+    
+    return cards_container
 
 @app.callback(
     Output('root', 'children'),
@@ -139,21 +234,70 @@ def get_controller_status(controller_ip):
     tests = latest_json
     sorted_tests = sorted(tests, key=lambda x: datetime.strptime(x['end_time'], '%Y-%m-%d %H:%M:%S'), reverse=True)
     
-    for test in tests:
+    for test in sorted_tests:
         test['index'] = tests.index(test)
         
-    status['tests'] = tests
-    
-    test_trs = []
+    status['tests'] = sorted_tests
+    punctual_tests = 0
+    prolonged_tests = 0
+    unreachable_tests = 0
     
     for test in sorted_tests:
-        # ? Get all statuses for this test.
         statuses = []
         for machine_status in test['machine_statuses']:
             statuses.append(machine_status['status'])
         statuses = ", ".join(statuses)
         
         if "prolonged" in statuses.lower():
+            prolonged_tests += 1
+        elif "unreachable" in statuses.lower():
+            unreachable_tests += 1
+        elif "punctual" in statuses.lower():
+            punctual_tests += 1
+
+    test_types_container = dbc.CardBody([
+        html.Span(f"Total: {len(sorted_tests)}", style={"color": "#007bff"}),
+        html.Span(f"Punctual: {punctual_tests}", style={"color": "#28a745"}),
+        html.Span(f"Prolonged: {prolonged_tests}", style={"color": "#ffc107"}),
+        html.Span(f"Unreachable: {unreachable_tests}", style={"color": "#dc3545"})
+    ], style={"display": "flex", "justify-content": "space-between", "width": "100%"})
+
+    # ? Get how long its been since the last test.
+    
+    last_test_time = datetime.strptime(sorted_tests[0]['end_time'], '%Y-%m-%d %H:%M:%S')
+    time_since_last_test = datetime.now() - last_test_time
+    seconds = time_since_last_test.total_seconds()
+    if seconds < 60:
+        time_since_last_test = f"{int(seconds)} seconds"
+    elif seconds < 3600:
+        time_since_last_test = f"{int(seconds/60)} minutes"
+    elif seconds < 86400:
+        time_since_last_test = f"{int(seconds/3600)} hours"
+    else:
+        time_since_last_test = f"{int(seconds/86400)} days"
+
+    last_test_color = "success" if "punctual" in sorted_tests[0]['machine_statuses'][0]['status'].lower() else "danger"
+
+    last_test_alert = dbc.Alert([
+        html.Div([
+            "Last test finished ", 
+            html.Strong(f"{time_since_last_test} ago."),
+        ]),
+    ], color=last_test_color, style={"margin-bottom": "1vh", "display": "flex", "justify-content": "space-between", "align-items": "center"})
+    
+    test_trs = []
+    
+    for test in sorted_tests:
+        start_time = datetime.strptime(test['start_time'], '%Y-%m-%d %H:%M:%S').strftime('%a %d %b %y %H:%M')
+        end_time = datetime.strptime(test['end_time'], '%Y-%m-%d %H:%M:%S').strftime('%a %d %b %y %H:%M')
+
+        # ? Get all statuses for this test.
+        statuses = []
+        for machine_status in test['machine_statuses']:
+            statuses.append(machine_status['status'])
+        statuses = ", ".join(statuses)
+        
+        if "prolonged" in statuses.lower() or "no csv" in statuses.lower():
             row_color = "#FFA500"
         elif "unreachable" in statuses.lower():
             row_color = "#dc3545"
@@ -162,41 +306,46 @@ def get_controller_status(controller_ip):
         else:
             row_color = "#6c757d"
         
+        duration_s = test['duration_s']
+        
+        duration = ""
+        if duration_s < 60:
+            duration = f"{duration_s} seconds"
+        elif duration_s < 3600:
+            minutes = int(duration_s/60)
+            seconds = duration_s%60
+            duration = f"{minutes} minutes, {seconds} seconds"
+        elif duration_s < 86400:
+            hours = int(duration_s/3600)
+            minutes = int((duration_s%3600)/60)
+            seconds = duration_s%60
+            duration = f"{hours} hours, {minutes} minutes, {seconds} seconds"
+        else:
+            days = int(duration_s/86400)
+            hours = int((duration_s%86400)/3600)
+            minutes = int((duration_s%3600)/60)
+            seconds = duration_s%60
+            duration = f"{days} days, {hours} hours, {minutes} minutes, {seconds} seconds"
+        
         test_tr = html.Tr([
-            html.Td(test['index'], style={"color": row_color}),
+            html.Td(test['index'], style={"color": row_color, "font-family": "monospace"}),
             html.Td(test['permutation_name'], style={"color": row_color}),
-            html.Td(test['start_time'], style={"color": row_color}),
-            html.Td(test['end_time'], style={"color": row_color}),
-            html.Td(test['duration_s'], style={"color": row_color}),
-            html.Td(
-                html.Ul([
-                    html.Li(
-                        [
-                            html.Span(
-                                machine_status['name'],
-                                style={"font-weight": "bold"}
-                            ),
-                            html.Span(
-                                f"- {machine_status['status']}",
-                                style={"margin-left": "1vw"}
-                            )
-                        ]
-                    )
-                    for machine_status in test['machine_statuses']
-                ]), style={"color": row_color}
-            )
+            html.Td(start_time, style={"color": row_color}),
+            html.Td(end_time, style={"color": row_color}),
+            html.Td(duration, style={"color": row_color}),
+            html.Td(generate_machine_status_cards(test['machine_statuses']), style={"color": row_color})
         ])
         test_trs.append(test_tr)
     
-    table = dbc.Table(striped=True, bordered=True, hover=True, responsive=True, 
+    table = dbc.Table(bordered=True, hover=True, responsive=True, 
         children=[
             html.Thead(
                 html.Tr([
-                    html.Th("#"),
-                    html.Th("Test"),
-                    html.Th("Start"),
-                    html.Th("End"),
-                    html.Th("Duration (s)"),
+                    html.Th("#", style={"width": "5%"}),
+                    html.Th("Test", style={"width": "20%"}),
+                    html.Th("Start", style={"width": "10%"}),
+                    html.Th("End", style={"width": "10%"}),
+                    html.Th("Duration", style={"width": "10%"}),
                     html.Th("Statuses")
                 ])
             ),
@@ -206,6 +355,8 @@ def get_controller_status(controller_ip):
 
     return html.Div(
         [
+            last_test_alert,
+            test_types_container,
             table
         ],
         style={
