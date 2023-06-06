@@ -268,18 +268,19 @@ def get_controller_status(controller_ip):
     # ? Get how long its been since the last test.
     
     last_test_time = datetime.strptime(sorted_tests[0]['end_time'], '%Y-%m-%d %H:%M:%S')
+    last_test_duration_s = sorted_tests[0]['duration_s']
     time_since_last_test = datetime.now() - last_test_time
-    seconds = time_since_last_test.total_seconds()
-    if seconds < 60:
-        time_since_last_test = f"{int(seconds)} seconds"
-    elif seconds < 3600:
-        time_since_last_test = f"{int(seconds/60)} minutes"
-    elif seconds < 86400:
-        time_since_last_test = f"{int(seconds/3600)} hours"
+    time_since_last_test_s = time_since_last_test.total_seconds()
+    if time_since_last_test_s < 60:
+        time_since_last_test = f"{int(time_since_last_test_s)} seconds"
+    elif time_since_last_test_s < 3600:
+        time_since_last_test = f"{int(time_since_last_test_s/60)} minutes"
+    elif time_since_last_test_s < 86400:
+        time_since_last_test = f"{int(time_since_last_test_s/3600)} hours"
     else:
-        time_since_last_test = f"{int(seconds/86400)} days"
+        time_since_last_test = f"{int(time_since_last_test_s/86400)} days"
 
-    last_test_color = "success" if "punctual" in sorted_tests[0]['machine_statuses'][0]['status'].lower() else "danger"
+    last_test_color = "danger" if time_since_last_test_s > last_test_duration_s * 2 else "success"
 
     last_test_alert = dbc.Alert([
         html.Div([
