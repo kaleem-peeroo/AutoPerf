@@ -177,6 +177,9 @@ def generate_machine_status_cards(statuses):
     Input('controllers-dropdown', 'value')
 )
 def get_controller_status(controller_ip):
+    if controller_ip is None:
+        return generate_error_message("Please select a controller using the dropdown on the top right.")
+    
     status = {}
     # ? Get the controller with the given IP.
     try:
