@@ -829,7 +829,7 @@ def main():
                                     status = {
                                         "host": machine_from_process['host'],
                                         "name": machine_from_process['name'],
-                                        "status": "Prolonged.",
+                                        "status": "Prolonged process.",
                                         "pings": 0,
                                         "ssh_pings": 0
                                     }
