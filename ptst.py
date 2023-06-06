@@ -143,6 +143,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         "host": machine['host'],
         "name": machine['name'],
         "status": "",
+        "time_to_scripts_s": 0,
         "pings": 0,
         "ssh_pings": 0
     }    
@@ -158,6 +159,8 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         
     # ? Wait some time for restart to happen.
     time.sleep(5)
+    
+    start_time = time.time()
     
     for i in range(max_retries):
         console.print(f"Pinging {machine_name} (attempt {i+1}/{max_retries})...", style="bold " + color)
@@ -239,6 +242,12 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
         machine_statuses.append(status)
         return None, None
 
+    script_time = time.time()
+
+    time_to_scripts_s = script_time - start_time
+    
+    status['time_to_scripts_s'] = int(time_to_scripts_s)
+        
     # ? Run scripts on remote machine
     console.print(f"{machine_name}: Running scripts...", style="bold " + color)
     ssh_command = f"ssh {machine['username']}@{machine['host']} '{script_string}'"
@@ -258,10 +267,18 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             break
         time.sleep(1)
 
-    if status['status'] == "punctual":
+    end_time = time.time()
+    status['script_exec_s'] = int(end_time - start_time)
+
+    # ? Start timer after scripts are done
+    start_time = time.time()
+
+    if "punctual" in status['status'].lower():
         remote_files_command = f"ssh {machine['username']}@{machine['host']} 'ls *.csv'"
         remote_files_process = subprocess.run(remote_files_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         remote_files = remote_files_process.stdout.decode().split()
+        
+        status['csv_count'] = len(remote_files)
         
         if len(remote_files) == 0:
             status['status'] = status['status'] + "No csv files found. "
@@ -281,6 +298,8 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             ssh_command = f"ssh {machine['username']}@{machine['host']} 'rm *.csv'"
             with open(os.devnull, 'w') as devnull:
                 subprocess.run(ssh_command, shell=True, stdout=devnull)
+    else:
+        status['csv_count'] = 0
 
     parse_cpu_logs_command = f"sar -f sar_logs > cpu.log"
     parse_mem_logs_command = f"sar -r -f sar_logs > mem.log"
@@ -327,6 +346,8 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     remote_files_process = subprocess.run(remote_files_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     remote_files = remote_files_process.stdout.decode().split()
     
+    status['log_count'] = len(remote_files)
+    
     if len(remote_files) == 0:
         status['status'] = status['status'] + "No log files. "
     else:
@@ -349,7 +370,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
             os.rename(local_path, os.path.join(test_folder, f"{machine_name}_{remote_file}"))
         
         console.print(f"{machine_name}: Deleting log files...", style="bold " + color)
-        # ? Delete all csv files on remote machine
+        # ? Delete all log files on remote machine
         ssh_command = f"ssh {machine['username']}@{machine['host']} 'rm *.log'"
         with open(os.devnull, 'w') as devnull:
             subprocess.run(ssh_command, shell=True, stdout=devnull)
@@ -358,6 +379,10 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     downloaded_log_files = [file for file in os.listdir(test_folder) if file.endswith(".log")]
     if len(downloaded_log_files) == 0:
         status['status'] = status['status'] + f"No log files downloaded. "
+
+    # ? End timer for post script execution
+    end_time = time.time()
+    status['post_script_time_s'] = int(end_time - start_time)
 
     machine_statuses.append(status)
 
@@ -729,7 +754,8 @@ def main():
                         script_string = scripts_per_machine_list[i]
                         duration_s = permutation[0]
                         timeout_s = duration_s + buffer_duration
-                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, duration_s, machine_statuses, permutation_name, campaign_folder, random_color))
+                        extended_timeout_s = duration_s + (2 * buffer_duration)
+                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout_s, machine_statuses, permutation_name, campaign_folder, random_color))
                         machine_process_map.append((machine, process))
                         processes.append(process)
                         try:
@@ -741,7 +767,7 @@ def main():
                     start_time = time.time()
                     for process in processes:
                         while process.is_alive():
-                            if time.time() - start_time > timeout_s:
+                            if time.time() - start_time > extended_timeout_s:
                                 process.terminate()
                                 # ? Set status to prolonged for each machine status
 
@@ -757,7 +783,7 @@ def main():
                                 
                                 machine_statuses.append(status)
                                 
-                                console.print(f"{machine_from_process['name']} timed out after {timeout_s} seconds and was terminated", style="bold red")
+                                console.print(f"{machine_from_process['name']} timed out after {extended_timeout_s} seconds and was terminated", style="bold red")
                                 break
                         process.join()
 
@@ -779,6 +805,7 @@ def main():
                             'end_time': end_time_str,
                             'duration_s': int(end_time - start_time)
                         }
+                        pprint(result)
                         json.dump(result, f, indent=4)
                         statuses.append(result)
                         f.write(',\n')
