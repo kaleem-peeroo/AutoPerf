@@ -280,14 +280,14 @@ def get_controller_status(controller_ip):
     else:
         time_since_last_test = f"{int(time_since_last_test_s/86400)} days"
 
-    last_test_color = "danger" if time_since_last_test_s > last_test_duration_s * 2 else "success"
+    last_test_color = "#dc3545" if time_since_last_test_s > last_test_duration_s * 2 else "#28a745"
 
-    last_test_alert = dbc.Alert([
-        html.Div([
-            "Last test finished ", 
-            html.Strong(f"{time_since_last_test} ago."),
-        ]),
-    ], color=last_test_color, style={"margin-bottom": "1vh", "display": "flex", "justify-content": "space-between", "align-items": "center"})
+    last_test_alert = dbc.Toast([
+        "Last test finished ", 
+        html.Strong(f"{time_since_last_test} ago."),
+    ], header="Last Test", style={"border": f"2px solid {last_test_color}", "color": last_test_color, "position": "fixed", "bottom": "0", "left": "0", "margin": "10px", "z-index": "9999", "max-width": "350px"})
+
+
     
     test_trs = []
     
