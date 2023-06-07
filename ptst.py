@@ -138,7 +138,7 @@ def test_ssh(machine):
     else:
         return False
 
-def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, test_name, campaign_folder, color, max_retries=20):
+def ssh_to_machine(machines, machine, script_string, duration_s, timeout, machine_statuses, test_name, campaign_folder, color, max_retries=20):
     status = {
         "host": machine['host'],
         "name": machine['name'],
@@ -247,7 +247,7 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
     time_to_scripts_s = script_time - start_time
     
     status['time_to_scripts_s'] = int(time_to_scripts_s)
-        
+    
     # ? Run scripts on remote machine
     console.print(f"{machine_name}: Running scripts...", style="bold " + color)
     ssh_command = f"ssh {machine['username']}@{machine['host']} '{script_string}'"
@@ -269,6 +269,9 @@ def ssh_to_machine(machines, machine, script_string, timeout, machine_statuses, 
 
     end_time = time.time()
     status['script_exec_s'] = int(end_time - start_time)
+    
+    if status['script_exec_s'] < duration_s:
+        status['status'] = status['status'] + "Premature. "
 
     # ? Start timer after scripts are done
     start_time = time.time()
@@ -755,7 +758,7 @@ def main():
                         duration_s = permutation[0]
                         timeout_s = duration_s + buffer_duration
                         extended_timeout_s = duration_s + (2 * buffer_duration)
-                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, timeout_s, machine_statuses, permutation_name, campaign_folder, random_color))
+                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, duration_s, timeout_s, machine_statuses, permutation_name, campaign_folder, random_color))
                         machine_process_map.append((machine, process))
                         processes.append(process)
                         try:
