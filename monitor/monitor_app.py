@@ -178,7 +178,13 @@ def generate_machine_status_cards(statuses):
 )
 def get_controller_status(controller_ip):
     if controller_ip is None:
-        return generate_error_message("Please select a controller using the dropdown on the top right.")
+        return html.Div([
+            html.Img(
+                src="https://img.freepik.com/free-vector/thoughtful-woman-with-laptop-looking-big-question-mark_1150-39362.jpg?w=1380&t=st=1686135280~exp=1686135880~hmac=1c6f47e3cc0639fa06b4dcd83623296665f722d1ec800ac751e8906e950d650d",
+                style={"width": "25vw", "height": "auto"}
+            ),
+            html.P("Select a controller from the dropdown above to get started.", style={"color": "#666"})
+        ], style={"display": "flex", "justify-content": "center", "align-items": "center", "height": "100vh", "flex-direction": "column"})
     
     status = {}
     # ? Get the controller with the given IP.
@@ -451,6 +457,8 @@ def get_controller_status(controller_ip):
         ]
     )
 
+    ssh.close()
+
     return html.Div(
         [
             last_test_alert,
@@ -468,8 +476,6 @@ navbar = dbc.NavbarSimple(
     children=[
         dcc.Dropdown(
             options=dropdown_options,
-            # TODO: remove when done testing
-            value="10.210.35.27",
             placeholder="Controllers",
             id='controllers-dropdown', 
             style={"min-width": "10vw"},
