@@ -270,8 +270,7 @@ def ssh_to_machine(machines, machine, script_string, duration_s, timeout, machin
     end_time = time.time()
     status['script_exec_s'] = int(end_time - start_time)
     
-    # ? Add a 60 second buffer to the script execution time
-    if status['script_exec_s'] < duration_s + 60:
+    if status['script_exec_s'] < duration_s:
         status['status'] = status['status'] + "Premature. "
 
     # ? Start timer after scripts are done
