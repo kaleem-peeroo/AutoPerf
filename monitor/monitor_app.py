@@ -240,8 +240,15 @@ def get_controller_status(controller_ip):
     try:
         latest_json = json.loads(latest_json)
     except json.decoder.JSONDecodeError as e:
-        console.print(f"# The first test of {current_campaign_name} is still running. Please wait until it finishes.", style="bold red")
-        return generate_error_message(f"The first test of {current_campaign_name} is still running. Please wait until it finishes.")
+        # console.print(f"# The first test of {current_campaign_name} is still running. Please wait until it finishes.", style="bold red")
+        return html.Div([
+            html.Img(src="https://i.pinimg.com/originals/c8/97/71/c89771495cd7b8e2453000f0c66d6103.gif", style={"width": "35vw", "height": "auto"}),
+            html.P([
+                html.Span(f"The first test of "),
+                html.Span(f"{current_campaign_name}", style={"font-family": "monospace", "color": "white", "background-color": "#444", "padding": "1vh 0.5vw"}),
+                html.Span(f" is still running.")
+            ], style={"color": "#666"})
+        ], style={"display": "flex", "justify-content": "center", "align-items": "center", "height": "100vh", "flex-direction": "column"})
     
     tests = latest_json
     sorted_tests = sorted(tests, key=lambda x: datetime.strptime(x['end_time'], '%Y-%m-%d %H:%M:%S'), reverse=True)
