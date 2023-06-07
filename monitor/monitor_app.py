@@ -260,6 +260,7 @@ def get_controller_status(controller_ip):
     punctual_tests = []
     prolonged_tests = []
     unreachable_tests = []
+    premature_tests = []
     
     for test in sorted_tests:
         statuses = []
@@ -267,8 +268,10 @@ def get_controller_status(controller_ip):
             statuses.append(machine_status['status'])
         statuses = ", ".join(statuses)
         
-        if "prolonged" in statuses.lower() or "no csv" in statuses.lower():
+        if "prolonged" in statuses.lower():
             prolonged_tests.append(test['permutation_name'])
+        elif "premature" in statuses.lower():
+            premature_tests.append(test['permutation_name'])
         elif "unreachable" in statuses.lower():
             unreachable_tests.append(test['permutation_name'])
         elif "punctual" in statuses.lower():
@@ -277,31 +280,10 @@ def get_controller_status(controller_ip):
     punctual_tests.reverse()
     prolonged_tests.reverse()
     unreachable_tests.reverse()
+    premature_tests.reverse()
 
     test_types_container = html.Div([
         dbc.Row([
-            dbc.Col([
-                dbc.Card([
-                    dbc.CardBody([
-                        dbc.Accordion([
-                            dbc.AccordionItem([
-                                html.Div([
-                                    dcc.Textarea(
-                                        id="textarea",
-                                        value="\n".join([test['permutation_name'] for test in tests]),
-                                        style={"font-size": "0.8em", "min-height": "70vh", "min-width": "90%"}
-                                    ),
-                                    dcc.Clipboard(
-                                        target_id="textarea",
-                                        title="Copy to clipboard",
-                                        style={"display": "block", "margin-left": "1vw"}
-                                    )
-                                ], style={"display": "flex", "justify-content": "space-between", "align-items": "top", "width": "100%"})
-                            ], title=f"{len(tests)} Total Tests", style={"color": "#007bff"})
-                        ], start_collapsed=True, style={"border": "2px solid #007bff", "border-radius": "3px"})
-                    ])
-                ], style={"border": "none", "box-shadow": "none"})
-            ], width=3),
             dbc.Col([
                 dbc.Card([
                     dbc.CardBody([
@@ -367,6 +349,28 @@ def get_controller_status(controller_ip):
                         ], start_collapsed=True, style={"border": "2px solid #dc3545", "border-radius": "3px"})
                     ])
                 ], style={"border": "none", "box-shadow": "none"})
+            ], width=3),
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardBody([
+                        dbc.Accordion([
+                            dbc.AccordionItem([
+                                html.Div([
+                                    dcc.Textarea(
+                                        id="textarea",
+                                        value="\n".join(premature_tests),
+                                        style={"font-size": "0.8em", "min-height": "70vh", "min-width": "90%"}
+                                    ),
+                                    dcc.Clipboard(
+                                        target_id="textarea",
+                                        title="Copy to clipboard",
+                                        style={"display": "block", "margin-left": "1vw"}
+                                    )
+                                ], style={"display": "flex", "justify-content": "space-between", "align-items": "top", "width": "100%"})
+                            ], title=f"{len(tests)} Premature Tests", style={"color": "#ffc107"})
+                        ], start_collapsed=True, style={"border": "2px solid #ffc107", "border-radius": "3px"})
+                    ])
+                ], style={"border": "none", "box-shadow": "none"})
             ], width=3)
         ], style={"margin-top": "-3vh"})
     ])
@@ -404,7 +408,7 @@ def get_controller_status(controller_ip):
             statuses.append(machine_status['status'])
         statuses = ", ".join(statuses)
         
-        if "prolonged" in statuses.lower() or "no csv" in statuses.lower():
+        if "prolonged" in statuses.lower() or "premature" in statuses.lower():
             row_color = "#FFA500"
         elif "unreachable" in statuses.lower():
             row_color = "#dc3545"
