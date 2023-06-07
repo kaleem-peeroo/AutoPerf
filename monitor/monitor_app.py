@@ -197,7 +197,10 @@ def get_controller_status(controller_ip):
     name = controller['name']
     ptstdir = controller['ptstdir']
     
-    ssh.connect(ip, username="acwh025", pkey = k, banner_timeout=120)
+    try:
+        ssh.connect(ip, username="acwh025", pkey=k, banner_timeout=120)
+    except Exception as e:
+        return generate_error_message(f"Error connecting to {ip}: {str(e)}")
     
     # ? Check if ptstdir is valid.
     sftp = ssh.open_sftp()
@@ -257,7 +260,7 @@ def get_controller_status(controller_ip):
             statuses.append(machine_status['status'])
         statuses = ", ".join(statuses)
         
-        if "prolonged" in statuses.lower():
+        if "prolonged" in statuses.lower() or "no csv" in statuses.lower():
             prolonged_tests.append(test['permutation_name'])
         elif "unreachable" in statuses.lower():
             unreachable_tests.append(test['permutation_name'])
@@ -267,13 +270,6 @@ def get_controller_status(controller_ip):
     punctual_tests.reverse()
     prolonged_tests.reverse()
     unreachable_tests.reverse()
-
-    test_types_container = dbc.CardBody([
-        html.Span(f"Total: {len(sorted_tests)}", style={"color": "#007bff"}),
-        html.Span(f"Punctual: {punctual_tests}", style={"color": "#28a745"}),
-        html.Span(f"Prolonged: {prolonged_tests}", style={"color": "#ffc107"}),
-        html.Span(f"Unreachable: {unreachable_tests}", style={"color": "#dc3545"})
-    ], style={"display": "flex", "justify-content": "space-between", "width": "100%", "margin-top": "-3vh"})
 
     test_types_container = html.Div([
         dbc.Row([
