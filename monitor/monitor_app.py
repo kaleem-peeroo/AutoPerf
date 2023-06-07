@@ -207,7 +207,7 @@ def get_controller_status(controller_ip):
     try:
         remote_files = sftp.listdir(ptstdir)
     except Exception as e:
-        console.log(f"Exception when getting remote_files: \n\t{e}", style="bold red")
+        console.print(f"Exception when getting remote_files: \n\t{e}", style="bold red")
         return generate_error_message(f"Couldn't find the directory {ptstdir} on the controller {name} ({ip}): {e}")
     
     remote_jsons = [file for file in remote_files if file.endswith(".json")]
