@@ -147,7 +147,7 @@ def generate_machine_status_cards(statuses):
 
         file_count = html.Div([
             html.Span(f"CSVs: {csv_count}"),
-            html.Span(f"LOGs: {csv_count}"),
+            html.Span(f"LOGs: {log_count}"),
             html.Span(f"Pings: {pings}"),
             html.Span(f"SSH Pings: {ssh_pings}"),
         ], style={"margin-top": "1vh", "display": "flex", "justify-content": "space-between", "align-items": "center", "color": "white"})
@@ -241,9 +241,9 @@ def get_controller_status(controller_ip):
         test['index'] = tests.index(test)
         
     status['tests'] = sorted_tests
-    punctual_tests = 0
-    prolonged_tests = 0
-    unreachable_tests = 0
+    punctual_tests = []
+    prolonged_tests = []
+    unreachable_tests = []
     
     for test in sorted_tests:
         statuses = []
@@ -252,43 +252,137 @@ def get_controller_status(controller_ip):
         statuses = ", ".join(statuses)
         
         if "prolonged" in statuses.lower():
-            prolonged_tests += 1
+            prolonged_tests.append(test['permutation_name'])
         elif "unreachable" in statuses.lower():
-            unreachable_tests += 1
+            unreachable_tests.append(test['permutation_name'])
         elif "punctual" in statuses.lower():
-            punctual_tests += 1
+            punctual_tests.append(test['permutation_name'])
+
+    punctual_tests.reverse()
+    prolonged_tests.reverse()
+    unreachable_tests.reverse()
 
     test_types_container = dbc.CardBody([
         html.Span(f"Total: {len(sorted_tests)}", style={"color": "#007bff"}),
         html.Span(f"Punctual: {punctual_tests}", style={"color": "#28a745"}),
         html.Span(f"Prolonged: {prolonged_tests}", style={"color": "#ffc107"}),
         html.Span(f"Unreachable: {unreachable_tests}", style={"color": "#dc3545"})
-    ], style={"display": "flex", "justify-content": "space-between", "width": "100%"})
+    ], style={"display": "flex", "justify-content": "space-between", "width": "100%", "margin-top": "-3vh"})
 
-    # ? Get how long its been since the last test.
-    
+    test_types_container = html.Div([
+        dbc.Row([
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardBody([
+                        dbc.Accordion([
+                            dbc.AccordionItem([
+                                html.Div([
+                                    dcc.Textarea(
+                                        id="textarea",
+                                        value="\n".join([test['permutation_name'] for test in tests]),
+                                        style={"font-size": "0.8em", "min-height": "70vh", "min-width": "90%"}
+                                    ),
+                                    dcc.Clipboard(
+                                        target_id="textarea",
+                                        title="Copy to clipboard",
+                                        style={"display": "block", "margin-left": "1vw"}
+                                    )
+                                ], style={"display": "flex", "justify-content": "space-between", "align-items": "top", "width": "100%"})
+                            ], title=f"{len(tests)} Total Tests", style={"color": "#007bff"})
+                        ], start_collapsed=True, style={"border": "2px solid #007bff", "border-radius": "3px"})
+                    ])
+                ], style={"border": "none", "box-shadow": "none"})
+            ], width=3),
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardBody([
+                        dbc.Accordion([
+                            dbc.AccordionItem([
+                                html.Div([
+                                    dcc.Textarea(
+                                        id="textarea",
+                                        value="\n".join(punctual_tests),
+                                        style={"font-size": "0.8em", "min-height": "70vh", "min-width": "90%"}
+                                    ),
+                                    dcc.Clipboard(
+                                        target_id="textarea",
+                                        title="Copy to clipboard",
+                                        style={"display": "block", "margin-left": "1vw"}
+                                    )
+                                ], style={"display": "flex", "justify-content": "space-between", "align-items": "top", "width": "100%"})
+                            ], title=f"{len(punctual_tests)} Punctual Tests", style={"color": "#28a745"})
+                        ], start_collapsed=True, style={"border": "2px solid #28a745", "border-radius": "3px"})
+                    ])
+                ], style={"border": "none", "box-shadow": "none"})
+            ], width=3),
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardBody([
+                        dbc.Accordion([
+                            dbc.AccordionItem([
+                                html.Div([
+                                    dcc.Textarea(
+                                        id="textarea",
+                                        value="\n".join(prolonged_tests),
+                                        style={"font-size": "0.8em", "min-height": "70vh", "min-width": "90%"}
+                                    ),
+                                    dcc.Clipboard(
+                                        target_id="textarea",
+                                        title="Copy to clipboard",
+                                        style={"display": "block", "margin-left": "1vw"}
+                                    )
+                                ], style={"display": "flex", "justify-content": "space-between", "align-items": "top", "width": "100%"})
+                            ], title=f"{len(prolonged_tests)} Prolonged Tests", style={"color": "#ffc107"})
+                        ], start_collapsed=True, style={"border": "2px solid #ffc107", "border-radius": "3px"})
+                    ])
+                ], style={"border": "none", "box-shadow": "none"})
+            ], width=3),
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardBody([
+                        dbc.Accordion([
+                            dbc.AccordionItem([
+                                html.Div([
+                                    dcc.Textarea(
+                                        id="textarea",
+                                        value="\n".join(unreachable_tests),
+                                        style={"font-size": "0.8em", "min-height": "70vh", "min-width": "90%"}
+                                    ),
+                                    dcc.Clipboard(
+                                        target_id="textarea",
+                                        title="Copy to clipboard",
+                                        style={"display": "block", "margin-left": "1vw"}
+                                    )
+                                ], style={"display": "flex", "justify-content": "space-between", "align-items": "top", "width": "100%"})
+                            ], title=f"{len(unreachable_tests)} Unreachable Tests", style={"color": "#dc3545"})
+                        ], start_collapsed=True, style={"border": "2px solid #dc3545", "border-radius": "3px"})
+                    ])
+                ], style={"border": "none", "box-shadow": "none"})
+            ], width=3)
+        ], style={"margin-top": "-3vh"})
+    ])
+
+    # ? Get how long its been since the last test.    
     last_test_time = datetime.strptime(sorted_tests[0]['end_time'], '%Y-%m-%d %H:%M:%S')
     last_test_duration_s = sorted_tests[0]['duration_s']
     time_since_last_test = datetime.now() - last_test_time
     time_since_last_test_s = time_since_last_test.total_seconds()
     if time_since_last_test_s < 60:
-        time_since_last_test = f"{int(time_since_last_test_s)} seconds"
+        time_since_last_test = f"{int(time_since_last_test_s)} second" if int(time_since_last_test_s) == 1 else f"{int(time_since_last_test_s)} seconds"
     elif time_since_last_test_s < 3600:
-        time_since_last_test = f"{int(time_since_last_test_s/60)} minutes"
+        time_since_last_test = f"{int(time_since_last_test_s/60)} minute" if int(time_since_last_test_s/60) == 1 else f"{int(time_since_last_test_s/60)} minutes"
     elif time_since_last_test_s < 86400:
-        time_since_last_test = f"{int(time_since_last_test_s/3600)} hours"
+        time_since_last_test = f"{int(time_since_last_test_s/3600)} hour" if int(time_since_last_test_s/3600) == 1 else f"{int(time_since_last_test_s/3600)} hours"
     else:
-        time_since_last_test = f"{int(time_since_last_test_s/86400)} days"
+        time_since_last_test = f"{int(time_since_last_test_s/86400)} day" if int(time_since_last_test_s/86400) == 1 else f"{int(time_since_last_test_s/86400)} days"
 
     last_test_color = "#dc3545" if time_since_last_test_s > last_test_duration_s * 2 else "#28a745"
 
     last_test_alert = dbc.Toast([
         "Last test finished ", 
         html.Strong(f"{time_since_last_test} ago."),
-    ], header="Last Test", style={"border": f"2px solid {last_test_color}", "color": last_test_color, "position": "fixed", "bottom": "0", "left": "0", "margin": "10px", "z-index": "9999", "max-width": "350px"})
+    ], header=current_campaign_name, style={"border": f"2px solid {last_test_color}", "color": last_test_color, "position": "fixed", "bottom": "0", "left": "0", "margin": "1vh", "z-index": "9999", "max-width": "350px"})
 
-
-    
     test_trs = []
     
     for test in sorted_tests:
@@ -374,6 +468,8 @@ navbar = dbc.NavbarSimple(
     children=[
         dcc.Dropdown(
             options=dropdown_options,
+            # TODO: remove when done testing
+            value="10.210.35.27",
             placeholder="Controllers",
             id='controllers-dropdown', 
             style={"min-width": "10vw"},
