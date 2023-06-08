@@ -1,12 +1,24 @@
+import numpy as np
+import os
+import pandas as pd
+import re
 from pprint import pprint
 from rich.console import Console
 import warnings
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
-import os
-import pandas as pd
-import numpy as np
 
 console = Console()
+
+def get_settings_from_testname(test):
+    datalen_bytes = re.findall("\d*B", test)[0].replace("B", "")
+    pub_count = re.findall("\d*P", test)[0].replace("P", "")
+    sub_count = re.findall("\d*S", test)[0].replace("S", "")
+    best_effort = 1 if len(re.findall("_BE_", test)) > 0 else 0
+    multicast = 1 if len(re.findall("_MC_", test)) > 0 else 0
+    durability = re.findall("\dDUR", test)[0].replace("DUR", "")
+
+    return datalen_bytes, pub_count, sub_count, best_effort, multicast, durability
 
 def get_expected_csv_count_from_testname(testname):
     split = testname.split("_")
@@ -146,7 +158,7 @@ def get_all_sub_metric(sub_files, metric):
         # ? Add a total column
         valid_cols = [col for col in sub_df.columns if col.startswith('sub_')]
         try:
-            sub_df["total_" + metric] = sub_df[valid_cols].sum(axis=1)
+            sub_df["total_" + metric.replace(" ", "_")] = sub_df[valid_cols].sum(axis=1)
         except FutureWarning:
             pass
 
@@ -163,7 +175,7 @@ def summarise_usable_tests(tests, camp_name):
     
     total_tests = len(tests)
     for i, test in enumerate(tests):
-        with console.status(f"Summarising test {i+1}/{total_tests}..."):
+        with console.status(f"[{i+1}/{total_tests}] Summarising test..."):
             test_files = os.listdir(test)
             csv_files = [f for f in test_files if f.endswith('.csv')]
 
@@ -184,3 +196,60 @@ def summarise_usable_tests(tests, camp_name):
             test_name = os.path.basename(test)
             summary_filename = os.path.join(summary_dir, test_name + "_summary.csv")
             df.to_csv(summary_filename)
+
+def get_metric_stats(df, metric):
+    if df[metric].dtype == 'object':
+        df = df[pd.to_numeric(df[metric], errors='coerce').notnull()]
+    
+    metric_mean = df[metric].astype(float).mean()
+    metric_std = df[metric].astype(float).std()
+    metric_min = df[metric].astype(float).min()
+    metric_max = df[metric].astype(float).max()
+    metric_10 = df[metric].astype(float).quantile(0.1)
+    metric_25 = df[metric].astype(float).quantile(0.25)
+    metric_50 = df[metric].astype(float).quantile(0.5)
+    metric_75 = df[metric].astype(float).quantile(0.75)
+    metric_90 = df[metric].astype(float).quantile(0.9)
+    
+    return metric_mean, metric_std, metric_min, metric_max, metric_10, metric_25, metric_50, metric_75, metric_90
+
+def generate_ml_summary(camp_path):
+    summary_dir = f"{camp_path}_summaries"
+    summary_csvs = [os.path.join(summary_dir, f) for f in os.listdir(summary_dir) if f.endswith(".csv") and "summary" in f.lower()]
+    
+    for i, file in enumerate(summary_csvs):
+        with console.status(f"[{i+1}/{len(summary_csvs)}] Generating ML file from {file}..."):
+            # ? Get the settings used from the test name
+            filename = os.path.basename(file)
+            datalen_bytes, pub_count, sub_count, best_effort, multicast, durability = get_settings_from_testname(filename)
+            
+            summ_df = pd.read_csv(file, index_col=0).astype(float, errors='ignore')
+            summ_df = summ_df.apply(pd.to_numeric, errors='coerce').dropna()
+            
+            # ? Get stats for all metrics
+            stats = []
+            # ? Add settings to stats
+            stats.extend([datalen_bytes, pub_count, sub_count, best_effort, multicast, durability])
+            
+            for metric in ["latency_us", "total_mbps", "total_total_samples", "total_samples/s", "total_lost_samples"]:
+                metric_stats = get_metric_stats(summ_df, metric)
+                stats.extend(metric_stats)
+            
+            # ? Put all stats into a row
+            row = pd.Series(stats, index=["datalen_bytes", "pub_count", "sub_count", "best_effort", "multicast", "durability", 
+                                           "lat_mean", "lat_std", "lat_min", "lat_max", "lat_10", "lat_25", "lat_50", "lat_75", "lat_90",
+                                           "total_mbps_mean", "total_mbps_std", "total_mbps_min", "total_mbps_max", "total_mbps_10", "total_mbps_25", "total_mbps_50", "total_mbps_75", "total_mbps_90",
+                                           "total_total_samples_mean", "total_total_samples_std", "total_total_samples_min", "total_total_samples_max", "total_total_samples_10", "total_total_samples_25", "total_total_samples_50", "total_total_samples_75", "total_total_samples_90",
+                                           "total_samples_s_mean", "total_samples_s_std", "total_samples_s_min", "total_samples_s_max", "total_samples_s_10", "total_samples_s_25", "total_samples_s_50", "total_samples_s_75", "total_samples_s_90",
+                                           "total_lost_samples_mean", "total_lost_samples_std", "total_lost_samples_min", "total_lost_samples_max", "total_lost_samples_10", "total_lost_samples_25", "total_lost_samples_50", "total_lost_samples_75", "total_lost_samples_90"])
+            
+            # ? Add row to dataframe
+            if "df" not in locals():
+                df = pd.DataFrame(columns=row.index)
+            df = df.append(row, ignore_index=True)
+    
+    ml_filename = f"{camp_path}_ml.csv"
+    df.to_csv(ml_filename)
+    console.print(f"ML file generated: {ml_filename}", style="bold green")
+
+    

@@ -54,7 +54,7 @@ def main():
                 summarise_usable_tests(usable_tests, camp_name_path)
                 
                 # ? create ML summary file
-                
+                generate_ml_summary(camp_name_path)
                 
     
 
