@@ -146,7 +146,7 @@ def ssh_to_machine(machines, machine, script_string, duration_s, timeout, machin
         "time_to_scripts_s": 0,
         "pings": 0,
         "ssh_pings": 0
-    }    
+    }
     
     machine_name = machine['name']
     test_folder = os.path.join(campaign_folder, test_name)
@@ -754,11 +754,27 @@ def main():
                         if random_color in used_colors:
                             random_color = pick_contrasting_color(random_color)
                         used_colors.add(random_color)
+                        
                         script_string = scripts_per_machine_list[i]
+                        
                         duration_s = permutation[0]
                         timeout_s = duration_s + buffer_duration
                         extended_timeout_s = duration_s + (2 * buffer_duration)
-                        process = Process(target=ssh_to_machine, args=(machines, machine, script_string, duration_s, timeout_s, machine_statuses, permutation_name, campaign_folder, random_color))
+                        
+                        process = Process(
+                            target=ssh_to_machine, 
+                            args=(
+                                machines, 
+                                machine, 
+                                script_string, 
+                                duration_s, 
+                                timeout_s, 
+                                machine_statuses, 
+                                permutation_name, 
+                                campaign_folder, 
+                                random_color
+                            )
+                        )
                         machine_process_map.append((machine, process))
                         processes.append(process)
                         try:
