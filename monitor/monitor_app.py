@@ -367,7 +367,7 @@ def get_controller_status(controller_ip):
                                         style={"display": "block", "margin-left": "1vw"}
                                     )
                                 ], style={"display": "flex", "justify-content": "space-between", "align-items": "top", "width": "100%"})
-                            ], title=f"{len(tests)} Premature Tests", style={"color": "#ffc107"})
+                            ], title=f"{len(premature_tests)} Premature Tests", style={"color": "#ffc107"})
                         ], start_collapsed=True, style={"border": "2px solid #ffc107", "border-radius": "3px"})
                     ])
                 ], style={"border": "none", "box-shadow": "none"})
