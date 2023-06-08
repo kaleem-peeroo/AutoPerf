@@ -139,6 +139,7 @@ def test_ssh(machine):
         return False
 
 def ssh_to_machine(machines, machine, script_string, duration_s, timeout, machine_statuses, test_name, campaign_folder, color, max_retries=20):
+    console.print(f"{machine['name']} Starting process...", style="bold " + color)
     status = {
         "host": machine['host'],
         "name": machine['name'],
