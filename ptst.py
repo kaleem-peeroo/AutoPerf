@@ -766,52 +766,81 @@ def main():
                         except Exception as e:
                             console.print(f"Caught exception from Process: {e}", style="bold red")
 
-                    # wait for the processes to finish or timeout_s
-                    start_time = time.time()
-                    for process in processes:
-                        while process.is_alive():
-                            if time.time() - start_time > extended_timeout_s:
-                                process.terminate()
-                                # ? Set status to prolonged for each machine status
+                    # ? Number of processes should match the number of machines
+                    if len(processes) == len(machines):
+                        start_time = time.time()
+                        for process in processes:
+                            while process.is_alive():
+                                if time.time() - start_time > extended_timeout_s:
+                                    process.terminate()
+                                    # ? Set status to prolonged for each machine status
 
-                                machine_from_process = [machine for machine, p in machine_process_map if p == process][0]
+                                    machine_from_process = [machine for machine, p in machine_process_map if p == process][0]
 
-                                status = {
-                                    "host": machine_from_process['host'],
-                                    "name": machine_from_process['name'],
-                                    "status": "Prolonged.",
+                                    status = {
+                                        "host": machine_from_process['host'],
+                                        "name": machine_from_process['name'],
+                                        "status": "Prolonged.",
+                                        "pings": 0,
+                                        "ssh_pings": 0
+                                    }
+                                    
+                                    machine_statuses.append(status)
+                                    
+                                    console.print(f"{machine_from_process['name']} timed out after {extended_timeout_s} seconds and was terminated", style="bold red")
+                                    break
+                            process.join()
+
+                        # ? Check if all machines returned no csv files and add to retry_permutations if so
+                        all_no_csv_files = all("no csv files" in status['status'] for status in machine_statuses)
+                        if all_no_csv_files:
+                            retry_permutations.append(permutation)
+                        
+                        console.print("Writing test status to file...", style="bold white")
+                        # Write the statuses to a file
+                        with open(statuses_file, 'a') as f:
+                            end_time = time.time()
+                            start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+                            end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
+                            result = {
+                                'permutation_name': permutation_name, 
+                                'machine_statuses': list(machine_statuses),
+                                'start_time': start_time_str,
+                                'end_time': end_time_str,
+                                'duration_s': int(end_time - start_time)
+                            }
+                        
+                            pprint(result)
+                            json.dump(result, f, indent=4)
+                            statuses.append(result)
+                            f.write(',\n')
+                    else:
+                        console.print("Number of processes != number of machines.", style="bold red")
+                        console.print("Writing test status to file...", style="bold white")
+                        
+                        with open(statuses_file, 'a') as f:
+                            end_time = time.time()
+                            start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+                            end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
+                            result = {
+                                'permutation_name': permutation_name, 
+                                'machine_statuses': [{
+                                    "host": "N/A",
+                                    "name": "N/A",
+                                    "status": f"# of processes != # of machines. {len(processes)} processes. {len(machines)} machines. Unreachable.",
                                     "pings": 0,
                                     "ssh_pings": 0
-                                }
-                                
-                                machine_statuses.append(status)
-                                
-                                console.print(f"{machine_from_process['name']} timed out after {extended_timeout_s} seconds and was terminated", style="bold red")
-                                break
-                        process.join()
-
-                    # ? Check if all machines returned no csv files and add to retry_permutations if so
-                    all_no_csv_files = all("no csv files" in status['status'] for status in machine_statuses)
-                    if all_no_csv_files:
-                        retry_permutations.append(permutation)
-                    
-                    console.print("Writing test status to file...", style="bold white")
-                    # Write the statuses to a file
-                    with open(statuses_file, 'a') as f:
-                        end_time = time.time()
-                        start_time_str = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
-                        end_time_str = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
-                        result = {
-                            'permutation_name': permutation_name, 
-                            'machine_statuses': list(machine_statuses),
-                            'start_time': start_time_str,
-                            'end_time': end_time_str,
-                            'duration_s': int(end_time - start_time)
-                        }
-                        pprint(result)
-                        json.dump(result, f, indent=4)
-                        statuses.append(result)
-                        f.write(',\n')
+                                }],
+                                'start_time': start_time_str,
+                                'end_time': end_time_str,
+                                'duration_s': int(end_time - start_time)
+                            }
+                        
+                            pprint(result)
+                            json.dump(result, f, indent=4)
+                            statuses.append(result)
+                            f.write(',\n')
+                        
                         
                 console.print(f"[bold green]{permutation_name} completed in {time.time() - start_time:.2f} seconds[/bold green]")
 
