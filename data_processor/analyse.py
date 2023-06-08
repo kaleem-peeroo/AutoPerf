@@ -65,21 +65,27 @@ def get_lat_df_from_pub_file(pub_file):
     # ? Find out where to start parsing the file from 
     with open(pub_file, "r") as pub_file_obj:
         pub_first_5_lines = [next(pub_file_obj) for x in range(5)]
+    
     start_index = 0    
     for i, line in enumerate(pub_first_5_lines):
         if "Ave" in line:
             start_index = i
             break
+    
     # ? Find out where to stop parsing the file from (ignore the summary stats at the end)
     with open(pub_file, "r") as pub_file_obj:
-        pub_last_5_lines = pub_file_obj.readlines()[-5:]
-    end_index = len(pub_file)
+        pub_file_contents = pub_file_obj.readlines()
+
+    pub_last_5_lines = pub_file_contents[-5:]
+    line_count = len(pub_file_contents)
+    
+    end_index = 0
     for i, line in enumerate(pub_last_5_lines):
-        if line == "\n":
-            end_index = end_index - 5 - i
+        if "summary" in line.lower():
+            end_index = line_count - 5 + i - 2
             break
-        
-    lat_df = pd.read_csv(pub_file, skiprows=start_index, nrows=end_index-start_index)
+    
+    lat_df = pd.read_csv(pub_file, skiprows=start_index, nrows=end_index-start_index, on_bad_lines="skip")
     
     # ? Pick out the latency column ONLY
     latency_col = None
@@ -107,15 +113,19 @@ def get_all_sub_metric(sub_files, metric):
         
         # ? Find out where to stop parsing the file from (ignore the summary stats at the end)
         with open(file, "r") as file_obj:
-            pub_last_5_lines = file_obj.readlines()[-5:]
-        end_index = len(file)
+            file_contents = file_obj.readlines()
+
+        pub_last_5_lines = file_contents[-5:]
+        line_count = len(file_contents)
+        
+        end_index = 0
         for i, line in enumerate(pub_last_5_lines):
-            if line == "\n":
-                end_index = end_index - 5 - i
+            if "summary" in line.lower():
+                end_index = line_count - 5 + i - 2
                 break
             
         try:
-            df = pd.read_csv(file, on_bad_lines="skip", skiprows=start_index, skipfooter=end_index, engine="python")
+            df = pd.read_csv(file, on_bad_lines="skip", skiprows=start_index, nrows=end_index-start_index)
         except pd.errors.ParserError as e:
             print(f"Error when getting data from {file}:")
             print(f"\t{e}")

@@ -50,10 +50,12 @@ def main():
                 # ? generate stats files
                 usable_tests = analyse_tests(unzipped_dir)
                 
+                # ? summarise usable tests
                 summarise_usable_tests(usable_tests, camp_name_path)
                 
-                print()
-        
+                # ? create ML summary file
+                
+                
     
 
 if __name__ == '__main__':
