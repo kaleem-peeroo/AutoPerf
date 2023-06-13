@@ -40,7 +40,8 @@ def main():
 
                 # ? unzip the file
                 if not os.path.exists(unzipped_dir):
-                    os.system(f'unzip {local_zip} -d {unzipped_dir} > /dev/null 2>&1')
+                    with console.status(f"Unzipping {local_zip} to {unzipped_dir}", spinner="dots"):
+                        os.system(f'unzip {local_zip} -d {unzipped_dir} > /dev/null 2>&1')
                     console.print(f"Unzipped {local_zip} to {unzipped_dir}", style="bold green")
                 
                 tests_dirname = os.path.basename(unzipped_dir)
@@ -56,7 +57,5 @@ def main():
                 # ? create ML summary file
                 generate_ml_summary(camp_name_path)
                 
-    
-
 if __name__ == '__main__':
     main()
