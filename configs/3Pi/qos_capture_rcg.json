@@ -2,7 +2,7 @@
     {
         "name": "QoS Capture RCG PS",
         "random_combination_generation": true,
-        "random_combination_count": 256,
+        "random_combination_count": 512,
         "settings": {
             "duration_s": [600],
             "datalen_bytes": [100, 128000],
