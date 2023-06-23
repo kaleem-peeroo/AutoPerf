@@ -1,5 +1,6 @@
 __pycache__/
 *_rsa
+.vscode/
 progress.log
 debug.json
 Example_Campaign_*
