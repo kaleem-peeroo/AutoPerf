@@ -4,7 +4,7 @@
         "random_combination_generation": true,
         "random_combination_count": 3,
         "settings": {
-            "duration_s": [5],
+            "duration_s": [10],
             "datalen_bytes": [1, 128000],
             "pub_count": [1, 25],
             "sub_count": [1, 25],
