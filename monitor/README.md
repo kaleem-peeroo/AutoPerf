@@ -27,11 +27,17 @@ When you click on a controller it will load up the test statuses:
 ![Test Statuses Screen](../images/ptst_monitor_test_statuses.png)
 
 `1`: List of test names that were punctual.
+
 `2`: List of test names that were prolonged.
+
 `3`: List of test names that were unreachable.
+
 `4`: List of test names that were premature.
+
 `5`: How long has it been since the last test finished.
+
 `6`: Prolonged status of each machine used in the test.
+
 `7`: Punctual status of each machine used in the test.
 
 # Test Types
