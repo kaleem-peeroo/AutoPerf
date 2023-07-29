@@ -1,7 +1,7 @@
-
 import check_and_download as cad
 from analyse import *
 import sys
+import zipfile
 import os
 import paramiko
 from rich.progress import track
@@ -37,11 +37,16 @@ def main():
             
             for local_zip in local_zips:
                 unzipped_dir = local_zip.replace(".zip", "")
+                unzipped_dir = os.path.normpath(unzipped_dir)
 
                 # ? unzip the file
                 if not os.path.exists(unzipped_dir):
                     with console.status(f"Unzipping {local_zip} to {unzipped_dir}", spinner="dots"):
-                        os.system(f'unzip {local_zip} -d {unzipped_dir} > /dev/null 2>&1')
+                        if os.name == 'nt':
+                            with zipfile.ZipFile(local_zip, 'r') as zip_ref:
+                                zip_ref.extractall(unzipped_dir)
+                        else:
+                            os.system(f'unzip {local_zip} -d {unzipped_dir} > /dev/null 2>&1')
                     console.print(f"Unzipped {local_zip} to {unzipped_dir}", style="bold green")
                 
                 tests_dirname = os.path.basename(unzipped_dir)

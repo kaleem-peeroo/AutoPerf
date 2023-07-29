@@ -9,13 +9,19 @@ console = Console()
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-k = paramiko.RSAKey.from_private_key_file("/Users/kaleem/.ssh/id_rsa")
+ssh_key_path = "/Users/kaleem/.ssh/id_rsa"
+if not os.path.exists(ssh_key_path):
+    ssh_key_path = r"C:\Users\kalee\.ssh\id_rsa"
+k = paramiko.RSAKey.from_private_key_file(ssh_key_path)
 
 def ping_machine(ip):
     if ip is None:
         return False
 
-    response = os.system("ping -c 1 " + ip + " > /dev/null 2>&1")
+    if os.name == 'nt':
+        response = os.system("ping -n 1 " + ip + " > nul")
+    else:
+        response = os.system("ping -c 1 " + ip + " > /dev/null 2>&1")
 
     if response == 0:
         return True
@@ -30,7 +36,13 @@ def validate_machine(machine):
     else:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        k = paramiko.RSAKey.from_private_key_file("/Users/kaleem/.ssh/id_rsa")
+        
+        ssh_key_path = "/Users/kaleem/.ssh/id_rsa"
+
+        if not os.path.exists(ssh_key_path):
+            ssh_key_path = r"C:\Users\kalee\.ssh\id_rsa"
+
+        k = paramiko.RSAKey.from_private_key_file(ssh_key_path)
         
         ssh.connect(machine['ip'], username='acwh025', pkey=k, banner_timeout=120)
         
@@ -47,6 +59,7 @@ def validate_machine(machine):
                 return True
             
         except IOError:
+            console.print(f"Could NOT find {machine['ptstdir']} on {machine['name']}", style="bold red")
             return False
         finally:
             sftp.close()
@@ -117,7 +130,7 @@ def download_new_zips(machines):
             
             # ? Download new zips
             sftp = ssh.open_sftp()
-            with console.status("Downloading new zips...") as status:
+            with console.status(f"Downloading new zips... (1/{len(new_zips)})") as status:
                 for i, zip in enumerate(new_zip_paths):
                     remote_path = zip
                     local_path = f"{machine['outputdir']}/{zip.split('/')[-1]}"
@@ -131,7 +144,7 @@ def download_new_zips(machines):
                             console.print(f"Local path: {local_path}")
                             
                         console.print(f"New zip has been downloaded: {os.path.basename(remote_path)}", style="bold green")
-                    status.update(f"Downloading new zips... ({i+1}/{len(new_zips)})")
+                    status.update(f"Downloading new zips... ({i+2}/{len(new_zips)})")
 
             sftp.close()
         else:

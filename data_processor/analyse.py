@@ -23,12 +23,22 @@ def get_settings_from_testname(test):
 def get_expected_csv_count_from_testname(testname):
     split = testname.split("_")
     sub_split = [_ for _ in split if "S" in _ and "SEC" not in _]
-    sub_value = sub_split[0].replace("S", "")
+    try:
+        sub_value = sub_split[0].replace("S", "")
+    except IndexError:
+        pprint(split)
+        raise IndexError
     sub_value = int(sub_value)
     
     return sub_value + 1
 
 def analyse_tests(tests_dir):
+    tests_dir = os.path.normpath(tests_dir)
+
+    if not os.path.exists(tests_dir):
+        console.print(f"{tests_dir} does not exist.", style="bold red")
+        return []
+
     tests_dirname = os.path.basename(tests_dir)
     camp_name = tests_dirname.replace("_raw", "")
 
@@ -259,6 +269,9 @@ def generate_ml_summary(camp_path):
     summary_dir = f"{camp_path}_summaries"
     summary_csvs = [os.path.join(summary_dir, f) for f in os.listdir(summary_dir) if f.endswith(".csv") and "summary" in f.lower()]
     
+    if len(summary_csvs) == 0:
+        return
+
     for i, file in enumerate(summary_csvs):
         with console.status(f"[{i+1}/{len(summary_csvs)}] Generating ML file from {file}..."):
             # ? Get the settings used from the test name
@@ -311,5 +324,3 @@ def generate_ml_summary(camp_path):
     
     df.to_csv(ml_filename)
     console.print(f"ML file generated: {ml_filename}", style="bold green")
-
-    
