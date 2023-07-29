@@ -1,6 +1,6 @@
 [
     {
-        "name": "QoS Capture RCG PS",
+        "name": "QoS Capture RCG PSSS",
         "random_combination_generation": true,
         "random_combination_count": 512,
         "settings": {
