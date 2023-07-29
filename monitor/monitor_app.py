@@ -1,5 +1,6 @@
 from pprint import pprint
 from rich.console import Console
+from rich.markdown import Markdown
 import time
 import sys
 import paramiko
@@ -18,7 +19,7 @@ app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.FONT_AWESO
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-k = paramiko.RSAKey.from_private_key_file("/Users/kaleem/.ssh/id_rsa")
+k = paramiko.Ed25519Key.from_private_key_file("C:/Users/kalee/.ssh/id_ed25519")
 
 def validate_args():
     erorr_message = ""
@@ -191,17 +192,18 @@ def get_controller_status(controller_ip):
     try:
         controller = [controller for controller in get_controllers() if controller['ip'] == controller_ip][0]
     except IndexError:
+        console.print(f"Couldn't find any controller with the IP: {controller_ip}", style="bold red")
         return generate_error_message(f"Couldn't find any controller with the IP {controller_ip}.")
         
     ip = controller['ip']
     name = controller['name']
     ptstdir = controller['ptstdir']
-    
+
     try:
         ssh.connect(ip, username="acwh025", pkey=k, banner_timeout=120)
     except Exception as e:
         return generate_error_message(f"Error connecting to {ip}: {str(e)}")
-    
+
     # ? Check if ptstdir is valid.
     sftp = ssh.open_sftp()
     try:
@@ -209,22 +211,24 @@ def get_controller_status(controller_ip):
     except Exception as e:
         console.print(f"Exception when getting remote_files: \n\t{e}", style="bold red")
         return generate_error_message(f"Couldn't find the directory {ptstdir} on the controller {name} ({ip}): {e}")
-    
+
     remote_jsons = [file for file in remote_files if file.endswith(".json")]
 
     if len(remote_jsons) == 0:
         console.print(Markdown("# No tests in progress."), style="bold red")
         return generate_error_message(f"No tests in progress on the controller {name} ({ip}).")
-    
+
     # ? Get the latest json file that was last edited.
     latest_mtime = None
     latest_json = None
     for file in remote_jsons:
         file_path = os.path.join(ptstdir, file)
+        file_path = os.path.normpath(file_path).replace("\\", "/")
         mtime = sftp.stat(file_path).st_mtime
         if latest_mtime is None or mtime > latest_mtime:
             latest_mtime = mtime
             latest_file = file_path
+
 
     if latest_file is None:
         console.print(Markdown("# No tests in progress."), style="bold red")
