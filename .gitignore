@@ -9,3 +9,5 @@ PTST_Production_Test*
 .DS_Store
 misc/
 output.txt
+dataset_creator/test_data
+dataset_creator/test_data_summaries

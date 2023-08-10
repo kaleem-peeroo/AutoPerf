@@ -92,7 +92,7 @@ def create_dataset_from_summaries(summ_dir):
 
     dataset_df = pd.DataFrame()
 
-    for test_csv in track(test_csvs, description="Creating dataset..."):
+    for test_csv in track(test_csvs, description="[4/4] Creating dataset..."):
         test_df = pd.read_csv(os.path.join(summ_dir, test_csv), index_col=0)
         test_df = get_total_sub_df(test_df)
 
@@ -192,8 +192,7 @@ def get_all_sub_metric(sub_files):
                         col_name = "lost_samples_percent"
                     test_df[f"{sub_name}_{col_name}"] = df[col]
 
-        test_df = test_df.astype(float)
-
+        test_df = test_df.astype(float, errors="ignore")
 
     return test_df
 
@@ -265,7 +264,7 @@ def summarise_tests(test_dirs, camp_name):
     if not os.path.exists(summ_dir):
         os.mkdir(summ_dir)
 
-    for test in track(test_dirs, description="Summarising tests..."):
+    for test in track(test_dirs, description="[3/4] Summarising tests..."):
         test_name = os.path.basename(test)
         summ_path = os.path.join(summ_dir, f"{test_name}.csv")
         
@@ -307,7 +306,7 @@ assert(get_expected_csv_count_from_testname("600SEC_6400B_25P_25S_BE_MC_2DUR_100
 
 def get_usable_tests(test_dirs):
     usable_tests = []
-    for test_dir in track(test_dirs, description="Getting usable tests..."):
+    for test_dir in track(test_dirs, description="[2/4] Getting usable tests..."):
         expected_csv_count = get_expected_csv_count_from_testname(os.path.basename(test_dir))
         actual_csv_count = len([f for f in os.listdir(test_dir) if f.endswith('.csv')])
 
@@ -321,7 +320,7 @@ def get_usable_tests(test_dirs):
 
 
 def validate_test_dirs(test_dirs):
-    for test_dir in track(test_dirs, description="Validating test directories..."):
+    for test_dir in track(test_dirs, description="[1/4] Validating test directories..."):
         if not os.path.isdir(test_dir):
             console.print(f"[red]Error: [/red]Invalid test directory path: {test_dir}")
             sys.exit(1)
@@ -354,6 +353,7 @@ if __name__ == "__main__":
     
     dirpath = sys.argv[1]
     test_dirs = [os.path.join(dirpath, d) for d in os.listdir(dirpath)]
+    test_dirs = [d for d in test_dirs if os.path.isdir(d)]
 
     camp_name = os.path.basename(dirpath)
 
