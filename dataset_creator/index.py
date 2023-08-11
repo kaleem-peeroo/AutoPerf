@@ -13,6 +13,7 @@ console = Console()
 
 import warnings
 warnings.filterwarnings("ignore", category=pd.errors.PerformanceWarning)
+warnings.filterwarnings("ignore", category=pd.errors.SettingWithCopyWarning)
 
 errors = []
 
@@ -22,7 +23,13 @@ def get_total_sub_df(df):
 
     for metric in metrics:
         metric_cols = [col for col in sub_cols if metric in col]
-        df[f"total_{metric}"] = df[metric_cols].sum(axis=1)
+        df[metric_cols] = df[metric_cols].apply(pd.to_numeric, errors='coerce')
+        df = df.dropna(subset=metric_cols)
+        
+        df[f"total_{metric}"] = df[metric_cols].sum(axis=1, skipna=True)
+
+    # ? Remove any rows that have string values
+    df = df[df.applymap(lambda x: not isinstance(x, str)).all(1)]
 
     return df
 
@@ -55,7 +62,7 @@ def get_metric_stats(df, desired_stats):
     
     for key, value in metric_stats.items():
         if not isinstance(value, (float, int, np.int64)):
-            errors.append(f"Value of {key} is not a float or int: {value}. It is a {type(value)}")
+            # errors.append(f"Value of {key} is not a float or int: {value}. It is a {type(value)}")
             raise ValueError(f"Value of {key} is not a float or int: {value}. It is a {type(value)}")
 
     return metric_stats
@@ -93,7 +100,14 @@ def create_dataset_from_summaries(summ_dir):
     dataset_df = pd.DataFrame()
 
     for test_csv in track(test_csvs, description="[4/4] Creating dataset..."):
-        test_df = pd.read_csv(os.path.join(summ_dir, test_csv), index_col=0)
+        try:
+            test_df = pd.read_csv(os.path.join(summ_dir, test_csv))
+        except pd.errors.DtypeWarning as e:
+            # pprint(e)
+            # pprint(f"\n\n{test_csv}\n\n")
+            errors.append(f"Error reading {test_csv}: {e}")
+            raise e
+        
         test_df = get_total_sub_df(test_df)
 
         duration_secs, datalen_bytes, pub_count, sub_count, reliable, multicast, durability, latency_count = get_setting_value_from_filename(test_csv)
@@ -125,6 +139,11 @@ def create_dataset_from_summaries(summ_dir):
     other_columns = [col for col in dataset_df.columns if col not in desired_columns]
 
     dataset_df = dataset_df[desired_columns + other_columns]
+
+    rows_before = len(dataset_df)
+    dataset_df.dropna(inplace=True)
+    rows_after = len(dataset_df)
+    errors.append(f"Dropped {rows_before - rows_after} rows due to NaN values.")
     
     dataset_df.to_csv("dataset.csv", index=False)
 
@@ -146,7 +165,7 @@ def get_all_sub_metric(sub_files):
                 break
         
         if start_index == 0:
-            print(f"Couldn't get start_index for header row from {file}.")
+            # print(f"Couldn't get start_index for header row from {file}.")
             errors.append(f"Couldn't get start_index for header row from {file}.")
             continue
 
@@ -163,7 +182,7 @@ def get_all_sub_metric(sub_files):
                 break
             
         if end_index == 0:
-            print(f"Couldn't get end_index for summary row from {file}.")
+            # print(f"Couldn't get end_index for summary row from {file}.")
             errors.append(f"Couldn't get end_index for summary row from {file}.")
             continue
 
@@ -173,8 +192,6 @@ def get_all_sub_metric(sub_files):
         try:
             df = pd.read_csv(file, on_bad_lines="skip", skiprows=start_index, nrows=nrows)
         except pd.errors.ParserError as e:
-            print(f"Error when getting data from {file}:")
-            print(f"\t{e}")
             errors.append(f"Error when getting data from {file}:{e}")
             continue
         
@@ -191,6 +208,9 @@ def get_all_sub_metric(sub_files):
                     elif "%" in col_name:
                         col_name = "lost_samples_percent"
                     test_df[f"{sub_name}_{col_name}"] = df[col]
+
+        # ? Remove rows with strings in them
+        test_df = test_df[test_df.applymap(lambda x: not isinstance(x, str)).all(1)]
 
         test_df = test_df.astype(float, errors="ignore")
 
@@ -213,7 +233,7 @@ def get_lat_df_from_pub_file(pub_file):
             break
 
     if start_index == 0:
-        console.print(f"Couldn't find start index for {pub_file}.", style="bold red")
+        # console.print(f"Couldn't find start index for {pub_file}.", style="bold red")
         errors.append(f"Couldn't find start index for header row for {pub_file}.")
         return None
 
@@ -231,14 +251,14 @@ def get_lat_df_from_pub_file(pub_file):
             break
     
     if end_index == 0:
-        console.print(f"Couldn't find end index for {pub_file}.", style="bold red")
+        # console.print(f"Couldn't find end index for {pub_file}.", style="bold red")
         errors.append(f"Couldn't find end index for summary row for {pub_file}.")
         return None
 
     try:
         lat_df = pd.read_csv(pub_file, skiprows=start_index, nrows=end_index-start_index, on_bad_lines="skip")
     except pd.errors.EmptyDataError:
-        console.print(f"EmptyDataError for {pub_file}.", style="bold red")
+        # console.print(f"EmptyDataError for {pub_file}.", style="bold red")
         errors.append(f"EmptyDataError for {pub_file}.")
         return None
     
@@ -250,7 +270,7 @@ def get_lat_df_from_pub_file(pub_file):
             break
 
     if latency_col is None:
-        console.print(f"Couldn't find latency column for {pub_file}.", style="bold red")
+        # console.print(f"Couldn't find latency column for {pub_file}.", style="bold red")
         errors.append(f"Couldn't find latency column for {pub_file}.")
         return None
 
@@ -269,7 +289,7 @@ def summarise_tests(test_dirs, camp_name):
         summ_path = os.path.join(summ_dir, f"{test_name}.csv")
         
         if os.path.exists(summ_path):
-            console.print(f"[yellow]Skipping {test_name} as summary already exists[/yellow]")
+            # console.print(f"[yellow]Skipping {test_name} as summary already exists[/yellow]")
             continue
 
         test_files = os.listdir(test)
@@ -286,7 +306,7 @@ def summarise_tests(test_dirs, camp_name):
 
         df_list = [lat_df, subs_df]
         df = pd.concat(df_list, axis=1)
-        df.to_csv(summ_path)
+        df.to_csv(summ_path, index=False)
 
     return summ_dir
 
@@ -327,7 +347,7 @@ def validate_test_dirs(test_dirs):
 
         test_dir_contents = os.listdir(test_dir)
         if len(test_dir_contents) == 0:
-            console.print(f"[red]Error: [/red]Test directory is empty: {test_dir}")
+            # console.print(f"[red]Error: [/red]Test directory is empty: {test_dir}")
             errors.append(f"{test_dir} is empty.")
             continue
 
@@ -347,7 +367,6 @@ def validate_command_line_args(args):
         console.print(f"[red]Error: [/red]Directory is empty: {dirpath}")
         sys.exit(1)
 
-
 if __name__ == "__main__":
     validate_command_line_args(sys.argv)
     
@@ -364,6 +383,8 @@ if __name__ == "__main__":
     summ_dir = summarise_tests(usable_tests, camp_name)
 
     create_dataset_from_summaries(summ_dir)
+
+    console.print(f"Finished with {len(errors)} errors.", style="bold white")
 
     if len(errors) > 0:
         with open("error_log.txt", "w") as file:
