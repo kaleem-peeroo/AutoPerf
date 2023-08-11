@@ -6,6 +6,7 @@ import pandas as pd
 from rich.console import Console
 from rich.progress import track
 from pprint import pprint
+from win10toast import ToastNotifier
 
 console = Console()
 
@@ -390,3 +391,6 @@ if __name__ == "__main__":
         with open("error_log.txt", "w") as file:
             for error in errors:
                 file.write(error + "\n")
+
+    toaster = ToastNotifier()
+    toaster.show_toast("Dataset Created", f"{dirpath}: {len(errors)} errors.", duration=5)
