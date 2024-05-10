@@ -1,0 +1,14 @@
+[
+    {
+        "name": "3Pi",
+        "ip": "10.210.35.27",
+        "ptstdir": "/home/acwh025/Documents/PTST",
+        "outputdir": "C:\\Users\\kalee\\Documents\\phd_data\\3pi\\ml_data"
+    },
+    {
+        "name": "5Pi",
+        "ip": "10.210.58.126",
+        "ptstdir": "/home/acwh025/Documents/PTST",
+        "outputdir": "C:\\Users\\kalee\\Documents\\phd_data\\5pi\\ml_data"
+    }
+]
