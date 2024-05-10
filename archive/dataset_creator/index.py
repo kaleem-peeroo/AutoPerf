@@ -6,10 +6,7 @@ import pandas as pd
 from rich.console import Console
 from rich.progress import track
 from pprint import pprint
-
-if os.name == 'nt':
-    # ? Code for Windows
-    from win10toast import ToastNotifier
+from win10toast import ToastNotifier
 
 console = Console()
 
@@ -395,7 +392,5 @@ if __name__ == "__main__":
             for error in errors:
                 file.write(error + "\n")
 
-    if os.name == 'nt':
-        # ? Code for Windows
-        toaster = ToastNotifier()
-        toaster.show_toast("Dataset Created", f"{dirpath}: {len(errors)} errors.", duration=5)
+    toaster = ToastNotifier()
+    toaster.show_toast("Dataset Created", f"{dirpath}: {len(errors)} errors.", duration=5)
