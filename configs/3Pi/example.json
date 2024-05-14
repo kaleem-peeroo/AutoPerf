@@ -1,7 +1,7 @@
 [{
   "name": "PCG Test PS",
   "settings": {
-    "duration_s": [10],
+    "duration_s": [300],
     "datalen_bytes": [100],
     "pub_count": [1,10],
     "sub_count": [1,10],
