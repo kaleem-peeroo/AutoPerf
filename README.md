@@ -64,6 +64,11 @@ Experiments (formerly campaigns) refer to AP experiments where 1 AP experiment c
 
 ESS stands for Experiment Status Spreadsheet and is a csv file containing details about the run of each test. More details [here](#experiment-status-spreadsheet-ess)
 
+Experiment traffic light is a green-red light system that determines if tests should run or not. If multiple consecutive tests have failed then the machine is probably unresponsive and needs human intervention. In this case the traffic light turns red. This means all future tests will not be run until the light turns green.
+
+Green:  Run test.
+Red:    Go to next test.
+
 # User Story
 
 These are the general steps that take place when using AP:
@@ -74,7 +79,7 @@ These are the general steps that take place when using AP:
 
 # System Story
 
-This is how AP generally works in terms of a sequence of steps.
+This is an overview of how the system will work from start to finish.
 
 1. Validate connections to machines in config.
 2. Restart all machines.
@@ -87,6 +92,8 @@ This is how AP generally works in terms of a sequence of steps.
     3. If ESS does exist:
         1. Find last successful test.
         2. Set PCG next test to be the next combination.
+        3. Match tests that have run with test folders that exist.
+            - Make sure that successful tests that have run, have existing data.
     4. If ESS does NOT exist:
         1. Make one.
         2. Set PCG next test to be first combination.
@@ -102,6 +109,11 @@ This is how AP generally works in terms of a sequence of steps.
     10. Get end timestamp.
     11. Find row in ESS for that test.
     12. Record end timestamp into ESS.
+    13. Create directory for test.
+    14. Move pub.csv and sub_n.csv files to directory.
+    15. If last 15 tests have failed:
+        - Stop program.
+5. Compress experiment folder.
 
 # Configuration
 
