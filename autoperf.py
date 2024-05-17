@@ -9,7 +9,7 @@ from typing import List
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO, 
+    level=logging.DEBUG, 
     filename="autoperf.log", 
     filemode="w",
     format='%(asctime)s \t%(levelname)s \t%(message)s'
@@ -24,43 +24,6 @@ formatter = logging.Formatter(
 console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
-
-def read_config(config_path: str = ""):
-    if config_path == "":
-        logger.error(
-            f"No config path passed to read_config()"
-        )
-        return None
-
-    with open(config_path, 'r') as f:
-        try:
-            config = json.load(f)
-        except ValueError:
-            logger.error(
-                f"Error parsing JSON for config file: {config_path}"
-            )
-            return None
-
-    if not isinstance(config, list):
-        logger.error(
-            f"Config file does not contain a list: {config_path}"
-        )
-        return None
-
-    REQUIRED_KEYS = [
-        'experiment_name',
-        'combination_generation_type',
-        'resuming_test_name',
-        'qos_settings',
-        'slave_machines'
-    ]
-
-    for experiment in config:
-        ic(experiment)
-        ic(experiment.keys())
-        ic(experiment.keys() == REQUIRED_KEYS)
-
-    return config
 
 def get_difference_between_lists(list_one: List = [], list_two: List = []):
     if list_one is None:
@@ -133,6 +96,55 @@ def get_shorter_list(list_one: List = [], list_two: List = []):
     else:
         return list_one
 
+def read_config(config_path: str = ""):
+    if config_path == "":
+        logger.error(
+            f"No config path passed to read_config()"
+        )
+        return None
+
+    with open(config_path, 'r') as f:
+        try:
+            config = json.load(f)
+        except ValueError:
+            logger.error(
+                f"Error parsing JSON for config file: {config_path}"
+            )
+            return None
+
+    if not isinstance(config, list):
+        logger.error(
+            f"Config file does not contain a list: {config_path}"
+        )
+        return None
+
+    REQUIRED_KEYS = [
+        'experiment_name',
+        'combination_generation_type',
+        'resuming_test_name',
+        'qos_settings',
+        'slave_machines'
+    ]
+
+    for experiment in config:
+        list_difference = get_difference_between_lists(
+            experiment.keys(), 
+            REQUIRED_KEYS
+        )
+        if list_difference is None:
+            logger.error(
+                f"Error comparing config settings for {experiment}"
+            )
+            return None
+
+        if len(list_difference) > 0:
+            logger.error(
+                f"Mismatch in config settings for {experiment}: {list_difference}"
+            )
+            return None
+
+    return config
+
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
         logger.error(
@@ -141,13 +153,13 @@ def main(sys_args: list[str] = []) -> None:
         return None
 
     CONFIG_PATH = sys_args[1]
-
     if not os.path.exists(CONFIG_PATH):
         logger.error(
             f"Config path {CONFIG_PATH} does NOT exist."
         )
         return None
 
+    logger.debug(f"Reading {CONFIG_PATH}.")
     CONFIG = read_config(CONFIG_PATH)
     if CONFIG is None:
         logger.error(
@@ -157,7 +169,7 @@ def main(sys_args: list[str] = []) -> None:
 
 if __name__ == "__main__":
     if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
-        main(sys.argv[1:])
+        main(sys.argv)
     else:
         logger.error("Tests failed.")
         sys.exit(1)
