@@ -1,11 +1,11 @@
 # Table of contents
 1. [Introduction](#introduction)
-2. [How does the current system work?](#how-does-the-current-system-work?)
-3. [Features](#features)
-4. [Terminology](#terminology)
-5. [User Story](#user-story)
-6. [System Story](#system-story)
-7. [Configuration](#configuration)
+2. [Features](#features)
+3. [Terminology](#terminology)
+4. [System Story](#system-story)
+5. [Configuration](#configuration)
+6. [Experiment Status Spreadsheet (ESS)](#experiment-status-spreadsheet-(ess))
+7. [Deprecated Content](#deprecated-content)
 
 # Introduction
 
@@ -24,31 +24,8 @@ What are the extra things that AP should be able to do?
 - [ ]  Deal with the situation where several consecutive tests have failed - the machines could be off
 - [ ]  Notify remotely when something has gone wrong
 - [ ]  Continue a previous test campaign if it was interrupted
+- [ ]  Rerun tests up to 3 times just in case something went wrong that isn't related to the test itself (e.g. can't access the slave machines)
 
-# How does the current system work?
-
-1. Read config file and buffer duration in seconds from command line arguments.
-2. For each campaign:
-    1. Generate combinations.
-    2. For each combination:
-        1. Generate scripts for combination.
-        2. Distribute scripts across machines.
-        3. Check last 10 tests for failures.
-            1. If last 10 tests have failed then stop the application.
-            2. If last 10 tests have not ALL failed then continue.
-        4. For each machine:
-            1. Ping machine.
-            2. Check SSH connection to machine.
-        5. For each machine:
-            1. Restart machine.
-            2. Ping every other machine.
-            3. SSH check every other machine.
-            4. tbc...
-
-# New things to add
-
-- [ ] Set buffer duration straight from config file. Only thing being passed to the application is the config file.
-- [ ] Add functionality to store and manipulate test statuses from the [ESS](#experiment-status-spreadsheet-ess).
 
 # Features
 
@@ -62,20 +39,8 @@ Tests refer to Perftest tests.
 
 Experiments (formerly campaigns) refer to AP experiments where 1 AP experiment can contain many Perftest tests.
 
-ESS stands for Experiment Status Spreadsheet and is a csv file containing details about the run of each test. More details [here](#experiment-status-spreadsheet-ess)
+ESS stands for Experiment Status Spreadsheet and is a csv file containing details about the run of each test. More details [here](#experiment-status-spreadsheet-ess).
 
-Experiment traffic light is a green-red light system that determines if tests should run or not. If multiple consecutive tests have failed then the machine is probably unresponsive and needs human intervention. In this case the traffic light turns red. This means all future tests will not be run until the light turns green.
-
-Green:  Run test.
-Red:    Go to next test.
-
-# User Story
-
-These are the general steps that take place when using AP:
-
-1. Define experimental configurations.
-2. Run AP.
-3. Get notified if something goes wrong.
 
 # System Story
 
@@ -135,7 +100,6 @@ RCG Example:
 [{
     'experiment_name': 'RCG #1',
     'combination_generation_type': 'rcg',
-    'resuming_test_name': '',
     'qos_settings': {
         'duration_secs': [30],
         'datalen_bytes': [100],
@@ -172,7 +136,6 @@ PCG Example:
 [{
     'experiment_name': 'PCG #1',
     'combination_generation_type': 'pcg',
-    'resuming_test_name': '',
     'qos_settings': {
         'duration_secs': [30],
         'datalen_bytes': [100],
@@ -216,3 +179,39 @@ It contains the following columns:
 - ssh check count
 - end status
 - attempt #
+
+# Deprecated Content
+
+# User Story
+
+These are the general steps that take place when using AP:
+
+1. Define experimental configurations.
+2. Run AP.
+3. Get notified if something goes wrong.
+
+# How does the current system work?
+
+1. Read config file and buffer duration in seconds from command line arguments.
+2. For each campaign:
+    1. Generate combinations.
+    2. For each combination:
+        1. Generate scripts for combination.
+        2. Distribute scripts across machines.
+        3. Check last 10 tests for failures.
+            1. If last 10 tests have failed then stop the application.
+            2. If last 10 tests have not ALL failed then continue.
+        4. For each machine:
+            1. Ping machine.
+            2. Check SSH connection to machine.
+        5. For each machine:
+            1. Restart machine.
+            2. Ping every other machine.
+            3. SSH check every other machine.
+            4. tbc...
+
+# New things to add
+
+- [ ] Set buffer duration straight from config file. Only thing being passed to the application is the config file.
+- [ ] Add functionality to store and manipulate test statuses from the [ESS](#experiment-status-spreadsheet-ess).
+
