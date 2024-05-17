@@ -9,8 +9,19 @@ class TestAutoPerf(unittest.TestCase):
         config = ap.read_config("./pytests/config_1.json")
         self.assertNotEqual(config, None)
 
-        config = ap.read_config("./pytests/config_2.json")
-        self.assertEqual(config, None)
+        config_paths_that_return_none = [
+            './pytests/config_2.json',
+            './pytests/config_3.json',
+            './pytests/config_4.json',
+            './pytests/config_5.json',
+            './pytests/config_6.json',
+        ]
+        
+        for config_path in config_paths_that_return_none:
+            self.assertEqual(
+                ap.read_config(config_path),
+                None
+            )
 
     def test_get_difference_between_lists(self):
         self.assertEqual(

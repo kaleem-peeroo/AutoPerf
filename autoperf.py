@@ -25,6 +25,25 @@ console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
 
+REQUIRED_EXPERIMENT_KEYS = [
+    'experiment_name',
+    'combination_generation_type',
+    'resuming_test_name',
+    'qos_settings',
+    'slave_machines'
+]
+
+REQUIRED_QOS_KEYS = [
+    "datalen_bytes",
+    'durability_level',
+    'duration_secs',
+    'latency_count',
+    'pub_count',
+    'sub_count',
+    'use_multicast',
+    'use_reliable'
+]
+
 def get_difference_between_lists(list_one: List = [], list_two: List = []):
     if list_one is None:
         logger.error(
@@ -118,18 +137,16 @@ def read_config(config_path: str = ""):
         )
         return None
 
-    REQUIRED_KEYS = [
-        'experiment_name',
-        'combination_generation_type',
-        'resuming_test_name',
-        'qos_settings',
-        'slave_machines'
-    ]
-
     for experiment in config:
+        if not isinstance(experiment, dict):
+            logger.error(
+                f"{experiment} is NOT a dictionary."
+            )
+            return None
+
         list_difference = get_difference_between_lists(
-            experiment.keys(), 
-            REQUIRED_KEYS
+            list(experiment.keys()), 
+            REQUIRED_EXPERIMENT_KEYS
         )
         if list_difference is None:
             logger.error(
@@ -140,6 +157,29 @@ def read_config(config_path: str = ""):
         if len(list_difference) > 0:
             logger.error(
                 f"Mismatch in config settings for {experiment}: {list_difference}"
+            )
+            return None
+
+        qos_settings = experiment['qos_settings']
+        if not isinstance(qos_settings, dict):
+            logger.error(
+                f"{qos_settings} in {experiment} is NOT a dictionary."
+            )
+            return None
+
+        list_difference = get_difference_between_lists(
+            list(qos_settings.keys()),
+            REQUIRED_QOS_KEYS
+        )
+        if list_difference is None:
+            logger.error(
+                f"Error comparing config settings for {qos_settings} in {experiment}."
+            )
+            return None
+
+        if len(list_difference) > 0:
+            logger.error(
+                f"Mismatch in config settings for {qos_settings} in {experiment}: {list_difference}"
             )
             return None
 
