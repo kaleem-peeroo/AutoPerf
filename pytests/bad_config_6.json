@@ -1,0 +1,35 @@
+[
+  {
+    "experiment_name": "PCG #1",
+    "combination_generation_type": "",
+    "resuming_test_name": "",
+    "qos_settings": {
+      "duration_secs": [30],
+      "datalen_bytes": [100],
+      "pub_count": [1, 50, 100],
+      "sub_count": [1, 50, 100],
+      "use_reliable": [true, false],
+      "use_multicast": [true, false],
+      "durability_level": [],
+      "latency_count": [100]
+    },
+    "slave_machines": [
+      {
+        "machine_name": "p1",
+        "participant_allocation": "pub",
+        "ip": "169.254.248.55",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "p2",
+        "participant_allocation": "sub",
+        "ip": "169.254.201.141",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      }
+    ]
+  }
+]

@@ -235,9 +235,33 @@ def read_config(config_path: str = ""):
 
     return config
 
-def get_if_pcg(experiment: Dict) -> Optional[bool]:
-    # TODO
-    pass
+def get_if_pcg(experiment: Optional[Dict] = None) -> Optional[bool]:
+    if experiment is None:
+        logger.error(
+            f"No experiment given."
+        )
+        return None
+
+    if 'combination_generation_type' not in experiment.keys():
+        logger.error(
+            f"combination_generation_type option not found in experiment config."
+        )
+        return None
+
+    if experiment['combination_generation_type'] == "":
+        logger.error(
+            "combination_generation_type is empty."
+        )
+        return None
+
+    combination_generation_type = experiment['combination_generation_type']
+    if combination_generation_type not in ['pcg', 'rcg']:
+        logger.error(
+            f"Invalid value for combination generation type: {combination_generation_type}.\n\tExpected either PCG or RCG."
+        )
+        return None
+    
+    return experiment['combination_generation_type'] == 'pcg'
 
 def get_valid_dirname(dir_name: str = "") -> Optional[str]:
     if dir_name == "":

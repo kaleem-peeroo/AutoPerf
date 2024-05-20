@@ -64,8 +64,30 @@ class TestAutoPerf(unittest.TestCase):
             self.assertEqual(experiment_name, "PCG_#1")
 
     def test_get_if_pcg(self):
-        # TODO:
-        pass
+        self.assertEqual(
+                ap.get_if_pcg(None), 
+                None
+            )
+
+        CONFIG = ap.read_config('./pytests/good_config_1.json') 
+        for EXPERIMENT in CONFIG:
+            is_pcg = ap.get_if_pcg(EXPERIMENT)
+            self.assertEqual(is_pcg, True)
+
+        CONFIG = ap.read_config('./pytests/good_config_2.json')
+        for EXPERIMENT in CONFIG:
+            is_pcg = ap.get_if_pcg(EXPERIMENT)
+            self.assertEqual(is_pcg, False)
+
+        CONFIG = ap.read_config('./pytests/bad_config_6.json')
+        for EXPERIMENT in CONFIG:
+            is_pcg = ap.get_if_pcg(EXPERIMENT)
+            self.assertEqual(is_pcg, None)
+
+        CONFIG = ap.read_config('./pytests/bad_config_7.json')
+        for EXPERIMENT in CONFIG:
+            is_pcg = ap.get_if_pcg(EXPERIMENT)
+            self.assertEqual(is_pcg, None)
 
     def test_validate_dict_using_keys(self):
         # TODO:
