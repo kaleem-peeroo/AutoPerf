@@ -5,7 +5,7 @@ import os
 import logging
 import json
 from icecream import ic
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 # Set up logging
 logging.basicConfig(
@@ -42,6 +42,15 @@ REQUIRED_QOS_KEYS = [
     'sub_count',
     'use_multicast',
     'use_reliable'
+]
+
+REQUIRED_SLAVE_MACHINE_KEYS = [
+    'ip',
+    'machine_name',
+    'participant_allocation',
+    'perftest_exec_path',
+    'ssh_key_path',
+    'username'
 ]
 
 def get_difference_between_lists(list_one: List = [], list_two: List = []):
@@ -143,7 +152,7 @@ def validate_dict_using_keys(
 
     if len(list_difference) > 0:
         logger.error(
-            f"Mismatch in keys for {given_keys}: {list_difference}"
+            f"Mismatch in keys for \n\t{given_keys}: \n\t\t{list_difference}"
         )
         return False
     
@@ -208,6 +217,23 @@ def read_config(config_path: str = ""):
                 f"Config invalid for {experiment}."
             )
             return None
+
+        slave_machine_settings = experiment['slave_machines']
+        for machine_setting in slave_machine_settings:
+            is_slave_machine_config_valid = validate_dict_using_keys(
+                list(machine_setting.keys()),
+                REQUIRED_SLAVE_MACHINE_KEYS
+            )
+            if is_slave_machine_config_valid is None:
+                logger.error(
+                    f"Error validating slave machine {machine_setting['machine_name']} for {experiment['experiment_name']}."
+                )
+                return None
+            if not is_slave_machine_config_valid:
+                logger.error(
+                    f"Config invalid for slave machine {machine_setting['machine_name']} for {experiment['experiment_name']}."
+                )
+                return None
 
     return config
 

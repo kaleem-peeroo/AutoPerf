@@ -23,7 +23,7 @@ class TestAutoPerf(unittest.TestCase):
                 None
             )
 
-    def test_validate_dict(self):
+    def test_validate_dict_using_keys(self):
         # TODO:
         pass
 
