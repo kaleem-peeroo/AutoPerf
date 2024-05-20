@@ -9,7 +9,7 @@
     "sub_count": [1, 50, 100],
     "use_reliable": [true, false],
     "use_multicast": [true, false],
-    "durability_level": [],
+    "durability_level": [0, 1, 2, 3],
     "latency_count": [100]
   },
   "slave_machines": [

@@ -1,5 +1,6 @@
 import pandas as pd
 import sys
+import itertools
 import re
 import pytest
 import os
@@ -301,8 +302,44 @@ def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[s
     return experiment_dirname
 
 def generate_combinations_from_qos(qos: Optional[Dict] = None) -> Optional[List]:
-    # TODO
-    pass
+    if qos is None:
+        logger.error(
+            f"No QoS passed."
+        )
+        return None
+
+
+    keys = qos.keys()
+    if len(keys) == 0:
+        logger.error(
+            f"No options found for qos"
+        )
+        return None
+
+    for key in keys:
+        if key not in REQUIRED_QOS_KEYS:
+            logger.error(
+                f"Found an unexpected QoS setting: {key}"
+            )
+            return None
+
+    values = qos.values()
+    if len(values) == 0:
+        logger.error(
+            f"No values found for qos"
+        )
+        return None
+    for value in values:
+        if len(value) == 0:
+            logger.error(
+                f"One of the settings has no values."
+            )
+            return None
+
+    combinations = list(itertools.product(*values))
+    combination_dicts = [dict(zip(keys, combination)) for combination in combinations]
+
+    return combination_dicts
 
 def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
     if ess_filepath == "":
@@ -364,6 +401,7 @@ def main(sys_args: list[str] = []) -> None:
         if not os.path.exists(EXPERIMENT_DIRNAME):
             os.makedirs(EXPERIMENT_DIRNAME)
 
+        logger.debug(f"Checking if PCG or not.")
         is_pcg = get_if_pcg(EXPERIMENT)
         if is_pcg is None:
             logger.error(
@@ -372,6 +410,8 @@ def main(sys_args: list[str] = []) -> None:
             continue 
 
         if is_pcg:
+            logger.debug(f"Is PCG")
+            logger.debug(f"Generating combinations from QoS settings.")
             COMBINATIONS = generate_combinations_from_qos(EXPERIMENT['qos_settings'])
 
             ESS_FILEPATH = os.path.join(EXPERIMENT_DIRNAME, 'ess.csv')

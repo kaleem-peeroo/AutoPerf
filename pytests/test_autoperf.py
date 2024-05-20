@@ -57,6 +57,60 @@ class TestAutoPerf(unittest.TestCase):
                 test_output
             )
 
+    def test_generate_combinations_from_qos(self):
+        qos = {
+            "duration_secs": [10, 20],
+            "pub_count": [10, 20],
+        }
+        combinations = ap.generate_combinations_from_qos(qos)
+        self.assertEqual(
+            combinations,
+            [
+                {"duration_secs": 10, "pub_count": 10},
+                {"duration_secs": 10, "pub_count": 20},
+                {"duration_secs": 20, "pub_count": 10},
+                {"duration_secs": 20, "pub_count": 20},
+            ]
+        )
+
+        qos = {
+            "duration_secs": [20],
+            "pub_count": [10, 20],
+        }
+        combinations = ap.generate_combinations_from_qos(qos)
+        self.assertEqual(
+            combinations,
+            [
+                {"duration_secs": 20, "pub_count": 10},
+                {"duration_secs": 20, "pub_count": 20},
+            ]
+        )
+
+        qos = {
+            "duration_secs": [],
+            "pub_count": [10, 20],
+        }
+        combinations = ap.generate_combinations_from_qos(qos)
+        self.assertEqual(
+            combinations,
+            None
+        )
+
+        qos = {
+            "duration_secs": [True, False],
+            "pub_count": [10, 20],
+        }
+        combinations = ap.generate_combinations_from_qos(qos)
+        self.assertEqual(
+            combinations,
+            [
+                {"duration_secs": True, "pub_count": 10},
+                {"duration_secs": True, "pub_count": 20},
+                {"duration_secs": False, "pub_count": 10},
+                {"duration_secs": False, "pub_count": 20},
+            ]
+        )
+
     def test_get_dirname_from_experiment(self):
         CONFIG = ap.read_config('./pytests/good_config_1.json') 
         for EXPERIMENT in CONFIG:
