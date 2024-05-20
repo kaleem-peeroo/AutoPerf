@@ -23,6 +23,10 @@ class TestAutoPerf(unittest.TestCase):
                 None
             )
 
+    def test_validate_dict(self):
+        # TODO:
+        pass
+
     def test_get_difference_between_lists(self):
         self.assertEqual(
            ap.get_difference_between_lists(
