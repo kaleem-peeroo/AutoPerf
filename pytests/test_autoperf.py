@@ -1,6 +1,5 @@
 import unittest
 import warnings
-import sys
 import autoperf as ap
 from icecream import ic
 
@@ -25,8 +24,26 @@ class TestAutoPerf(unittest.TestCase):
 
     def test_get_ess_df(self):
         ess_df = ap.get_ess_df("./pytests/ess/good_ess_1.csv")
-        ic(ess_df)
-        asdf
+        required_columns = [
+            'start_timestamp',
+            'end_timestamp',
+            'test_name',
+            'pings_count',
+            'ssh_check_count',
+            'end_status',
+            'attempt_number',
+            'qos_settings'
+        ]
+
+        self.assertEqual(
+            len(ess_df.columns),
+            len(required_columns)
+        )
+
+        self.assertEqual(
+            list(ess_df.columns),
+            required_columns
+        )
 
     def test_get_valid_dirname(self):
         test_inputs = [
