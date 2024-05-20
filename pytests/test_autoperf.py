@@ -6,15 +6,15 @@ from icecream import ic
 
 class TestAutoPerf(unittest.TestCase):
     def test_read_config(self):
-        config = ap.read_config("./pytests/good_config_1.json")
+        config = ap.read_config("./pytests/configs/good_config_1.json")
         self.assertNotEqual(config, None)
 
         config_paths_that_return_none = [
-            './pytests/bad_config_1.json',
-            './pytests/bad_config_2.json',
-            './pytests/bad_config_3.json',
-            './pytests/bad_config_4.json',
-            './pytests/bad_config_5.json',
+            './pytests/configs/bad_config_1.json',
+            './pytests/configs/bad_config_2.json',
+            './pytests/configs/bad_config_3.json',
+            './pytests/configs/bad_config_4.json',
+            './pytests/configs/bad_config_5.json',
         ]
         
         for config_path in config_paths_that_return_none:
@@ -124,7 +124,7 @@ class TestAutoPerf(unittest.TestCase):
         )
 
     def test_get_dirname_from_experiment(self):
-        CONFIG = ap.read_config('./pytests/good_config_1.json') 
+        CONFIG = ap.read_config('./pytests/configs/good_config_1.json') 
         for EXPERIMENT in CONFIG:
             experiment_name = ap.get_dirname_from_experiment(EXPERIMENT)
             self.assertEqual(experiment_name, "PCG_#1")
@@ -135,22 +135,22 @@ class TestAutoPerf(unittest.TestCase):
                 None
             )
 
-        CONFIG = ap.read_config('./pytests/good_config_1.json') 
+        CONFIG = ap.read_config('./pytests/configs/good_config_1.json') 
         for EXPERIMENT in CONFIG:
             is_pcg = ap.get_if_pcg(EXPERIMENT)
             self.assertEqual(is_pcg, True)
 
-        CONFIG = ap.read_config('./pytests/good_config_2.json')
+        CONFIG = ap.read_config('./pytests/configs/good_config_2.json')
         for EXPERIMENT in CONFIG:
             is_pcg = ap.get_if_pcg(EXPERIMENT)
             self.assertEqual(is_pcg, False)
 
-        CONFIG = ap.read_config('./pytests/bad_config_6.json')
+        CONFIG = ap.read_config('./pytests/configs/bad_config_6.json')
         for EXPERIMENT in CONFIG:
             is_pcg = ap.get_if_pcg(EXPERIMENT)
             self.assertEqual(is_pcg, None)
 
-        CONFIG = ap.read_config('./pytests/bad_config_7.json')
+        CONFIG = ap.read_config('./pytests/configs/bad_config_7.json')
         for EXPERIMENT in CONFIG:
             is_pcg = ap.get_if_pcg(EXPERIMENT)
             self.assertEqual(is_pcg, None)
