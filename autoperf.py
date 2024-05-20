@@ -300,6 +300,10 @@ def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[s
 
     return experiment_dirname
 
+def generate_combinations_from_qos(qos: Optional[Dict] = None) -> Optional[List]:
+    # TODO
+    pass
+
 def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
     if ess_filepath == "":
         logger.error(
@@ -338,6 +342,7 @@ def main(sys_args: list[str] = []) -> None:
         return None
 
     logger.debug(f"Reading {CONFIG_PATH}.")
+
     CONFIG = read_config(CONFIG_PATH)
     if CONFIG is None:
         logger.error(
@@ -345,7 +350,10 @@ def main(sys_args: list[str] = []) -> None:
         )
         return None
 
-    for EXPERIMENT in CONFIG:
+    for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
+
+        logger.debug(f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}...")
+
         EXPERIMENT_DIRNAME = get_dirname_from_experiment(EXPERIMENT)
         if EXPERIMENT_DIRNAME is None:
             logger.error(
