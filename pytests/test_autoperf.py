@@ -24,8 +24,9 @@ class TestAutoPerf(unittest.TestCase):
             )
 
     def test_get_ess_df(self):
-        # TODO
-        pass
+        ess_df = ap.get_ess_df("./pytests/ess/good_ess_1.csv")
+        ic(ess_df)
+        asdf
 
     def test_get_valid_dirname(self):
         test_inputs = [
