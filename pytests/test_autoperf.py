@@ -90,8 +90,37 @@ class TestAutoPerf(unittest.TestCase):
             self.assertEqual(is_pcg, None)
 
     def test_validate_dict_using_keys(self):
-        # TODO:
-        pass
+        self.assertEqual(
+            ap.validate_dict_using_keys(
+                ['one', 'two', 'three'],
+                ['four', 'five', 'six']
+            ),
+            False
+        )
+
+        self.assertEqual(
+            ap.validate_dict_using_keys(
+                ['one', 'two', 'three'],
+                ['one', 'two', 'three']
+            ),
+            True
+        )
+
+        self.assertEqual(
+            ap.validate_dict_using_keys(
+                ['one', 'two', 'three'],
+                ['one', 'two']
+            ),
+            False
+        )
+
+        self.assertEqual(
+            ap.validate_dict_using_keys(
+                ['one'],
+                ['one', 'two']
+            ),
+            False
+        )
 
     def test_get_difference_between_lists(self):
         self.assertEqual(
