@@ -58,11 +58,10 @@ class TestAutoPerf(unittest.TestCase):
             )
 
     def test_get_dirname_from_experiment(self):
-       # CONFIG = ap.read_config('./pytests/good_config_1.json') 
-       # for EXPERIMENT in CONFIG:
-       #     experiment_name = EXPERIMENT['experiment_name']
-        # TODO
-        pass
+        CONFIG = ap.read_config('./pytests/good_config_1.json') 
+        for EXPERIMENT in CONFIG:
+            experiment_name = ap.get_dirname_from_experiment(EXPERIMENT)
+            self.assertEqual(experiment_name, "PCG_#1")
 
     def test_get_if_pcg(self):
         # TODO:

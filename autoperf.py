@@ -239,10 +239,6 @@ def get_if_pcg(experiment: Dict) -> Optional[bool]:
     # TODO
     pass
 
-def get_dirname_from_experiment(experiment: Dict) -> Optional[str]:
-    # TODO
-    pass
-
 def get_valid_dirname(dir_name: str = "") -> Optional[str]:
     if dir_name == "":
         logger.error(
@@ -267,6 +263,18 @@ def get_valid_dirname(dir_name: str = "") -> Optional[str]:
         return None
 
     return dir_name
+
+def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[str]:
+    if experiment is None:
+        logger.error(
+            f"No experiment config passed."
+        )
+        return None
+
+    experiment_name = experiment['experiment_name']
+    experiment_dirname = get_valid_dirname(experiment_name)
+
+    return experiment_dirname
 
 def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
     if ess_filepath == "":
