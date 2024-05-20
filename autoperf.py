@@ -5,7 +5,7 @@ import os
 import logging
 import json
 from icecream import ic
-from typing import List
+from typing import List, Optional
 
 # Set up logging
 logging.basicConfig(
@@ -115,6 +115,40 @@ def get_shorter_list(list_one: List = [], list_two: List = []):
     else:
         return list_one
 
+def validate_dict_using_keys(
+    given_keys: List = [], 
+    required_keys: List = []
+) -> Optional[bool]:
+    if given_keys == []:
+        logger.error(
+            f"No given_keys given."
+        )
+        return None
+
+    if required_keys == []:
+        logger.error(
+            f"No required_keys given."
+        )
+        return None
+
+    list_difference = get_difference_between_lists(
+        list(given_keys), 
+        required_keys
+    )
+    if list_difference is None:
+        logger.error(
+            f"Error comparing keys for {given_keys}"
+        )
+        return None
+
+    if len(list_difference) > 0:
+        logger.error(
+            f"Mismatch in keys for {given_keys}: {list_difference}"
+        )
+        return False
+    
+    return True
+
 def read_config(config_path: str = ""):
     if config_path == "":
         logger.error(
@@ -143,43 +177,35 @@ def read_config(config_path: str = ""):
                 f"{experiment} is NOT a dictionary."
             )
             return None
-
-        list_difference = get_difference_between_lists(
-            list(experiment.keys()), 
+    
+        is_experiment_config_valid = validate_dict_using_keys(
+            list(experiment.keys()),
             REQUIRED_EXPERIMENT_KEYS
         )
-        if list_difference is None:
+        if is_experiment_config_valid is None:
             logger.error(
-                f"Error comparing config settings for {experiment}"
+                f"Error validating {experiment}."
             )
             return None
-
-        if len(list_difference) > 0:
+        if not is_experiment_config_valid:
             logger.error(
-                f"Mismatch in config settings for {experiment}: {list_difference}"
+                f"Config invalid for {experiment}."
             )
             return None
 
         qos_settings = experiment['qos_settings']
-        if not isinstance(qos_settings, dict):
-            logger.error(
-                f"{qos_settings} in {experiment} is NOT a dictionary."
-            )
-            return None
-
-        list_difference = get_difference_between_lists(
+        is_qos_config_valid = validate_dict_using_keys(
             list(qos_settings.keys()),
             REQUIRED_QOS_KEYS
         )
-        if list_difference is None:
+        if is_qos_config_valid is None:
             logger.error(
-                f"Error comparing config settings for {qos_settings} in {experiment}."
+                f"Error validating {experiment}."
             )
             return None
-
-        if len(list_difference) > 0:
+        if not is_qos_config_valid:
             logger.error(
-                f"Mismatch in config settings for {qos_settings} in {experiment}: {list_difference}"
+                f"Config invalid for {experiment}."
             )
             return None
 

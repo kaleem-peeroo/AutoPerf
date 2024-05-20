@@ -48,7 +48,7 @@ This is an overview of how the system will work from start to finish.
 
 1. Validate connections to machines in config.
 2. Restart all machines.
-3. Revalidate connections machines.
+3. Revalidate connections to machines.
 4. For each experiment:
     1. If PCG:
         1. Generate all possible combinations.
