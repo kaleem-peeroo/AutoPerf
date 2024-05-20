@@ -47,9 +47,7 @@ ESS stands for Experiment Status Spreadsheet and is a csv file containing detail
 This is an overview of how the system will work from start to finish.
 
 1. Validate connections to machines in config.
-2. Restart all machines.
-3. Revalidate connections to machines.
-4. For each experiment:
+2. For each experiment:
     1. If PCG:
         1. Generate all possible combinations.
         2. Order them.
@@ -78,7 +76,7 @@ This is an overview of how the system will work from start to finish.
     14. Move pub.csv and sub_n.csv files to directory.
     15. If last 15 tests have failed:
         - Stop program.
-5. Compress experiment folder.
+3. Compress experiment folder.
 
 # Configuration
 
