@@ -177,6 +177,7 @@ It contains the following columns:
 - ssh check count
 - end status
 - attempt #
+- qos settings
 
 # Deprecated Content
 
