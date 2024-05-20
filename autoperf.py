@@ -1,5 +1,6 @@
 import pandas as pd
 import sys
+import re
 import pytest
 import os
 import logging
@@ -124,10 +125,7 @@ def get_shorter_list(list_one: List = [], list_two: List = []):
     else:
         return list_one
 
-def validate_dict_using_keys(
-    given_keys: List = [], 
-    required_keys: List = []
-) -> Optional[bool]:
+def validate_dict_using_keys(given_keys: List = [], required_keys: List = []) -> Optional[bool]:
     if given_keys == []:
         logger.error(
             f"No given_keys given."
@@ -237,6 +235,62 @@ def read_config(config_path: str = ""):
 
     return config
 
+def get_if_pcg(experiment: Dict) -> Optional[bool]:
+    # TODO
+    pass
+
+def get_dirname_from_experiment(experiment: Dict) -> Optional[str]:
+    # TODO
+    pass
+
+def get_valid_dirname(dir_name: str = "") -> Optional[str]:
+    if dir_name == "":
+        logger.error(
+            f"No dirname passed for validation."
+        )
+        return None
+
+    dir_name = re.sub(r'[<>:"/\\|?*]', '_', dir_name)
+    dir_name = dir_name.strip()
+    dir_name = re.sub(r'\s+', '_', dir_name)
+
+    if not dir_name:
+        logger.error(
+            f"Dirname can't be empty after validation."
+        )
+        return None
+
+    if len(dir_name) > 255:
+        logger.error(
+            f"Dirname can't be more than 255 characters:\n\t{dir_name}"
+        )
+        return None
+
+    return dir_name
+
+def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
+    if ess_filepath == "":
+        logger.error(
+            f"No filepath passes for ESS."
+        )
+        return None
+
+    ess_exists = os.path.exists(ess_filepath)
+    if ess_exists:
+        ess_df = pd.read_csv(ess_filepath)
+    else:
+        ess_df = pd.DataFrame(columns=[
+            "start_timestamp",
+            "end_timestamp",
+            "test_name",
+            "pings_count",
+            "ssh_check_count",
+            "end_status",
+            "attempt_number"
+       ])
+
+    return ess_df
+
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
         logger.error(
@@ -258,6 +312,30 @@ def main(sys_args: list[str] = []) -> None:
             f"Couldn't read config of {CONFIG_PATH}."
         )
         return None
+
+    for EXPERIMENT in CONFIG:
+        EXPERIMENT_DIRNAME = get_dirname_from_experiment(EXPERIMENT)
+        if EXPERIMENT_DIRNAME is None:
+            logger.error(
+                f"Error getting experiment dirname for {EXPERIMENT['experiment_name']}"
+                )
+            continue
+
+        if not os.path.exists(EXPERIMENT_DIRNAME):
+            os.makedirs(EXPERIMENT_DIRNAME)
+
+        is_pcg = get_if_pcg(EXPERIMENT)
+        if is_pcg is None:
+            logger.error(
+                f"Error checking if {EXPERIMENT['experiment_name']} is PCG or not."
+            )
+            continue 
+
+        if is_pcg:
+            COMBINATIONS = generate_combinations_from_qos(EXPERIMENT['qos_settings'])
+
+            ESS_FILEPATH = os.path.join(EXPERIMENT_DIRNAME, 'ess.csv')
+            ess_df = get_ess_df(ESS_FILEPATH)
 
 if __name__ == "__main__":
     if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:

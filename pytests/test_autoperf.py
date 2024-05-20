@@ -6,15 +6,15 @@ from icecream import ic
 
 class TestAutoPerf(unittest.TestCase):
     def test_read_config(self):
-        config = ap.read_config("./pytests/config_1.json")
+        config = ap.read_config("./pytests/good_config_1.json")
         self.assertNotEqual(config, None)
 
         config_paths_that_return_none = [
-            './pytests/config_2.json',
-            './pytests/config_3.json',
-            './pytests/config_4.json',
-            './pytests/config_5.json',
-            './pytests/config_6.json',
+            './pytests/bad_config_1.json',
+            './pytests/bad_config_2.json',
+            './pytests/bad_config_3.json',
+            './pytests/bad_config_4.json',
+            './pytests/bad_config_5.json',
         ]
         
         for config_path in config_paths_that_return_none:
@@ -22,6 +22,51 @@ class TestAutoPerf(unittest.TestCase):
                 ap.read_config(config_path),
                 None
             )
+
+    def test_get_ess_df(self):
+        # TODO
+        pass
+
+    def test_get_valid_dirname(self):
+        test_inputs = [
+            'valid_folder_name',
+            'invalid<name>',
+            'name:with|invalid*chars?',
+            '   leading and trailing spaces    ',
+            'multiple     spaces ',
+            'a' * 256,
+            'Mixed CASE and Numbers 123',
+            'special_!@#$%^&*()'
+        ]
+        test_outputs = [
+            'valid_folder_name',
+            'invalid_name_',
+            'name_with_invalid_chars_',
+            'leading_and_trailing_spaces',
+            'multiple_spaces',
+            None,
+            'Mixed_CASE_and_Numbers_123',
+            'special_!@#$%^&_()'
+        ]
+
+        for index, _ in enumerate(test_inputs):
+            test_input = test_inputs[index]
+            test_output = test_outputs[index]
+            self.assertEqual(
+                ap.get_valid_dirname(test_input),
+                test_output
+            )
+
+    def test_get_dirname_from_experiment(self):
+       # CONFIG = ap.read_config('./pytests/good_config_1.json') 
+       # for EXPERIMENT in CONFIG:
+       #     experiment_name = EXPERIMENT['experiment_name']
+        # TODO
+        pass
+
+    def test_get_if_pcg(self):
+        # TODO:
+        pass
 
     def test_validate_dict_using_keys(self):
         # TODO:
