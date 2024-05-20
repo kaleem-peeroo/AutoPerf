@@ -359,10 +359,27 @@ def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
             "pings_count",
             "ssh_check_count",
             "end_status",
-            "attempt_number"
+            "attempt_number",
+            "qos_settings"
        ])
 
     return ess_df
+
+def get_test_name_from_combination_dict(combination_dict: Dict) -> Optional[str]:
+    # TODO
+    pass
+
+def get_next_test_from_ess(ess_df: pd.DataFrame) -> Optional[str]:
+    # TODO
+    pass
+
+def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool]:
+    # TODO 
+    pass
+
+def run_test(next_test_name: str = "", next_test_config: Dict = {}, ess_df: pd.DataFrame = pd.DataFrame()) -> Optional[bool]:
+    # TODO
+    pass
 
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
@@ -413,9 +430,35 @@ def main(sys_args: list[str] = []) -> None:
             logger.debug(f"Is PCG")
             logger.debug(f"Generating combinations from QoS settings.")
             COMBINATIONS = generate_combinations_from_qos(EXPERIMENT['qos_settings'])
+            if COMBINATIONS is None:
+                logger.error(
+                    f"Error generating combinations for {EXPERIMENT['experiment_name']}"
+                )
+                continue
 
             ESS_FILEPATH = os.path.join(EXPERIMENT_DIRNAME, 'ess.csv')
             ess_df = get_ess_df(ESS_FILEPATH)
+            if ess_df is None:
+                logger.error(
+                    f"Error getting ESS dataframe."
+                )
+                continue
+
+            next_test_name = get_test_name_from_combination_dict(COMBINATIONS[0])
+            next_test_config = COMBINATIONS[0]
+            if len(ess_df.index) > 0:
+                if have_last_n_tests_failed(ess_df, 10):
+                    logger.error(
+                        f"Last 10 tests have failed. Quitting..."
+                    )
+                    return None
+
+                next_test_name = get_next_test_from_ess(ess_df)
+
+            run_test(next_test_name, next_test_config, ess_df)
+
+        else:
+            logger.debug(f"Is RCG")
 
 if __name__ == "__main__":
     if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:

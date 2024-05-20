@@ -57,6 +57,18 @@ class TestAutoPerf(unittest.TestCase):
                 test_output
             )
 
+    def test_get_test_name_from_combination_dict(self):
+        # TODO
+        pass
+
+    def test_get_next_test_from_ess(self):
+        # TODO
+        pass
+
+    def test_have_last_n_tests_failed(self):
+        # TODO
+        pass
+
     def test_generate_combinations_from_qos(self):
         qos = {
             "duration_secs": [10, 20],
