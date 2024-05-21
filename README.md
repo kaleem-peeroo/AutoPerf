@@ -7,6 +7,12 @@
 6. [Experiment Status Spreadsheet (ESS)](#experiment-status-spreadsheet-(ess))
 7. [Deprecated Content](#deprecated-content)
 
+# TODO
+- [ ] Code get_test_name_from_combination_dict()
+- [ ] Code get_next_test_from_ess()
+- [ ] Code have_last_n_tests_failed()
+- [ ] Code run_test()
+
 # Introduction
 
 I want to improve and revamp Autoperf (AP). So I’m going to plan out everything here and record things as they go along.
@@ -41,6 +47,21 @@ Experiments (formerly campaigns) refer to AP experiments where 1 AP experiment c
 
 ESS stands for Experiment Status Spreadsheet and is a csv file containing details about the run of each test. More details [here](#experiment-status-spreadsheet-ess).
 
+# Examples
+
+## QoS Config Dict
+```python
+{
+    'duration_secs': [30],
+    'datalen_bytes': [100],
+    'pub_count': [1, 50, 100],
+    'sub_count': [1, 50, 100],
+    'use_reliable': [true, false],
+    'use_multicast': [true, false],
+    'durability_level': [0, 1, 2, 3],
+    'latency_count': [100]
+}
+```
 
 # System Story
 
