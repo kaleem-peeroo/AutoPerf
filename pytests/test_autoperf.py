@@ -228,6 +228,16 @@ class TestAutoPerf(unittest.TestCase):
             }
         )
 
+        self.assertEqual(
+            ap.get_next_test_from_ess(None),
+            None
+        )
+
+        self.assertEqual(
+            ap.get_next_test_from_ess(pd.DataFrame()),
+            None
+        )
+
     def test_have_last_n_tests_failed(self):
         # TODO
         pass
