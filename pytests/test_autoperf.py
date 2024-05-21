@@ -24,20 +24,32 @@ def generate_random_ess_row():
     )
     random_end_timestamp = random_end_timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
-    random_test_name = "10SEC_100B_10PUB_10SUB_REL_UC_0DUR_100LC"
+    duration_secs = random.randint(60, 120)
+    datalen_bytes = random.randint(100, 1_000)
+    pub_count = random.randint(10, 50)
+    sub_count = random.randint(10, 50)
+    use_reliable = random.choice([True, False])
+    use_multicast = random.choice([True, False])
+    durability_level = random.randint(0, 3)
+    latency_count = random.randint(100, 1_000)
+
+    random_test_name = f"{duration_secs}SEC_{datalen_bytes}B_{pub_count}PUB_{sub_count}SUB_"
+    random_test_name += f"{'REL' if use_reliable else 'BE'}_{'MC' if use_multicast else 'UC'}_"
+    random_test_name += f"{durability_level}DUR_{latency_count}LC"
+
     random_pings_count = random.randint(0, 3)
     random_ssh_check_count = random.randint(0, 3)
     random_end_status = random.choice(["success", "fail", "timeout"])
     random_attempt_number = random.randint(0, 3)
     random_qos_settings = {
-        'duration_secs': 10,
-        'datalen_bytes': 100,
-        'pub_count': 10,
-        'sub_count': 10,
-        'use_reliable': True,
-        'use_multicast': False,
-        'durability_level': 0,
-        'latency_count': 100
+        'duration_secs': duration_secs,
+        'datalen_bytes': datalen_bytes,
+        'pub_count': pub_count,
+        'sub_count': sub_count,
+        'use_reliable': use_reliable,
+        'use_multicast': use_multicast,
+        'durability_level': durability_level,
+        'latency_count': latency_count
     }
 
     row = pd.DataFrame({
@@ -53,7 +65,7 @@ def generate_random_ess_row():
 
     return row
 
-def generate_random_ess():
+def generate_random_ess(row_count: int = 10):
     ess_filepath = "./pytests/ess/random_ess.csv"
     column_headings = [
         'start_timestamp',
@@ -67,7 +79,7 @@ def generate_random_ess():
     ]
 
     ess_df = pd.DataFrame(columns=column_headings)
-    for _ in range(10):
+    for _ in range(row_count):
         row = generate_random_ess_row()
         ess_df = pd.concat([ess_df, row], ignore_index=True)
 
@@ -75,7 +87,7 @@ def generate_random_ess():
 
 class TestAutoPerf(unittest.TestCase):
     def setUp(self):
-        generate_random_ess()
+        generate_random_ess(50)
 
     def tearDown(self):
         # os.remove("./pytests/ess/random_ess.csv")
