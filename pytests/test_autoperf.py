@@ -239,8 +239,41 @@ class TestAutoPerf(unittest.TestCase):
         )
 
     def test_have_last_n_tests_failed(self):
-        # TODO
-        pass
+        ess_df = ap.get_ess_df("./pytests/ess/good_ess_1.csv")
+        self.assertEqual(
+            ap.have_last_n_tests_failed(ess_df, 3),
+            True
+        )
+
+        self.assertEqual(
+            ap.have_last_n_tests_failed(ess_df, 5),
+            False
+        )
+
+        self.assertEqual(
+            ap.have_last_n_tests_failed(ess_df, 0),
+            None
+        )
+
+        self.assertEqual(
+            ap.have_last_n_tests_failed(ess_df, -1),
+            None
+        )
+
+        self.assertEqual(
+            ap.have_last_n_tests_failed(ess_df, 100),
+            None
+        )
+
+        self.assertEqual(
+            ap.have_last_n_tests_failed(ess_df, 50),
+            False
+        )
+
+        self.assertEqual(
+            ap.have_last_n_tests_failed(ess_df, 49),
+            False
+        )
 
     def test_generate_combinations_from_qos(self):
         qos = {

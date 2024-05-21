@@ -494,8 +494,42 @@ def get_next_test_from_ess(ess_df: pd.DataFrame) -> Optional[Dict]:
     return last_test_qos
 
 def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool]:
-    # TODO 
-    pass
+    if ess_df is None:
+        logger.error(
+            f"No ESS dataframe passed."
+        )
+        return None
+
+    if len(ess_df.index) == 0:
+        logger.error(
+            f"ESS dataframe is empty."
+        )
+        return None
+
+    if n < 1:
+        logger.error(
+            f"Invalid value for n."
+        )
+        return None
+
+    if len(ess_df.index) < n:
+        logger.error(
+            f"ESS dataframe has less than {n} tests."
+        )
+        return None
+
+    last_n_tests = ess_df.tail(n)
+    if last_n_tests is None:
+        logger.error(
+            f"Couldn't get the last {n} tests."
+        )
+        return None
+
+    failed_tests = last_n_tests[last_n_tests['end_status'] != 'success']
+    if len(failed_tests.index) == n:
+        return True
+
+    return False
 
 def run_test(next_test_name: str = "", next_test_config: Dict = {}, ess_df: pd.DataFrame = pd.DataFrame()) -> Optional[bool]:
     # TODO
