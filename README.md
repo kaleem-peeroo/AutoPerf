@@ -11,7 +11,7 @@
 - [x] Code get_test_name_from_combination_dict()
 - [x] Code get_next_test_from_ess()
 - [x] Code have_last_n_tests_failed()
-- [ ] Create function to generate ESS based off config
+- [x] Create function to generate ESS based off config
 - [ ] Code run_test()
 
 # Introduction
@@ -31,7 +31,7 @@ What are the extra things that AP should be able to do?
 - [ ]  Deal with the situation where several consecutive tests have failed - the machines could be off
 - [ ]  Notify remotely when something has gone wrong
 - [ ]  Continue a previous test campaign if it was interrupted
-- [ ]  Rerun tests up to 3 times just in case something went wrong that isn't related to the test itself (e.g. can't access the slave machines)
+- [ ]  Rerun tests up to 3 times just in case something went wrong that isn"t related to the test itself (e.g. can"t access the slave machines)
 
 
 # Features
@@ -53,14 +53,14 @@ ESS stands for Experiment Status Spreadsheet and is a csv file containing detail
 ## QoS Config Dict
 ```python
 {
-    'duration_secs': [30],
-    'datalen_bytes': [100],
-    'pub_count': [1, 50, 100],
-    'sub_count': [1, 50, 100],
-    'use_reliable': [true, false],
-    'use_multicast': [true, false],
-    'durability_level': [0, 1, 2, 3],
-    'latency_count': [100]
+    "duration_secs": [30],
+    "datalen_bytes": [100],
+    "pub_count": [1, 50, 100],
+    "sub_count": [1, 50, 100],
+    "use_reliable": [true, false],
+    "use_multicast": [true, false],
+    "durability_level": [0, 1, 2, 3],
+    "latency_count": [100]
 }
 ```
 
@@ -118,34 +118,34 @@ What do we need to store?
 RCG Example:
 ```json
 [{
-    'experiment_name': 'RCG #1',
-    'combination_generation_type': 'rcg',
-    'qos_settings': {
-        'duration_secs': [30],
-        'datalen_bytes': [100],
-        'pub_count': [1, 100],
-        'sub_count': [1, 100],
-        'use_reliable': [true, false],
-        'use_multicast': [true, false],
-        'durability_level': [0, 1, 2, 3],
-        'latency_count': [100]
+    "experiment_name": "RCG #1",
+    "combination_generation_type": "rcg",
+    "qos_settings": {
+        "duration_secs": [30],
+        "datalen_bytes": [100],
+        "pub_count": [1, 100],
+        "sub_count": [1, 100],
+        "use_reliable": [true, false],
+        "use_multicast": [true, false],
+        "durability_level": [0, 1, 2, 3],
+        "latency_count": [100]
     },
-    'slave_machines': [
+    "slave_machines": [
         {
-            'machine_name': 'p1',
-            'participant_allocation': 'pub',
-            'ip': '169.254.248.55',
-            'ssh_key_path': '~/.ssh/id_rsa',
-            'username': 'acwh025',
-            'perftest_exec_path': '~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher'
+            "machine_name": "p1",
+            "participant_allocation": "pub",
+            "ip": "169.254.248.55",
+            "ssh_key_path": "~/.ssh/id_rsa",
+            "username": "acwh025",
+            "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
         },
         {
-            'machine_name': 'p2',
-            'participant_allocation': 'sub',
-            'ip': '169.254.201.141',
-            'ssh_key_path': '~/.ssh/id_rsa',
-            'username': 'acwh025',
-            'perftest_exec_path': '~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher'
+            "machine_name": "p2",
+            "participant_allocation": "sub",
+            "ip": "169.254.201.141",
+            "ssh_key_path": "~/.ssh/id_rsa",
+            "username": "acwh025",
+            "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
         }
     ]
 }]
@@ -154,34 +154,34 @@ RCG Example:
 PCG Example:
 ```json
 [{
-    'experiment_name': 'PCG #1',
-    'combination_generation_type': 'pcg',
-    'qos_settings': {
-        'duration_secs': [30],
-        'datalen_bytes': [100],
-        'pub_count': [1, 50, 100],
-        'sub_count': [1, 50, 100],
-        'use_reliable': [true, false],
-        'use_multicast': [true, false],
-        'durability_level': [],
-        'latency_count': [100]
+    "experiment_name": "PCG #1",
+    "combination_generation_type": "pcg",
+    "qos_settings": {
+        "duration_secs": [30],
+        "datalen_bytes": [100],
+        "pub_count": [1, 50, 100],
+        "sub_count": [1, 50, 100],
+        "use_reliable": [true, false],
+        "use_multicast": [true, false],
+        "durability_level": [],
+        "latency_count": [100]
     },
-    'slave_machines': [
+    "slave_machines": [
         {
-            'machine_name': 'p1',
-            'participant_allocation': 'pub',
-            'ip': '169.254.248.55',
-            'ssh_key_path': '~/.ssh/id_rsa',
-            'username': 'acwh025',
-            'perftest_exec_path': '~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher'
+            "machine_name": "p1",
+            "participant_allocation": "pub",
+            "ip": "169.254.248.55",
+            "ssh_key_path": "~/.ssh/id_rsa",
+            "username": "acwh025",
+            "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
         },
         {
-            'machine_name': 'p2',
-            'participant_allocation': 'sub',
-            'ip': '169.254.201.141',
-            'ssh_key_path': '~/.ssh/id_rsa',
-            'username': 'acwh025',
-            'perftest_exec_path': '~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher'
+            "machine_name": "p2",
+            "participant_allocation": "sub",
+            "ip": "169.254.201.141",
+            "ssh_key_path": "~/.ssh/id_rsa",
+            "username": "acwh025",
+            "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
         }
     ]
 }]
