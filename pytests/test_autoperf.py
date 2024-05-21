@@ -92,6 +92,37 @@ class TestAutoPerf(unittest.TestCase):
             "10SEC_100B_10PUB_10SUB_REL_UC_0DUR_100LC"
         )
 
+        test_dict = {
+            'duration_secs': 10,
+            'datalen_bytes': 100,
+            'pub_count': 10,
+            'sub_count': 10,
+            'use_reliable': 0,
+            'use_multicast': 0,
+            'durability_level': 0,
+            'latency_count': 100
+        }
+        test_name = ap.get_test_name_from_combination_dict(test_dict)
+        self.assertEqual(
+            test_name,
+            "10SEC_100B_10PUB_10SUB_BE_UC_0DUR_100LC"
+        )
+
+        test_dict = {
+            'datalen_bytes': 100,
+            'pub_count': 10,
+            'sub_count': 10,
+            'use_reliable': 0,
+            'use_multicast': 0,
+            'durability_level': 0,
+            'latency_count': 100
+        }
+        test_name = ap.get_test_name_from_combination_dict(test_dict)
+        self.assertEqual(
+            test_name,
+            None
+        )
+
     def test_get_next_test_from_ess(self):
         # TODO
         pass
