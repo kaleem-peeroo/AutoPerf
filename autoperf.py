@@ -365,9 +365,107 @@ def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
 
     return ess_df
 
-def get_test_name_from_combination_dict(combination_dict: Dict) -> Optional[str]:
-    # TODO
-    pass
+def get_test_name_from_combination_dict(combination_dict: Dict = {}) -> Optional[str]:
+    if combination_dict == {}:
+        logger.error(
+            f"No combination dict passed."
+        )
+        return None
+
+    if combination_dict is None:
+        logger.error(
+            f"Combination dict is None."
+        )
+        return None
+
+    if combination_dict.keys() == []:
+        logger.error(
+            f"No keys found in combination dict."
+        )
+        return None
+
+    if len(get_difference_between_lists(
+        list(combination_dict.keys()),
+        REQUIRED_QOS_KEYS
+    )) > 0:
+        logger.error(
+            f"Invalid configuration options in combination dict."
+        )
+        return None
+
+    duration_string = None
+    datalen_string = None
+    pub_string = None
+    sub_string = None
+    rel_string = None
+    mc_string = None
+    dur_string = None
+    lc_string = None
+    for key, value in combination_dict.items():
+        if value == "":
+            logger.error(
+                f"Value for {key} is empty."
+            )
+            return None
+
+        if key.lower() == "duration_secs":
+            duration_string = f"{value}SEC"
+
+        elif key.lower() == "datalen_bytes":
+            datalen_string = f"{value}B"
+
+        elif key.lower() == "pub_count":
+            pub_string = f"{value}PUB"
+            
+        elif key.lower() == "sub_count":
+            sub_string = f"{value}SUB"
+
+        elif key.lower() == "use_reliable":
+
+            if value:
+                rel_string = "REL"
+            else:
+                rel_string = "BE"
+
+        elif key.lower() == "use_multicast":
+            if value:
+                mc_string = "MC"
+            else:
+                mc_string = "UC"
+
+        elif key.lower() == "durability_level":
+            dur_string = f"{value}DUR"
+
+        elif key.lower() == "latency_count":
+            lc_string = f"{value}LC"
+
+    if duration_string is None:
+        duration_string = ""
+    if datalen_string is None:
+        datalen_string = ""
+    if pub_string is None:
+        pub_string = ""
+    if sub_string is None:
+        sub_string = ""
+    if rel_string is None:
+        rel_string = ""
+    if mc_string is None:
+        mc_string = ""
+    if dur_string is None:
+        dur_string = ""
+    if lc_string is None:
+        lc_string = ""
+
+    test_name = f"{duration_string}_"
+    test_name = f"{test_name}{datalen_string}_"
+    test_name = f"{test_name}{pub_string}_"
+    test_name = f"{test_name}{sub_string}_"
+    test_name = f"{test_name}{rel_string}_"
+    test_name = f"{test_name}{mc_string}_"
+    test_name = f"{test_name}{dur_string}_"
+    test_name = f"{test_name}{lc_string}"
+
+    return test_name
 
 def get_next_test_from_ess(ess_df: pd.DataFrame) -> Optional[str]:
     # TODO
@@ -421,7 +519,7 @@ def main(sys_args: list[str] = []) -> None:
         logger.debug(f"Checking if PCG or not.")
         is_pcg = get_if_pcg(EXPERIMENT)
         if is_pcg is None:
-            logger.error(
+            logger.warning(
                 f"Error checking if {EXPERIMENT['experiment_name']} is PCG or not."
             )
             continue 
@@ -431,7 +529,7 @@ def main(sys_args: list[str] = []) -> None:
             logger.debug(f"Generating combinations from QoS settings.")
             COMBINATIONS = generate_combinations_from_qos(EXPERIMENT['qos_settings'])
             if COMBINATIONS is None:
-                logger.error(
+                logger.warning(
                     f"Error generating combinations for {EXPERIMENT['experiment_name']}"
                 )
                 continue
@@ -439,12 +537,18 @@ def main(sys_args: list[str] = []) -> None:
             ESS_FILEPATH = os.path.join(EXPERIMENT_DIRNAME, 'ess.csv')
             ess_df = get_ess_df(ESS_FILEPATH)
             if ess_df is None:
-                logger.error(
+                logger.warning(
                     f"Error getting ESS dataframe."
                 )
                 continue
 
             next_test_name = get_test_name_from_combination_dict(COMBINATIONS[0])
+            if next_test_name is None:
+                logger.warning(
+                    f"Couldn't get the name of the next test to run for {EXPERIMENT['experiment_name']}."
+                )
+                continue
+
             next_test_config = COMBINATIONS[0]
             if len(ess_df.index) > 0:
                 if have_last_n_tests_failed(ess_df, 10):
