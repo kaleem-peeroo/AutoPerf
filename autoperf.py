@@ -1,5 +1,6 @@
 import pandas as pd
 import sys
+import ast
 import itertools
 import re
 import pytest
@@ -467,9 +468,30 @@ def get_test_name_from_combination_dict(combination_dict: Dict = {}) -> Optional
 
     return test_name
 
-def get_next_test_from_ess(ess_df: pd.DataFrame) -> Optional[str]:
-    # TODO
-    pass
+def get_next_test_from_ess(ess_df: pd.DataFrame) -> Optional[Dict]:
+    if ess_df is None:
+        logger.error(
+            f"No ESS dataframe passed."
+        )
+        return None
+
+    if len(ess_df.index) == 0:
+        logger.error(
+            f"ESS dataframe is empty."
+        )
+        return None
+
+    last_test = ess_df.iloc[-1]
+    if last_test is None:
+        logger.error(
+            f"Couldn't get the last test."
+        )
+        return None
+
+    last_test_qos = last_test['qos_settings'].replace("'", "\"")
+    last_test_qos = ast.literal_eval(last_test_qos)
+
+    return last_test_qos
 
 def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool]:
     # TODO 

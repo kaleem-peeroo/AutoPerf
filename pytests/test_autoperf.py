@@ -90,7 +90,6 @@ class TestAutoPerf(unittest.TestCase):
         generate_random_ess(50)
 
     def tearDown(self):
-        # os.remove("./pytests/ess/random_ess.csv")
         pass
 
     def test_read_config(self):
@@ -112,7 +111,7 @@ class TestAutoPerf(unittest.TestCase):
             )
 
     def test_get_ess_df(self):
-        ess_df = ap.get_ess_df("./pytests/ess/good_ess_1.csv")
+        ess_df = ap.get_ess_df("./pytests/ess/random_ess.csv")
         required_columns = [
             'start_timestamp',
             'end_timestamp',
@@ -212,21 +211,22 @@ class TestAutoPerf(unittest.TestCase):
             None
         )
 
-    # def test_get_next_test_from_ess(self):
-    #     ess_df = ap.get_ess_df("./pytests/ess/good_ess_1.csv")
-    #     next_test = ap.get_next_test_from_ess(ess_df)
-    #     self.assertEqual(
-    #         next_test,
-    #         {
-    #             'duration_secs': 100,
-    #             'pub_count': 10,
-    #             'sub_count': 10,
-    #             'use_reliable': True,
-    #             'use_multicast': False,
-    #             'durability_level': 0,
-    #             'latency_count': 100
-    #         }
-    #     )
+    def test_get_next_test_from_ess(self):
+        ess_df = ap.get_ess_df("./pytests/ess/good_ess_1.csv")
+        next_test = ap.get_next_test_from_ess(ess_df)
+        self.assertEqual(
+            next_test,
+            {
+                'duration_secs': 107, 
+                'datalen_bytes': 947, 
+                'pub_count': 27, 
+                'sub_count': 31, 
+                'use_reliable': False, 
+                'use_multicast': False, 
+                'durability_level': 3, 
+                'latency_count': 524
+            }
+        )
 
     def test_have_last_n_tests_failed(self):
         # TODO

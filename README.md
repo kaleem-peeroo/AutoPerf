@@ -8,8 +8,8 @@
 7. [Deprecated Content](#deprecated-content)
 
 # TODO
-- [ ] Code get_test_name_from_combination_dict()
-- [ ] Code get_next_test_from_ess()
+- [x] Code get_test_name_from_combination_dict()
+- [x] Code get_next_test_from_ess()
 - [ ] Code have_last_n_tests_failed()
 - [ ] Code run_test()
 
