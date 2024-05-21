@@ -488,8 +488,11 @@ def get_next_test_from_ess(ess_df: pd.DataFrame) -> Optional[Dict]:
         )
         return None
 
-    last_test_qos = last_test['qos_settings'].replace("'", "\"")
-    last_test_qos = ast.literal_eval(last_test_qos)
+    if isinstance(last_test['qos_settings'], str):
+        last_test_qos = last_test['qos_settings'].replace("'", "\"")
+        last_test_qos = ast.literal_eval(last_test_qos)
+    else:
+        last_test_qos = last_test['qos_settings']
 
     return last_test_qos
 
@@ -532,24 +535,17 @@ def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool
     return False
 
 def run_test(
-    next_test_name: str = "", 
     next_test_config: Dict = {}, 
-    machine_config: Dict = {},
+    machine_configs: List = [],
     ess_df: pd.DataFrame = pd.DataFrame()
 ) -> Optional[pd.DataFrame]:
-    if next_test_name == "":
-        logger.error(
-            f"No test name passed."
-        )
-        return None
-
     if next_test_config == {}:
         logger.error(
             f"No test config passed."
         )
         return None
 
-    if machine_config == {}:
+    if machine_configs == []:
         logger.error(
             f"No machine config passed."
         )
@@ -579,15 +575,18 @@ def run_test(
         )
         return None
 
-    if not isinstance(machine_config, dict):
+    if not isinstance(machine_configs, List):
         logger.error(
-            f"Machine config is not a dictionary."
+            f"Machine config is not a list."
         )
         return None
 
-    if not isinstance(next_test_name, str):
+    new_ess_df = ess_df
+
+    next_test_name = get_test_name_from_combination_dict(next_test_config)
+    if next_test_name is None:
         logger.error(
-            f"Next test name is not a string."
+            f"Couldn't get the name of the next test to run."
         )
         return None
 
@@ -595,9 +594,20 @@ def run_test(
         f"Running {next_test_name}..."
     )
 
-    ic(next_test_name)
-    ic(next_test_config)
-    ic(machine_config)
+    """
+    1. Check connections to machines.
+    2. Restart machines.
+    3. Check connections to machines.
+    4. Get qos config.
+    5. Generate scripts.
+    6. Allocate scripts to machines.
+    7. Run scripts.
+    8. Check results.
+    9. Update ESS.
+    10. Return ESS.
+    """
+
+    return new_ess_df
 
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
@@ -680,7 +690,6 @@ def main(sys_args: list[str] = []) -> None:
                 next_test_name = get_next_test_from_ess(ess_df)
 
             run_test(
-                next_test_name, 
                 next_test_config, 
                 EXPERIMENT['slave_machines'],
                 ess_df

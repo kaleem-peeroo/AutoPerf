@@ -10,7 +10,8 @@
 # TODO
 - [x] Code get_test_name_from_combination_dict()
 - [x] Code get_next_test_from_ess()
-- [ ] Code have_last_n_tests_failed()
+- [x] Code have_last_n_tests_failed()
+- [ ] Create function to generate ESS based off config
 - [ ] Code run_test()
 
 # Introduction

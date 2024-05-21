@@ -5,6 +5,7 @@ import random
 import autoperf as ap
 import pandas as pd
 from icecream import ic
+from typing import Dict, Optional
 from datetime import datetime, timedelta
 
 def generate_random_timestamp(start: datetime, end: datetime) -> datetime:
@@ -85,6 +86,105 @@ def generate_random_ess(row_count: int = 10):
 
     ess_df.to_csv(ess_filepath, index=False)
 
+def generate_ess_from_config(config: Dict = {}) -> Optional[pd.DataFrame]:
+    """
+    if pcg:
+        1. generate all combinations
+        2. pick a random cut off point in combinations
+        3. for each combination, generate a row
+        4. if the combination did not succeed, generate new row with attempt_number + 1
+        5. do this up to 3 times
+
+    if rcg:
+        1. generate a random config
+        2. generate a row
+        3. if the row did not succeed, generate new row with attempt_number + 1
+        4. do this x times
+    """
+
+    if config == {}:
+        return None
+
+    if ap.get_if_pcg(config) == True:
+        combinations = ap.generate_combinations_from_qos(config['qos_settings'])
+        random_cut_off = random.randint(0, len(combinations))
+        ess_df = pd.DataFrame(columns=[
+            'start_timestamp',
+            'end_timestamp',
+            'test_name',
+            'pings_count',
+            'ssh_check_count',
+            'end_status',
+            'attempt_number',
+            'qos_settings'
+        ])
+
+        for index, combination in enumerate(combinations):
+            if index >= random_cut_off:
+                break
+
+            row = pd.DataFrame({
+                'start_timestamp': [datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+                'end_timestamp': [datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+                'test_name': [ap.get_test_name_from_combination_dict(combination)],
+                'pings_count': [random.randint(0, 3)],
+                'ssh_check_count': [random.randint(0, 3)],
+                'end_status': [random.choice(["success", "fail", "timeout"])],
+                'attempt_number': [0],
+                'qos_settings': [combination]
+            })
+
+            ess_df = pd.concat([ess_df, row], ignore_index=True)
+
+        return ess_df
+
+    else:
+        random_cut_off = random.randint(0, 10)
+        ess_df = pd.DataFrame(columns=[
+            'start_timestamp',
+            'end_timestamp',
+            'test_name',
+            'pings_count',
+            'ssh_check_count',
+            'end_status',
+            'attempt_number',
+            'qos_settings'
+        ])
+
+        for _ in range(10):
+            row = pd.DataFrame({
+                'start_timestamp': [datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+                'end_timestamp': [datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+                'test_name': [ap.get_test_name_from_combination_dict({
+                    'duration_secs': random.randint(60, 120),
+                    'datalen_bytes': random.randint(100, 1_000),
+                    'pub_count': random.randint(10, 50),
+                    'sub_count': random.randint(10, 50),
+                    'use_reliable': random.choice([True, False]),
+                    'use_multicast': random.choice([True, False]),
+                    'durability_level': random.randint(0, 3),
+                    'latency_count': random.randint(100, 1_000)
+                })],
+                'pings_count': [random.randint(0, 3)],
+                'ssh_check_count': [random.randint(0, 3)],
+                'end_status': [random.choice(["success", "fail", "timeout"])],
+                'attempt_number': [0],
+                'qos_settings': [{
+                    'duration_secs': random.randint(60, 120),
+                    'datalen_bytes': random.randint(100, 1_000),
+                    'pub_count': random.randint(10, 50),
+                    'sub_count': random.randint(10, 50),
+                    'use_reliable': random.choice([True, False]),
+                    'use_multicast': random.choice([True, False]),
+                    'durability_level': random.randint(0, 3),
+                    'latency_count': random.randint(100, 1_000)
+                }]
+            })
+
+            ess_df = pd.concat([ess_df, row], ignore_index=True)
+
+        return ess_df
+    
 class TestAutoPerf(unittest.TestCase):
     def setUp(self):
         generate_random_ess(50)
@@ -427,6 +527,27 @@ class TestAutoPerf(unittest.TestCase):
         # TODO
         pass
 
+    def test_run_test(self):
+        CONFIG = ap.read_config('./pytests/configs/good_config_1.json')
+        if CONFIG == None:
+            return
+
+        EXPERIMENT = CONFIG[0]
+        COMBINATIONS = ap.generate_combinations_from_qos(EXPERIMENT['qos_settings'])
+        ess_df = generate_ess_from_config(EXPERIMENT)
+        next_test_config = ap.get_next_test_from_ess(ess_df)
+        next_test_config_index = COMBINATIONS.index(next_test_config)
+
+        new_ess_df = ap.run_test(
+            next_test_config,
+            EXPERIMENT['slave_machines'],
+            ess_df
+        )
+
+        self.assertEqual(
+            new_ess_df.shape[0],
+            ess_df.shape[0] + 1
+        )
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=FutureWarning)
