@@ -1,9 +1,86 @@
 import unittest
 import warnings
+import os
+import random
 import autoperf as ap
+import pandas as pd
 from icecream import ic
+from datetime import datetime, timedelta
+
+def generate_random_timestamp(start: datetime, end: datetime) -> datetime:
+    delta = end - start
+    random_seconds = random.randint(0, int(delta.total_seconds()))
+    return start + timedelta(seconds=random_seconds)
+
+def generate_random_ess_row():
+    random_start_timestamp = generate_random_timestamp(
+        datetime(2024, 1, 1, 10, 0, 0),
+        datetime(2024, 1, 1, 10, 10, 0)
+    )
+    random_start_timestamp = random_start_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    random_end_timestamp = generate_random_timestamp(
+        datetime(2024, 1, 1, 10, 10, 0),
+        datetime(2024, 1, 1, 10, 20, 0)
+    )
+    random_end_timestamp = random_end_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+    random_test_name = "10SEC_100B_10PUB_10SUB_REL_UC_0DUR_100LC"
+    random_pings_count = random.randint(0, 3)
+    random_ssh_check_count = random.randint(0, 3)
+    random_end_status = random.choice(["success", "fail", "timeout"])
+    random_attempt_number = random.randint(0, 3)
+    random_qos_settings = {
+        'duration_secs': 10,
+        'datalen_bytes': 100,
+        'pub_count': 10,
+        'sub_count': 10,
+        'use_reliable': True,
+        'use_multicast': False,
+        'durability_level': 0,
+        'latency_count': 100
+    }
+
+    row = pd.DataFrame({
+        'start_timestamp': [random_start_timestamp],
+        'end_timestamp': [random_end_timestamp],
+        'test_name': [random_test_name],
+        'pings_count': [random_pings_count],
+        'ssh_check_count': [random_ssh_check_count],
+        'end_status': [random_end_status],
+        'attempt_number': [random_attempt_number],
+        'qos_settings': [random_qos_settings]
+    })
+
+    return row
+
+def generate_random_ess():
+    ess_filepath = "./pytests/ess/random_ess.csv"
+    column_headings = [
+        'start_timestamp',
+        'end_timestamp',
+        'test_name',
+        'pings_count',
+        'ssh_check_count',
+        'end_status',
+        'attempt_number',
+        'qos_settings'
+    ]
+
+    ess_df = pd.DataFrame(columns=column_headings)
+    for _ in range(10):
+        row = generate_random_ess_row()
+        ess_df = pd.concat([ess_df, row], ignore_index=True)
+
+    ess_df.to_csv(ess_filepath, index=False)
 
 class TestAutoPerf(unittest.TestCase):
+    def setUp(self):
+        generate_random_ess()
+
+    def tearDown(self):
+        # os.remove("./pytests/ess/random_ess.csv")
+        pass
+
     def test_read_config(self):
         config = ap.read_config("./pytests/configs/good_config_1.json")
         self.assertNotEqual(config, None)
@@ -123,9 +200,21 @@ class TestAutoPerf(unittest.TestCase):
             None
         )
 
-    def test_get_next_test_from_ess(self):
-        # TODO
-        pass
+    # def test_get_next_test_from_ess(self):
+    #     ess_df = ap.get_ess_df("./pytests/ess/good_ess_1.csv")
+    #     next_test = ap.get_next_test_from_ess(ess_df)
+    #     self.assertEqual(
+    #         next_test,
+    #         {
+    #             'duration_secs': 100,
+    #             'pub_count': 10,
+    #             'sub_count': 10,
+    #             'use_reliable': True,
+    #             'use_multicast': False,
+    #             'durability_level': 0,
+    #             'latency_count': 100
+    #         }
+    #     )
 
     def test_have_last_n_tests_failed(self):
         # TODO
