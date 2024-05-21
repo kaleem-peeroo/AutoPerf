@@ -531,9 +531,73 @@ def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool
 
     return False
 
-def run_test(next_test_name: str = "", next_test_config: Dict = {}, ess_df: pd.DataFrame = pd.DataFrame()) -> Optional[bool]:
-    # TODO
-    pass
+def run_test(
+    next_test_name: str = "", 
+    next_test_config: Dict = {}, 
+    machine_config: Dict = {},
+    ess_df: pd.DataFrame = pd.DataFrame()
+) -> Optional[pd.DataFrame]:
+    if next_test_name == "":
+        logger.error(
+            f"No test name passed."
+        )
+        return None
+
+    if next_test_config == {}:
+        logger.error(
+            f"No test config passed."
+        )
+        return None
+
+    if machine_config == {}:
+        logger.error(
+            f"No machine config passed."
+        )
+        return None
+
+    if ess_df is None:
+        logger.error(
+            f"No ESS dataframe passed."
+        )
+        return None
+
+    if len(ess_df.index) == 0:
+        logger.error(
+            f"ESS dataframe is empty."
+        )
+        return None
+
+    if not isinstance(ess_df, pd.DataFrame):
+        logger.error(
+            f"ESS dataframe is not a dataframe."
+        )
+        return None
+
+    if not isinstance(next_test_config, dict):
+        logger.error(
+            f"Next test config is not a dictionary."
+        )
+        return None
+
+    if not isinstance(machine_config, dict):
+        logger.error(
+            f"Machine config is not a dictionary."
+        )
+        return None
+
+    if not isinstance(next_test_name, str):
+        logger.error(
+            f"Next test name is not a string."
+        )
+        return None
+
+    logger.debug(
+        f"Running {next_test_name}..."
+    )
+
+    ic(next_test_name)
+    ic(next_test_config)
+    ic(machine_config)
 
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
@@ -615,7 +679,12 @@ def main(sys_args: list[str] = []) -> None:
 
                 next_test_name = get_next_test_from_ess(ess_df)
 
-            run_test(next_test_name, next_test_config, ess_df)
+            run_test(
+                next_test_name, 
+                next_test_config, 
+                EXPERIMENT['slave_machines'],
+                ess_df
+            )
 
         else:
             logger.debug(f"Is RCG")
