@@ -1,5 +1,7 @@
 import pandas as pd
+import subprocess
 import sys
+import time
 import ast
 import itertools
 import re
@@ -55,6 +57,46 @@ REQUIRED_SLAVE_MACHINE_KEYS = [
     'ssh_key_path',
     'username'
 ]
+
+def ping_machine(ip: str = "") -> Optional[bool]:
+    if ip == "":
+        logger.error(
+            f"No IP passed for connection check."
+        )
+        return None
+
+    response = os.system(f"ping -c 1 {ip} > /dev/null 2>&1")
+
+    if response == 0:
+       return True
+    else:
+        return False
+
+def check_ssh_connection(ssh_key_path: str = "", username: str = "", ip: str = "") -> Optional[bool]:
+    if ssh_key_path == "":
+        logger.error(
+            f"No SSH key path passed for connection check."
+        )
+        return None
+
+    if username == "":
+        logger.error(
+            f"No username passed for connection check."
+        )
+        return None
+
+    if ip == "":
+        logger.error(
+            f"No IP passed for connection check."
+        )
+        return None
+
+    response = os.system(f"ssh -i {ssh_key_path} {username}@{ip} 'echo \"SSH connection successful.\"' > /dev/null 2>&1")
+
+    if response == 0:
+       return True
+    else:
+        return False
 
 def get_difference_between_lists(list_one: List = [], list_two: List = []):
     if list_one is None:
@@ -361,7 +403,8 @@ def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
             "ssh_check_count",
             "end_status",
             "attempt_number",
-            "qos_settings"
+            "qos_settings",
+            "comments"
        ])
 
     return ess_df
@@ -479,7 +522,7 @@ def get_next_test_from_ess(ess_df: pd.DataFrame) -> Optional[Dict]:
         logger.error(
             f"ESS dataframe is empty."
         )
-        return None
+        return {}
 
     last_test = ess_df.iloc[-1]
     if last_test is None:
@@ -503,17 +546,23 @@ def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool
         )
         return None
 
-    if len(ess_df.index) == 0:
+    if n == 0:
+        logger.warning(
+            f"Can't check last 0 tests."
+        )
+        return False
+
+    if n < 0:
         logger.error(
-            f"ESS dataframe is empty."
+            f"Can't check negative number of tests: {n}."
         )
         return None
 
-    if n < 1:
-        logger.error(
-            f"Invalid value for n."
+    if len(ess_df.index) == 0:
+        logger.warning(
+            f"ESS dataframe is empty."
         )
-        return None
+        return False
 
     if len(ess_df.index) < n:
         logger.error(
@@ -524,7 +573,7 @@ def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool
     last_n_tests = ess_df.tail(n)
     if last_n_tests is None:
         logger.error(
-            f"Couldn't get the last {n} tests."
+           f"Couldn't get the last {n} tests."
         )
         return None
 
@@ -557,12 +606,6 @@ def run_test(
         )
         return None
 
-    if len(ess_df.index) == 0:
-        logger.error(
-            f"ESS dataframe is empty."
-        )
-        return None
-
     if not isinstance(ess_df, pd.DataFrame):
         logger.error(
             f"ESS dataframe is not a dataframe."
@@ -590,10 +633,6 @@ def run_test(
         )
         return None
 
-    logger.debug(
-        f"Running {next_test_name}..."
-    )
-
     """
     1. Check connections to machines.
     2. Restart machines.
@@ -607,6 +646,96 @@ def run_test(
     10. Return ESS.
     """
 
+    new_ess_row = {}
+
+    # 1. Check connections to machines.
+    for machine_config in machine_configs:
+        machine_ip = machine_config['ip']
+        if not ping_machine(machine_ip):
+            logger.error(
+                f"Couldn't ping {machine_ip}."
+            )
+            return None
+
+        if not check_ssh_connection(
+            machine_config['ssh_key_path'],
+            machine_config['username'],
+            machine_ip
+        ):
+            logger.error(
+                f"Couldn't SSH into {machine_ip}."
+            )
+            return None
+
+    # 2. Restart machines.
+    for machine_config in machine_configs:
+        logger.debug(
+            f"Restarting {machine_config['machine_name']}..."
+        )
+        machine_ip = machine_config['ip']
+        restart_command = f"ssh -i {machine_config['ssh_key_path']} {machine_config['username']}@{machine_ip} 'sudo reboot'"
+        with open(os.devnull, 'w') as devnull:
+            subprocess.run(restart_command, shell=True, stdout=devnull, stderr=devnull)
+
+    time.sleep(30)
+
+    # 3. Check connections to machines.
+    for machine_config in machine_configs:
+        machine_ip = machine_config['ip']
+        machine_name = machine_config['machine_name']
+        
+        # Ping machine up to 5 times.
+        for attempt in range(1, 6):
+            if ping_machine(machine_ip):
+                new_ess_row['ping_count'] = attempt
+                break
+            
+            if attempt == 5:
+                logger.error(
+                    f"Couldn't ping {machine_name} ({machine_ip}) after 5 attempts after restart."
+                )
+                new_ess_row['comments'] = new_ess_row['comments'] + f"Couldn't ping {machine_name} ({machine_ip}) after 5 attempts after restart. "
+                break
+
+            time.sleep(3)
+
+        # SSH into machine up to 5 times.
+        for attempt in range(1, 6):
+            if check_ssh_connection(
+                machine_config['ssh_key_path'],
+                machine_config['username'],
+                machine_ip
+            ):
+                new_ess_row['ssh_check_count'] = attempt
+                break
+
+            if attempt == 5:
+                logger.error(
+                    f"Couldn't SSH into {machine_name} ({machine_ip}) after 5 attempts after restart."
+                )
+                new_ess_row['comments'] = new_ess_row['comments'] + f"Couldn't SSH into {machine_name} ({machine_ip}) after 5 attempts after restart. "
+                break
+
+            time.sleep(1)
+
+    logger.debug(
+        f"All machines are up and running."
+    )
+
+    # 4. Get qos config.
+    ic(next_test_config)
+
+    # 5. Generate scripts.
+
+    # 6. Allocate scripts to machines.
+
+    # 7. Run scripts.
+
+    # 8. Check results.
+
+    # 9. Update ESS.
+
+    # 10. Return ESS.
     return new_ess_df
 
 def main(sys_args: list[str] = []) -> None:
@@ -664,6 +793,7 @@ def main(sys_args: list[str] = []) -> None:
                 )
                 continue
 
+            logger.debug(f"Getting ESS dataframe.")
             ESS_FILEPATH = os.path.join(EXPERIMENT_DIRNAME, 'ess.csv')
             ess_df = get_ess_df(ESS_FILEPATH)
             if ess_df is None:
@@ -672,6 +802,7 @@ def main(sys_args: list[str] = []) -> None:
                 )
                 continue
 
+            logger.debug(f"Getting the next test to run.")
             next_test_name = get_test_name_from_combination_dict(COMBINATIONS[0])
             if next_test_name is None:
                 logger.warning(
@@ -687,8 +818,13 @@ def main(sys_args: list[str] = []) -> None:
                     )
                     return None
 
-                next_test_name = get_next_test_from_ess(ess_df)
+                next_test_config = get_next_test_from_ess(ess_df)
+                if next_test_config == {}:
+                    next_test_config = COMBINATIONS[0]
 
+            next_test_index = COMBINATIONS.index(next_test_config)
+
+            logger.debug(f"[{next_test_index + 1}/{len(COMBINATIONS)}] Running test {next_test_name}...")
             run_test(
                 next_test_config, 
                 EXPERIMENT['slave_machines'],

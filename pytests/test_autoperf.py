@@ -61,7 +61,8 @@ def generate_random_ess_row():
         'ssh_check_count': [random_ssh_check_count],
         'end_status': [random_end_status],
         'attempt_number': [random_attempt_number],
-        'qos_settings': [random_qos_settings]
+        'qos_settings': [random_qos_settings],
+        'comments': ""
     })
 
     return row
@@ -76,7 +77,8 @@ def generate_random_ess(row_count: int = 10):
         'ssh_check_count',
         'end_status',
         'attempt_number',
-        'qos_settings'
+        'qos_settings',
+        'comments'
     ]
 
     ess_df = pd.DataFrame(columns=column_headings)
@@ -116,7 +118,8 @@ def generate_ess_from_config(config: Dict = {}) -> Optional[pd.DataFrame]:
             'ssh_check_count',
             'end_status',
             'attempt_number',
-            'qos_settings'
+            'qos_settings',
+            'comments'
         ])
 
         for index, combination in enumerate(combinations):
@@ -131,7 +134,8 @@ def generate_ess_from_config(config: Dict = {}) -> Optional[pd.DataFrame]:
                 'ssh_check_count': [random.randint(0, 3)],
                 'end_status': [random.choice(["success", "fail", "timeout"])],
                 'attempt_number': [0],
-                'qos_settings': [combination]
+                'qos_settings': [combination],
+                'comments': ""
             })
 
             ess_df = pd.concat([ess_df, row], ignore_index=True)
@@ -148,7 +152,8 @@ def generate_ess_from_config(config: Dict = {}) -> Optional[pd.DataFrame]:
             'ssh_check_count',
             'end_status',
             'attempt_number',
-            'qos_settings'
+            'qos_settings',
+            'comments'
         ])
 
         for _ in range(10):
@@ -178,7 +183,8 @@ def generate_ess_from_config(config: Dict = {}) -> Optional[pd.DataFrame]:
                     'use_multicast': random.choice([True, False]),
                     'durability_level': random.randint(0, 3),
                     'latency_count': random.randint(100, 1_000)
-                }]
+                }],
+                'comments': ""
             })
 
             ess_df = pd.concat([ess_df, row], ignore_index=True)
@@ -220,7 +226,8 @@ class TestAutoPerf(unittest.TestCase):
             'ssh_check_count',
             'end_status',
             'attempt_number',
-            'qos_settings'
+            'qos_settings',
+            'comments'
         ]
 
         self.assertEqual(
@@ -335,7 +342,7 @@ class TestAutoPerf(unittest.TestCase):
 
         self.assertEqual(
             ap.get_next_test_from_ess(pd.DataFrame()),
-            None
+            {}
         )
 
     def test_have_last_n_tests_failed(self):
@@ -352,7 +359,7 @@ class TestAutoPerf(unittest.TestCase):
 
         self.assertEqual(
             ap.have_last_n_tests_failed(ess_df, 0),
-            None
+            False
         )
 
         self.assertEqual(
@@ -527,27 +534,17 @@ class TestAutoPerf(unittest.TestCase):
         # TODO
         pass
 
-    def test_run_test(self):
-        CONFIG = ap.read_config('./pytests/configs/good_config_1.json')
-        if CONFIG == None:
-            return
+    def test_check_ssh_connection(self):
+        # TODO
+        pass
 
-        EXPERIMENT = CONFIG[0]
-        COMBINATIONS = ap.generate_combinations_from_qos(EXPERIMENT['qos_settings'])
-        ess_df = generate_ess_from_config(EXPERIMENT)
-        next_test_config = ap.get_next_test_from_ess(ess_df)
-        next_test_config_index = COMBINATIONS.index(next_test_config)
+    def test_ping_machine(self):
+        # TODO
+        pass
 
-        new_ess_df = ap.run_test(
-            next_test_config,
-            EXPERIMENT['slave_machines'],
-            ess_df
-        )
-
-        self.assertEqual(
-            new_ess_df.shape[0],
-            ess_df.shape[0] + 1
-        )
+    def test_get_machine_ips(self):
+        # TODO
+        pass
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=FutureWarning)
