@@ -200,6 +200,7 @@ It contains the following columns:
 - end status
 - attempt #
 - qos settings
+- comments
 
 # Deprecated Content
 
