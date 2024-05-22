@@ -542,9 +542,77 @@ class TestAutoPerf(unittest.TestCase):
         # TODO
         pass
 
-    def test_get_machine_ips(self):
-        # TODO
-        pass
+    def test_generate_scripts_from_qos_config(self):
+        qos_config = {
+            'datalen_bytes': 100,
+            'durability_level': 0,
+            'duration_secs': 30,
+            'latency_count': 100,
+            'pub_count': 1,
+            'sub_count': 1,
+            'use_multicast': True,
+            'use_reliable': True
+        }
+        scripts = ap.generate_scripts_from_qos_config(qos_config)
+        self.assertEqual(
+            len(scripts),
+            2
+        )
+        self.assertEqual(
+            scripts,
+            [
+                '-dataLen 100 -multicast -durability 0 -pub -outputFile pub_0.csv -numSubscribers 1 -executionTime 30 -latencyCount 100 -batchSize 0 -transport UDPv4',
+                '-dataLen 100 -multicast -durability 0 -sub -outputFile sub_0.csv -numPublishers 1 -transport UDPv4'
+            ]
+        )
+
+        qos_config = {
+            'datalen_bytes': 100,
+            'durability_level': 0,
+            'duration_secs': 30,
+            'latency_count': 100,
+            'pub_count': 1,
+            'sub_count': 1,
+            'use_multicast': True,
+            'use_reliable': False
+        }
+        scripts = ap.generate_scripts_from_qos_config(qos_config)
+        self.assertEqual(
+            len(scripts),
+            2
+        )
+        self.assertEqual(
+            scripts,
+            [
+                '-dataLen 100 -bestEffort -multicast -durability 0 -pub -outputFile pub_0.csv -numSubscribers 1 -executionTime 30 -latencyCount 100 -batchSize 0 -transport UDPv4',
+                '-dataLen 100 -bestEffort -multicast -durability 0 -sub -outputFile sub_0.csv -numPublishers 1 -transport UDPv4'
+            ]
+        )
+
+        qos_config = {
+            'datalen_bytes': 100,
+            'durability_level': 0,
+            'duration_secs': 30,
+            'latency_count': 100,
+            'pub_count': 2,
+            'sub_count': 2,
+            'use_multicast': False,
+            'use_reliable': True
+        }
+        scripts = ap.generate_scripts_from_qos_config(qos_config)
+        self.assertEqual(
+            len(scripts),
+            4
+        )
+        self.assertEqual(
+            scripts,
+            [
+                '-dataLen 100 -durability 0 -pub -pidMultiPubTest 0 -outputFile pub_0.csv -numSubscribers 2 -executionTime 30 -latencyCount 100 -batchSize 0 -transport UDPv4',
+                '-dataLen 100 -durability 0 -pub -pidMultiPubTest 1 -numSubscribers 2 -executionTime 30 -latencyCount 100 -batchSize 0 -transport UDPv4',
+                '-dataLen 100 -durability 0 -sub -sidMultiSubTest 0 -outputFile sub_0.csv -numPublishers 2 -transport UDPv4',
+                '-dataLen 100 -durability 0 -sub -sidMultiSubTest 1 -outputFile sub_1.csv -numPublishers 2 -transport UDPv4'
+           ]
+        )
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=FutureWarning)

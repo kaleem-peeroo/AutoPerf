@@ -65,6 +65,10 @@ def ping_machine(ip: str = "") -> Optional[bool]:
         )
         return None
 
+    logger.debug(
+        f"Pinging {ip}"
+    )
+
     response = os.system(f"ping -c 1 {ip} > /dev/null 2>&1")
 
     if response == 0:
@@ -90,6 +94,10 @@ def check_ssh_connection(ssh_key_path: str = "", username: str = "", ip: str = "
             f"No IP passed for connection check."
         )
         return None
+
+    logger.debug(
+        f"Checking SSH connection to {username}@{ip}"
+    )
 
     response = os.system(f"ssh -i {ssh_key_path} {username}@{ip} 'echo \"SSH connection successful.\"' > /dev/null 2>&1")
 
@@ -583,6 +591,135 @@ def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool
 
     return False
 
+def generate_scripts_from_qos_config(qos_config: Dict = {}) -> Optional[List]:
+    if qos_config == {}:
+        logger.error(
+            f"No QoS config passed."
+        )
+        return None
+
+    if not isinstance(qos_config, dict):
+        logger.error(
+            f"QoS config is not a dictionary."
+        )
+        return None
+
+    qos_keys = qos_config.keys()
+    if len(qos_keys) == 0:
+        logger.error(
+            f"No keys found in QoS config."
+        )
+        return None
+
+    for key in qos_keys:
+        if key not in REQUIRED_QOS_KEYS:
+            logger.error(
+                f"Invalid QoS setting: {key}"
+            )
+            return None
+
+    qos_values = qos_config.values()
+    if len(qos_values) == 0:
+        logger.error(
+            f"No values found in QoS config."
+        )
+        return None
+
+    for value in qos_values:
+        if value == "":
+            logger.error(
+                f"Empty value found in QoS config."
+            )
+            return None
+
+    data_len_str = f"-dataLen {qos_config['datalen_bytes']}"
+    durability_str = f"-durability {qos_config['durability_level']}"
+    latency_count_str = f"-latencyCount {qos_config['latency_count']}"
+    exec_time_str = f"-executionTime {qos_config['duration_secs']}"
+
+    mc_str = ""
+    if qos_config['use_multicast']:
+        mc_str = "-multicast"
+
+    rel_str = ""
+    if not qos_config['use_reliable']:
+        rel_str = "-bestEffort"
+
+    script_base = data_len_str + " "
+    if rel_str != "":
+        script_base = script_base + rel_str + " "
+    if mc_str != "":
+        script_base = script_base + mc_str + " "
+    script_base = script_base + durability_str
+
+    script_bases = []
+
+    pub_count = qos_config['pub_count']
+    if pub_count == 0:
+        logger.error(
+            f"Pub count is 0 in generate_scripts_from_qos_config()"
+        )
+        return None
+    sub_count = qos_config['sub_count']
+    if sub_count == 0:
+        logger.error(
+            f"Sub count is 0 in generate_scripts_from_qos_config()"
+        )
+        return None
+
+    if pub_count == 1:
+        pub_script = f"{script_base} -pub -outputFile pub_0.csv"
+        pub_script = pub_script + f" -numSubscribers {sub_count}"
+        pub_script = pub_script + f" {exec_time_str}"
+        pub_script = pub_script + f" {latency_count_str}"
+        pub_script = pub_script + f" -batchSize 0"
+
+        script_bases.append(pub_script)
+    else:
+        for i in range(pub_count):
+            # Define the output file for the first publisher.
+            if i == 0:
+                pub_script = f"{script_base} -pub"
+                pub_script = pub_script + f" -pidMultiPubTest {i}"
+                pub_script = pub_script + f" -outputFile pub_{i}.csv"
+                pub_script = pub_script + f" -numSubscribers {sub_count}"
+                pub_script = pub_script + f" {exec_time_str}"
+                pub_script = pub_script + f" {latency_count_str}"
+                pub_script = pub_script + f" -batchSize 0"
+
+                script_bases.append(pub_script)
+            else:
+                pub_script = f"{script_base} -pub"
+                pub_script = pub_script + f" -pidMultiPubTest {i}"
+                pub_script = pub_script + f" -numSubscribers {sub_count}"
+                pub_script = pub_script + f" {exec_time_str}"
+                pub_script = pub_script + f" {latency_count_str}"
+                pub_script = pub_script + f" -batchSize 0"
+
+                script_bases.append(pub_script)
+    
+    if sub_count == 1:
+        sub_script = f"{script_base} -sub -outputFile sub_0.csv"
+        sub_script = sub_script + f" -numPublishers {pub_count}"
+
+        script_bases.append(sub_script)
+    else:
+        for i in range(sub_count):
+            sub_script = f"{script_base} -sub"
+            sub_script = sub_script + f" -sidMultiSubTest {i}"
+            sub_script = sub_script + f" -outputFile sub_{i}.csv"
+            sub_script = sub_script + f" -numPublishers {pub_count}"
+
+            script_bases.append(sub_script)
+
+    scripts = []
+    for script_base in script_bases:
+        script = f"{script_base} -transport UDPv4"
+        scripts.append(script)
+
+    return scripts
+    
+
 def run_test(
     next_test_config: Dict = {}, 
     machine_configs: List = [],
@@ -648,84 +785,100 @@ def run_test(
 
     new_ess_row = {}
 
-    # 1. Check connections to machines.
-    for machine_config in machine_configs:
-        machine_ip = machine_config['ip']
-        if not ping_machine(machine_ip):
-            logger.error(
-                f"Couldn't ping {machine_ip}."
-            )
-            return None
-
-        if not check_ssh_connection(
-            machine_config['ssh_key_path'],
-            machine_config['username'],
-            machine_ip
-        ):
-            logger.error(
-                f"Couldn't SSH into {machine_ip}."
-            )
-            return None
-
-    # 2. Restart machines.
-    for machine_config in machine_configs:
-        logger.debug(
-            f"Restarting {machine_config['machine_name']}..."
-        )
-        machine_ip = machine_config['ip']
-        restart_command = f"ssh -i {machine_config['ssh_key_path']} {machine_config['username']}@{machine_ip} 'sudo reboot'"
-        with open(os.devnull, 'w') as devnull:
-            subprocess.run(restart_command, shell=True, stdout=devnull, stderr=devnull)
-
-    time.sleep(30)
-
-    # 3. Check connections to machines.
-    for machine_config in machine_configs:
-        machine_ip = machine_config['ip']
-        machine_name = machine_config['machine_name']
-        
-        # Ping machine up to 5 times.
-        for attempt in range(1, 6):
-            if ping_machine(machine_ip):
-                new_ess_row['ping_count'] = attempt
-                break
-            
-            if attempt == 5:
-                logger.error(
-                    f"Couldn't ping {machine_name} ({machine_ip}) after 5 attempts after restart."
-                )
-                new_ess_row['comments'] = new_ess_row['comments'] + f"Couldn't ping {machine_name} ({machine_ip}) after 5 attempts after restart. "
-                break
-
-            time.sleep(3)
-
-        # SSH into machine up to 5 times.
-        for attempt in range(1, 6):
-            if check_ssh_connection(
-                machine_config['ssh_key_path'],
-                machine_config['username'],
-                machine_ip
-            ):
-                new_ess_row['ssh_check_count'] = attempt
-                break
-
-            if attempt == 5:
-                logger.error(
-                    f"Couldn't SSH into {machine_name} ({machine_ip}) after 5 attempts after restart."
-                )
-                new_ess_row['comments'] = new_ess_row['comments'] + f"Couldn't SSH into {machine_name} ({machine_ip}) after 5 attempts after restart. "
-                break
-
-            time.sleep(1)
-
-    logger.debug(
-        f"All machines are up and running."
-    )
+    # # 1. Check connections to machines.
+    # for machine_config in machine_configs:
+    #     machine_ip = machine_config['ip']
+    #     if not ping_machine(machine_ip):
+    #         logger.error(
+    #             f"Couldn't ping {machine_ip}."
+    #         )
+    #         return None
+    #
+    #     if not check_ssh_connection(
+    #         machine_config['ssh_key_path'],
+    #         machine_config['username'],
+    #         machine_ip
+    #     ):
+    #         logger.error(
+    #             f"Couldn't SSH into {machine_ip}."
+    #         )
+    #         return None
+    #
+    # logger.debug(
+    #     f"Restarting all machines"
+    # )
+    #
+    # # 2. Restart machines.
+    # for machine_config in machine_configs:
+    #     logger.debug(
+    #         f"Restarting {machine_config['machine_name']}..."
+    #     )
+    #     machine_ip = machine_config['ip']
+    #     restart_command = f"ssh -i {machine_config['ssh_key_path']} {machine_config['username']}@{machine_ip} 'sudo reboot'"
+    #     with open(os.devnull, 'w') as devnull:
+    #         subprocess.run(
+    #             restart_command, 
+    #             shell=True, 
+    #             stdout=devnull, 
+    #             stderr=devnull
+    #         )
+    #
+    # logger.debug(
+    #     f"All machines have been restarted. Waiting 15 seconds..."
+    # )
+    #
+    # time.sleep(15)
+    #
+    # # 3. Check connections to machines.
+    # for machine_config in machine_configs:
+    #     machine_ip = machine_config['ip']
+    #     machine_name = machine_config['machine_name']
+    #    
+    #     # Ping machine up to 5 times.
+    #     for attempt in range(1, 6):
+    #         if ping_machine(machine_ip):
+    #             new_ess_row['ping_count'] = attempt
+    #             break
+    #        
+    #         if attempt == 5:
+    #             logger.error(
+    #                 f"Couldn't ping {machine_name} ({machine_ip}) after 5 attempts after restart."
+    #             )
+    #             new_ess_row['comments'] = new_ess_row['comments'] + f"Couldn't ping {machine_name} ({machine_ip}) after 5 attempts after restart. "
+    #             break
+    #
+    #         time.sleep(3)
+    #
+    #     # SSH into machine up to 5 times.
+    #     for attempt in range(1, 6):
+    #         if check_ssh_connection(
+    #             machine_config['ssh_key_path'],
+    #             machine_config['username'],
+    #             machine_ip
+    #         ):
+    #             new_ess_row['ssh_check_count'] = attempt
+    #             break
+    #
+    #         if attempt == 5:
+    #             logger.error(
+    #                 f"Couldn't SSH into {machine_name} ({machine_ip}) after 5 attempts after restart."
+    #             )
+    #             new_ess_row['comments'] = new_ess_row['comments'] + f"Couldn't SSH into {machine_name} ({machine_ip}) after 5 attempts after restart. "
+    #             break
+    #
+    #         time.sleep(1)
+    #
+    # logger.debug(
+    #     f"All machines are up and running."
+    # )
 
     # 4. Get qos config.
-    ic(next_test_config)
+    qos_config = next_test_config
 
     # 5. Generate scripts.
+    scripts = generate_scripts_from_qos_config(
+        qos_config
+    )
 
     # 6. Allocate scripts to machines.
 
