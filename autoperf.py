@@ -12,6 +12,8 @@ import json
 from icecream import ic
 from typing import Dict, List, Optional
 
+DEBUG_MODE = True
+
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG, 
@@ -719,7 +721,119 @@ def generate_scripts_from_qos_config(qos_config: Dict = {}) -> Optional[List]:
 
     return scripts
     
+def get_machines_by_type(machine_configs: List = [], machine_type: str = "") -> Optional[List]:
+    if machine_configs == []:
+        logger.error(
+            f"No machine configs passed."
+        )
+        return None
 
+    if machine_type == "":
+        logger.error(
+            f"No machine type passed."
+        )
+        return None
+
+    if machine_type not in ['pub', 'sub']:
+        logger.error(
+            f"Invalid machine type: {machine_type}"
+        )
+        return None
+
+    machines_to_return = []
+    for machine_config in machine_configs:
+        if machine_config['participant_allocation'] in [machine_type, 'all']:
+            machines_to_return.append(machine_config)
+
+    return machines_to_return
+
+def distribute_scripts_to_machines(scripts: List = [], machine_configs: List = []) -> Optional[List]:
+    if scripts == []:
+        logger.error(
+            f"No scripts passed."
+        )
+        return None
+
+    if machine_configs == []:
+        logger.error(
+            f"No machine configs passed."
+        )
+        return None
+
+    pub_scripts = [script for script in scripts if "-pub" in script]
+    if len(pub_scripts) == 0:
+        logger.error(
+            f"No publisher scripts found."
+        )
+        return None
+
+    sub_scripts = [script for script in scripts if "-sub" in script]
+    if len(sub_scripts) == 0:
+        logger.error(
+            f"No subscriber scripts found."
+        )
+        return None
+
+    pub_machines = get_machines_by_type(machine_configs, 'pub')
+    if pub_machines == []:
+        logger.error(
+            f"No publisher machines found."
+        )
+        return None
+
+    sub_machines = get_machines_by_type(machine_configs, 'sub')
+    if sub_machines == []:
+        logger.error(
+            f"No subscriber machines found."
+        )
+        return None
+
+    # Add 'source ~/.bashrc; cd /path/to/executable;' to all machines first.
+    for machine in machine_configs:
+        perftest_exec_path = machine['perftest_exec_path']
+        perftest_exec_dirpath = os.path.dirname(perftest_exec_path)
+
+        machine['script'] = f'source ~/.bashrc; cd {perftest_exec_dirpath}; '
+
+    for i, pub_script in enumerate(pub_scripts):
+        script = pub_script
+        machine = pub_machines[i % len(pub_machines)]
+        
+        perftest_exec_basename = os.path.basename(machine['perftest_exec_path'])
+        perftest_exec_basename = f"./{perftest_exec_basename}"
+
+        machine['script'] = f"{machine['script']} & {perftest_exec_basename} {script}"
+        
+    for i, sub_script in enumerate(sub_scripts):
+        script = sub_script
+        """
+        Distribute the subscriber scripts in reverse order.
+        This evens out the allocation across machines.
+        Example:
+        Without reverse:
+            machine 1: p1, p3, s1, s3
+            machine 2: p2, s2
+        With reverse:
+            machine 1: p1, p3, s2
+            machine 2: p2, s1, s3
+        """
+        machine_index = len(sub_machines) - 1 - (i % len(sub_machines))
+        machine = sub_machines[machine_index]
+        
+        perftest_exec_basename = os.path.basename(machine['perftest_exec_path'])
+        perftest_exec_basename = f"./{perftest_exec_basename}"
+
+        machine['script'] = f"{machine['script']} & {perftest_exec_basename} {script}"
+
+    for machine in machine_configs:
+        # Remove the first ' & ' from each script.
+        machine['script'] = machine['script'].replace(' & ', '', 1)
+        # Add a ' & ' to the end of each script.
+        machine['script'] = f"{machine['script']} &"
+
+    return machine_configs
+
+                    
 def run_test(
     next_test_config: Dict = {}, 
     machine_configs: List = [],
@@ -785,92 +899,93 @@ def run_test(
 
     new_ess_row = {}
 
-    # # 1. Check connections to machines.
-    # for machine_config in machine_configs:
-    #     machine_ip = machine_config['ip']
-    #     if not ping_machine(machine_ip):
-    #         logger.error(
-    #             f"Couldn't ping {machine_ip}."
-    #         )
-    #         return None
-    #
-    #     if not check_ssh_connection(
-    #         machine_config['ssh_key_path'],
-    #         machine_config['username'],
-    #         machine_ip
-    #     ):
-    #         logger.error(
-    #             f"Couldn't SSH into {machine_ip}."
-    #         )
-    #         return None
-    #
-    # logger.debug(
-    #     f"Restarting all machines"
-    # )
-    #
-    # # 2. Restart machines.
-    # for machine_config in machine_configs:
-    #     logger.debug(
-    #         f"Restarting {machine_config['machine_name']}..."
-    #     )
-    #     machine_ip = machine_config['ip']
-    #     restart_command = f"ssh -i {machine_config['ssh_key_path']} {machine_config['username']}@{machine_ip} 'sudo reboot'"
-    #     with open(os.devnull, 'w') as devnull:
-    #         subprocess.run(
-    #             restart_command, 
-    #             shell=True, 
-    #             stdout=devnull, 
-    #             stderr=devnull
-    #         )
-    #
-    # logger.debug(
-    #     f"All machines have been restarted. Waiting 15 seconds..."
-    # )
-    #
-    # time.sleep(15)
-    #
-    # # 3. Check connections to machines.
-    # for machine_config in machine_configs:
-    #     machine_ip = machine_config['ip']
-    #     machine_name = machine_config['machine_name']
-    #    
-    #     # Ping machine up to 5 times.
-    #     for attempt in range(1, 6):
-    #         if ping_machine(machine_ip):
-    #             new_ess_row['ping_count'] = attempt
-    #             break
-    #        
-    #         if attempt == 5:
-    #             logger.error(
-    #                 f"Couldn't ping {machine_name} ({machine_ip}) after 5 attempts after restart."
-    #             )
-    #             new_ess_row['comments'] = new_ess_row['comments'] + f"Couldn't ping {machine_name} ({machine_ip}) after 5 attempts after restart. "
-    #             break
-    #
-    #         time.sleep(3)
-    #
-    #     # SSH into machine up to 5 times.
-    #     for attempt in range(1, 6):
-    #         if check_ssh_connection(
-    #             machine_config['ssh_key_path'],
-    #             machine_config['username'],
-    #             machine_ip
-    #         ):
-    #             new_ess_row['ssh_check_count'] = attempt
-    #             break
-    #
-    #         if attempt == 5:
-    #             logger.error(
-    #                 f"Couldn't SSH into {machine_name} ({machine_ip}) after 5 attempts after restart."
-    #             )
-    #             new_ess_row['comments'] = new_ess_row['comments'] + f"Couldn't SSH into {machine_name} ({machine_ip}) after 5 attempts after restart. "
-    #             break
-    #
-    #         time.sleep(1)
-    #
-    # logger.debug(
-    #     f"All machines are up and running."
-    # )
+    if not DEBUG_MODE:
+        # 1. Check connections to machines.
+        for machine_config in machine_configs:
+            machine_ip = machine_config['ip']
+            if not ping_machine(machine_ip):
+                logger.error(
+                    f"Couldn't ping {machine_ip}."
+                )
+                return None
+        
+            if not check_ssh_connection(
+                machine_config['ssh_key_path'],
+                machine_config['username'],
+                machine_ip
+            ):
+                logger.error(
+                    f"Couldn't SSH into {machine_ip}."
+                )
+                return None
+        
+        logger.debug(
+            f"Restarting all machines"
+        )
+        
+        # 2. Restart machines.
+        for machine_config in machine_configs:
+            logger.debug(
+                f"Restarting {machine_config['machine_name']}..."
+            )
+            machine_ip = machine_config['ip']
+            restart_command = f"ssh -i {machine_config['ssh_key_path']} {machine_config['username']}@{machine_ip} 'sudo reboot'"
+            with open(os.devnull, 'w') as devnull:
+                subprocess.run(
+                    restart_command, 
+                    shell=True, 
+                    stdout=devnull, 
+                    stderr=devnull
+                )
+        
+        logger.debug(
+            f"All machines have been restarted. Waiting 15 seconds..."
+        )
+        
+        time.sleep(15)
+        
+        # 3. Check connections to machines.
+        for machine_config in machine_configs:
+            machine_ip = machine_config['ip']
+            machine_name = machine_config['machine_name']
+           
+            # Ping machine up to 5 times.
+            for attempt in range(1, 6):
+                if ping_machine(machine_ip):
+                    new_ess_row['ping_count'] = attempt
+                    break
+               
+                if attempt == 5:
+                    logger.error(
+                        f"Couldn't ping {machine_name} ({machine_ip}) after 5 attempts after restart."
+                    )
+                    new_ess_row['comments'] = new_ess_row['comments'] + f"Couldn't ping {machine_name} ({machine_ip}) after 5 attempts after restart. "
+                    break
+        
+                time.sleep(3)
+        
+            # SSH into machine up to 5 times.
+            for attempt in range(1, 6):
+                if check_ssh_connection(
+                    machine_config['ssh_key_path'],
+                    machine_config['username'],
+                    machine_ip
+                ):
+                    new_ess_row['ssh_check_count'] = attempt
+                    break
+        
+                if attempt == 5:
+                    logger.error(
+                        f"Couldn't SSH into {machine_name} ({machine_ip}) after 5 attempts after restart."
+                    )
+                    new_ess_row['comments'] = new_ess_row['comments'] + f"Couldn't SSH into {machine_name} ({machine_ip}) after 5 attempts after restart. "
+                    break
+        
+                time.sleep(1)
+        
+        logger.debug(
+            f"All machines are up and running."
+        )
 
     # 4. Get qos config.
     qos_config = next_test_config
@@ -881,6 +996,10 @@ def run_test(
     )
 
     # 6. Allocate scripts to machines.
+    scripts_per_machine = distribute_scripts_to_machines(
+        scripts,
+        machine_configs
+    )
 
     # 7. Run scripts.
 

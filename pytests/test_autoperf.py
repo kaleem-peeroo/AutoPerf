@@ -614,6 +614,211 @@ class TestAutoPerf(unittest.TestCase):
            ]
         )
 
+    def test_distribute_scripts_to_machines(self):
+        distributed_scripts = ap.distribute_scripts_to_machines(
+            [],
+            []
+        )
+        self.assertEqual(
+            distributed_scripts,
+            None
+        )
+
+        self.assertEqual(
+            ap.distribute_scripts_to_machines(
+                [
+                    '-pub 1', 
+                    '-pub 2',
+                    '-pub 3',
+                    '-sub 1',
+                    '-sub 2',
+                    '-sub 3',
+                ],
+                [
+                    {
+                        'machine_name': 'p1',
+                        'ip': '129.123.123.123',
+                        'participant_allocation': 'pub',
+                        'perftest_exec_path': "~/path/to/perftest",
+                    },
+                    {
+                        'machine_name': 'p2',
+                        'ip': '129.123.123.123',
+                        'participant_allocation': 'sub',
+                        'perftest_exec_path': "~/path/to/perftest",
+                    }
+
+                ]
+            ),
+            [
+                {
+                    'machine_name': 'p1',
+                    'ip': '129.123.123.123',
+                    'participant_allocation': 'pub',
+                    'perftest_exec_path': "~/path/to/perftest",
+                    'script': 'source ~/.bashrc; cd ~/path/to; ./perftest -pub 1 & ./perftest -pub 2 & ./perftest -pub 3 &'
+                },
+                {
+                    'machine_name': 'p2',
+                    'ip': '129.123.123.123',
+                    'participant_allocation': 'sub',
+                    'perftest_exec_path': "~/path/to/perftest",
+                    'script': 'source ~/.bashrc; cd ~/path/to; ./perftest -sub 1 & ./perftest -sub 2 & ./perftest -sub 3 &'
+                }
+            ]
+        )
+
+        self.assertEqual(
+            ap.distribute_scripts_to_machines(
+                [
+                    '-pub 1', 
+                    '-sub 1',
+                ],
+                [
+                    {
+                        'machine_name': 'p1',
+                        'ip': '129.123.123.123',
+                        'participant_allocation': 'pub',
+                        'perftest_exec_path': "~/path/to/perftest",
+                    },
+                    {
+                        'machine_name': 'p2',
+                        'ip': '129.123.123.123',
+                        'participant_allocation': 'sub',
+                        'perftest_exec_path': "~/path/to/perftest",
+                    }
+
+                ]
+            ),
+            [
+                {
+                    'machine_name': 'p1',
+                    'ip': '129.123.123.123',
+                    'participant_allocation': 'pub',
+                    'perftest_exec_path': "~/path/to/perftest",
+                    'script': 'source ~/.bashrc; cd ~/path/to; ./perftest -pub 1 &'
+                },
+                {
+                    'machine_name': 'p2',
+                    'ip': '129.123.123.123',
+                    'participant_allocation': 'sub',
+                    'perftest_exec_path': "~/path/to/perftest",
+                    'script': 'source ~/.bashrc; cd ~/path/to; ./perftest -sub 1 &'
+                }
+            ]
+        )
+
+        self.assertEqual(
+            ap.distribute_scripts_to_machines(
+                [
+                    '-pub 1', 
+                    '-pub 2',
+                    '-pub 3',
+                    '-sub 1',
+                    '-sub 2',
+                    '-sub 3',
+                ],
+                [
+                    {
+                        'machine_name': 'p1',
+                        'ip': '129.123.123.123',
+                        'participant_allocation': 'all',
+                        'perftest_exec_path': "~/path/to/perftest",
+                    },
+                    {
+                        'machine_name': 'p2',
+                        'ip': '129.123.123.123',
+                        'participant_allocation': 'sub',
+                        'perftest_exec_path': "~/path/to/perftest",
+                    }
+
+                ]
+            ),
+            [
+                {
+                    'machine_name': 'p1',
+                    'ip': '129.123.123.123',
+                    'participant_allocation': 'all',
+                    'perftest_exec_path': "~/path/to/perftest",
+                    'script': 'source ~/.bashrc; cd ~/path/to; ./perftest -pub 1 & ./perftest -pub 2 & ./perftest -pub 3 & ./perftest -sub 2 &'
+                },
+                {
+                    'machine_name': 'p2',
+                    'ip': '129.123.123.123',
+                    'participant_allocation': 'sub',
+                    'perftest_exec_path': "~/path/to/perftest",
+                    'script': 'source ~/.bashrc; cd ~/path/to; ./perftest -sub 1 & ./perftest -sub 3 &'
+                }
+            ]
+        )
+
+        self.assertEqual(
+            ap.distribute_scripts_to_machines(
+                [
+                    '-pub 1', 
+                    '-pub 2',
+                    '-pub 3',
+                    '-sub 1',
+                    '-sub 2',
+                    '-sub 3',
+                ],
+                [
+                    {
+                        'machine_name': 'p1',
+                        'ip': '129.123.123.123',
+                        'participant_allocation': 'all',
+                        'perftest_exec_path': "~/path/to/perftest",
+                    },
+                    {
+                        'machine_name': 'p2',
+                        'ip': '129.123.123.123',
+                        'participant_allocation': 'all',
+                        'perftest_exec_path': "~/path/to/perftest",
+                    }
+
+                ]
+            ),
+            [
+                {
+                    'machine_name': 'p1',
+                    'ip': '129.123.123.123',
+                    'participant_allocation': 'all',
+                    'perftest_exec_path': "~/path/to/perftest",
+                    'script': 'source ~/.bashrc; cd ~/path/to; ./perftest -pub 1 & ./perftest -pub 3 & ./perftest -sub 2 &'
+                },
+                {
+                    'machine_name': 'p2',
+                    'ip': '129.123.123.123',
+                    'participant_allocation': 'all',
+                    'perftest_exec_path': "~/path/to/perftest",
+                    'script': 'source ~/.bashrc; cd ~/path/to; ./perftest -pub 2 & ./perftest -sub 1 & ./perftest -sub 3 &'
+                }
+            ]
+        )
+
+    def test_get_machines_by_type(self):
+        config = ap.read_config('./pytests/configs/good_config_1.json')
+        machines = config[0]['slave_machines']
+        pub_machines = ap.get_machines_by_type(machines, 'pub')
+        sub_machines = ap.get_machines_by_type(machines, 'sub')
+        self.assertEqual(
+            len(pub_machines),
+            1
+        )
+        self.assertEqual(
+            len(sub_machines),
+            1
+        )
+
+        self.assertEqual(
+            pub_machines[0]['machine_name'],
+            'p1'
+        )
+        self.assertEqual(
+            sub_machines[0]['machine_name'],
+            'p2'
+        )
+
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=FutureWarning)
     unittest.main()
