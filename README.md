@@ -1,11 +1,16 @@
 # Table of contents
-1. [Introduction](#introduction)
-2. [Features](#features)
-3. [Terminology](#terminology)
-4. [System Story](#system-story)
-5. [Configuration](#configuration)
-6. [Experiment Status Spreadsheet (ESS)](#experiment-status-spreadsheet-(ess))
-7. [Deprecated Content](#deprecated-content)
+1. [TODO](#todo)
+2. [Introduction](#introduction)
+3. [Features](#features)
+4. [Terminology](#terminology)
+5. [Examples](#examples)
+   1. [QoS Config Dict](#qos-config-dict)
+6. [System Story](#system-story)
+7. [Configuration](#configuration)
+8. [Experiment Status Spreadsheet (ESS)](#experiment-status-spreadsheet-(ess))
+9. [Deprecated Content](#deprecated-content)
+10. [User Story](#user-story)
+11. [How does the current system work?](#how-does-the-current-system-work?)
 
 # TODO
 - [x] Code get_test_name_from_combination_dict()
@@ -64,6 +69,18 @@ ESS stands for Experiment Status Spreadsheet and is a csv file containing detail
     "use_multicast": [true, false],
     "durability_level": [0, 1, 2, 3],
     "latency_count": [100]
+}
+```
+
+## Machine Config Dict
+```python
+{
+    "ip": "169.254.248.55",
+    "machine_name": "p1",
+    "participant_allocation": "pub",
+    "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher",
+    "ssh_key_path": "~/.ssh/id_rsa",
+    "username": "acwh025"
 }
 ```
 
