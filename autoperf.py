@@ -536,6 +536,7 @@ def get_next_test_from_ess(ess_df: pd.DataFrame) -> Optional[Dict]:
         return {}
 
     last_test = ess_df.iloc[-1]
+
     if last_test is None:
         logger.error(
             f"Couldn't get the last test."
@@ -996,6 +997,12 @@ def run_test(
         qos_config
     )
 
+    if scripts is None:
+        logger.error(
+            f"Error generating scripts from: \n\t{qos_config}"
+        )
+        return None
+
     # 6. Allocate scripts to machines.
     scripts_per_machine = distribute_scripts_to_machines(
         scripts,
@@ -1003,6 +1010,7 @@ def run_test(
     )
 
     # 7. Run scripts.
+    pprint(scripts_per_machine)
 
     # 8. Check results.
 
@@ -1066,6 +1074,12 @@ def main(sys_args: list[str] = []) -> None:
                 )
                 continue
 
+            if len(COMBINATIONS) == 0:
+                logger.error(
+                    f"No combinations generated for {EXPERIMENT['experiment_name']}"
+                )
+                continue
+
             logger.debug(f"Getting ESS dataframe.")
             ESS_FILEPATH = os.path.join(EXPERIMENT_DIRNAME, 'ess.csv')
             ess_df = get_ess_df(ESS_FILEPATH)
@@ -1092,6 +1106,9 @@ def main(sys_args: list[str] = []) -> None:
                     return None
 
                 next_test_config = get_next_test_from_ess(ess_df)
+                if next_test_config is None:
+                    next_test_config = COMBINATIONS[0]
+
                 if next_test_config == {}:
                     next_test_config = COMBINATIONS[0]
 
