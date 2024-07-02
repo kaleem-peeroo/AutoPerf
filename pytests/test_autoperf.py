@@ -382,6 +382,37 @@ class TestAutoPerf(unittest.TestCase):
             False
         )
 
+    def test_get_buffer_duration_secs_from_test_duration_secs(self):
+        self.assertEqual(
+            ap.get_buffer_duration_secs_from_test_duration_secs(10),
+            30
+        )
+
+        self.assertEqual(
+            ap.get_buffer_duration_secs_from_test_duration_secs(60),
+            30
+        )
+
+        self.assertEqual(
+            ap.get_buffer_duration_secs_from_test_duration_secs(120),
+            30
+        )
+
+        self.assertEqual(
+            ap.get_buffer_duration_secs_from_test_duration_secs(0),
+            None
+        )
+
+        self.assertEqual(
+            ap.get_buffer_duration_secs_from_test_duration_secs(-1),
+            None
+        )
+
+        self.assertEqual(
+            ap.get_buffer_duration_secs_from_test_duration_secs(1200),
+            60
+        )
+
     def test_generate_combinations_from_qos(self):
         qos = {
             "duration_secs": [10, 20],
