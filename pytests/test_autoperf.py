@@ -369,7 +369,7 @@ class TestAutoPerf(unittest.TestCase):
 
         self.assertEqual(
             ap.have_last_n_tests_failed(ess_df, 100),
-            None
+            False
         )
 
         self.assertEqual(

@@ -577,10 +577,10 @@ def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool
         return False
 
     if len(ess_df.index) < n:
-        logger.error(
+        logger.warning(
             f"ESS dataframe has less than {n} tests."
         )
-        return None
+        n = len(ess_df.index)
 
     last_n_tests = ess_df.tail(n)
     if last_n_tests is None:
