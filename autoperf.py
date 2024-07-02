@@ -9,9 +9,11 @@ import pytest
 import os
 import logging
 import json
+
 from icecream import ic
 from typing import Dict, List, Optional
 from pprint import pprint
+from multiprocessing import Process, Manager
 
 DEBUG_MODE = True
 
@@ -854,6 +856,191 @@ def get_buffer_duration_secs_from_test_duration_secs(test_duration_secs: int = 0
         buffer_duration_sec = 30
 
     return int(buffer_duration_sec)
+
+def has_failures_in_machine_statuses(machine_statuses: Dict = {}) -> Optional[bool]:
+    if machine_statuses == {}:
+        logger.error(
+            f"No machine statuses passed."
+        )
+        return None
+
+    if len(machine_statuses.keys()) == 0:
+        logger.error(
+            f"No keys in machine statuses."
+        )
+        return None
+
+    for _, status in machine_statuses.items():
+        if status != "complete" and status != "pending":
+            return True
+
+    return False
+
+def update_machine_status(machine_statuses: Dict = {}, machine_ip: str = "", new_status: str = "") -> Optional[Dict]:
+    if machine_statuses == {}:
+        logger.error(
+            f"No machine statuses passed."
+        )
+        return None
+
+    if machine_ip == "":
+        logger.error(
+            f"No machine IP passed."
+        )
+        return None
+
+    if new_status == "":
+        logger.error(
+            f"No new status passed."
+        )
+        return None
+
+    if machine_ip not in machine_statuses.keys():
+        logger.error(
+            f"Machine IP not found in machine statuses."
+        )
+        return None
+
+    machine_statuses[machine_ip] = new_status
+
+    return machine_statuses
+
+def run_script_on_machine(
+        machine_config: Dict = {}, 
+        machine_statuses: Dict = {}, 
+        timeout_secs: int = 0
+    ) -> None:
+
+    if machine_config == {}:
+        logger.error(
+            f"No machine config passed."
+        )
+        update_machine_status(
+            machine_statuses,
+            machine_config['ip'],
+            "error: no machine config passed"
+        )
+        return None
+
+    if machine_statuses == {}:
+        logger.error(
+            f"No machine statuses passed."
+        )
+        update_machine_status(
+            machine_statuses,
+            machine_config['ip'],
+            "error: no machine statuses passed"
+        )
+        return None
+
+    if timeout_secs == 0:
+        logger.error(
+            f"No timeout passed to run_script_on_machine()."
+        )
+        update_machine_status(
+            machine_statuses,
+            machine_config['ip'],
+            "error: no timeout passed"
+        )
+        return None
+
+    if has_failures_in_machine_statuses(machine_statuses):
+        logger.error(
+            f"Machine statuses have failures:"
+        )
+        logger.error(
+            f"{machine_statuses}"
+        )
+        update_machine_status(
+            machine_statuses,
+            machine_config['ip'],
+            "error: machine statuses have failures"
+        )
+        return None
+
+    # TODO: Remove this line.
+    timeout_secs = 5
+
+    logger.debug(
+        f"Running script on {machine_config['machine_name']} ({machine_config['ip']})."
+    )
+
+    script_string = machine_config['script']
+    machine_ip = machine_config['ip']
+    username = machine_config['username']
+    ssh_command = f"ssh {username}@{machine_ip} '{script_string}'"
+
+    process = subprocess.Popen(
+        ssh_command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+
+    try:
+        stdout, stderr = process.communicate(timeout=timeout_secs)
+        stdout = stdout.decode('utf-8').strip()
+        stderr = stderr.decode('utf-8').strip()
+
+        return_code = process.returncode
+
+        if return_code != 0:
+            logger.error(
+                f"Error running script on {machine_config['machine_name']}."
+            )
+            logger.error(
+                f"Return code: \t{return_code}"
+            )
+            if stdout != "":
+                logger.error(
+                    f"stdout: \t{stdout}"
+                )
+            if stderr != "":
+                logger.error(
+                    f"stderr: \t{stderr}"
+                )
+
+            update_machine_status(
+                machine_statuses,
+                machine_config['ip'],
+                "error: return code not 0"
+            )
+        else:
+            logger.debug(
+                f"Script on {machine_config['machine_name']} ran successfully."
+            )
+            update_machine_status(
+                machine_statuses,
+                machine_config['ip'],
+                "complete"
+            )
+
+    except subprocess.TimeoutExpired:
+        process.kill()
+        stdout, stderr = process.communicate()
+        stdout = stdout.decode('utf-8').strip()
+        stderr = stderr.decode('utf-8').strip()
+
+        logger.error(
+            f"Script on {machine_config['machine_name']} timed out."
+        )
+        if stdout != "":
+            logger.error(
+                f"stdout: \t\t{stdout}"
+            )
+
+        if stderr != "":
+            logger.error(
+                f"stderr: \t\t{stderr}"
+            )
+
+        update_machine_status(
+            machine_statuses,
+            machine_config['ip'],
+            "error: timed out"
+        )
+
+    return None
                     
 def run_test(
     next_test_config: Dict = {}, 
@@ -1027,12 +1214,63 @@ def run_test(
         scripts,
         machine_configs
     )
+    if scripts_per_machine is None:
+        logger.error(
+            f"Error distributing scripts to machines."
+        )
+        return None
 
     # 7. Run scripts.
+
     test_duration_secs = qos_config['duration_secs']
     buffer_duration_secs = get_buffer_duration_secs_from_test_duration_secs(
         test_duration_secs
     )
+    timeout_secs = test_duration_secs + buffer_duration_secs
+
+    with Manager() as manager:
+        machine_statuses = manager.dict()
+
+        # Initialise machine statuses with IP and "pending"
+        for machine_config in scripts_per_machine:
+            machine_statuses[machine_config['ip']] = "pending"
+
+        processes = []
+
+        for machine_config in scripts_per_machine:
+            machine_ip = machine_config['ip']
+
+            process = Process(
+                target=run_script_on_machine,
+                args=(
+                    machine_config,
+                    machine_statuses,
+                    timeout_secs
+                )
+            )
+            processes.append(process)
+            process.start()
+
+        for process in processes:
+            process.join(timeout_secs)
+            if process.is_alive():
+                logger.error(
+                    f"Process {process} is still alive after {timeout_secs} seconds. Terminating..."
+                )
+                process.terminate()
+                process.join()
+
+        if has_failures_in_machine_statuses(machine_statuses):
+            logger.error(
+                f"Errors running scripts on machines."
+            )
+            for machine_ip, status in machine_statuses.items():
+                if status != "complete":
+                    logger.error(
+                        f"{machine_ip}: {status}"
+                    )
+
+            return None
 
     # 8. Check results.
 
@@ -1137,11 +1375,16 @@ def main(sys_args: list[str] = []) -> None:
             next_test_index = COMBINATIONS.index(next_test_config)
 
             logger.debug(f"[{next_test_index + 1}/{len(COMBINATIONS)}] Running test {next_test_name}...")
-            run_test(
+            run_test_return_value = run_test(
                 next_test_config, 
                 EXPERIMENT['slave_machines'],
                 ess_df
             )
+            if run_test_return_value is None:
+                logger.error(
+                    f"Error running test {next_test_name} for {EXPERIMENT['experiment_name']}."
+                )
+                continue
 
         else:
             logger.debug(f"Is RCG")
