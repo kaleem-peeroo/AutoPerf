@@ -835,6 +835,25 @@ def distribute_scripts_to_machines(scripts: List = [], machine_configs: List = [
 
     return machine_configs
 
+def get_buffer_duration_secs_from_test_duration_secs(test_duration_secs: int = 0) -> Optional[int]:
+    if test_duration_secs == 0:
+        logger.error(
+            f"Test duration is 0."
+        )
+        return None
+
+    if test_duration_secs < 0:
+        logger.error(
+            f"Test duration is negative."
+        )
+        return None
+
+    buffer_duration_sec = test_duration_secs * 0.05
+
+    if buffer_duration_sec < 30:
+        buffer_duration_sec = 30
+
+    return int(buffer_duration_sec)
                     
 def run_test(
     next_test_config: Dict = {}, 
@@ -1010,7 +1029,10 @@ def run_test(
     )
 
     # 7. Run scripts.
-    pprint(scripts_per_machine)
+    test_duration_secs = qos_config['duration_secs']
+    buffer_duration_secs = get_buffer_duration_secs_from_test_duration_secs(
+        test_duration_secs
+    )
 
     # 8. Check results.
 
