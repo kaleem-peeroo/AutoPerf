@@ -1041,15 +1041,135 @@ def run_script_on_machine(
 
     return None
 
-def download_results_from_machine(machine_config, machine_statuses):
-    return None
+def download_results_from_machine(machine_config, machine_statuses, local_results_dirpath):
+    if machine_config == {}:
+        logger.error(
+            f"No machine config passed."
+        )
+        return None
+
+    if machine_statuses == {}:
+        logger.error(
+            f"No machine statuses passed."
+        )
+        return None
+
+    if local_results_dirpath == "":
+        logger.error(
+            f"No local results dirpath passed."
+        )
+        return None
+
+    if has_failures_in_machine_statuses(machine_statuses):
+        logger.error(
+            f"Machine statuses have failures:"
+        )
+        logger.error(
+            f"{machine_statuses}"
+        )
+        return None
+
+    logger.debug(
+        f"Downloading results from {machine_config['machine_name']} ({machine_config['ip']})."
+    )
+
+    machine_ip = machine_config['ip']
+    username = machine_config['username']
+    perftest_exec_path = machine_config['perftest_exec_path']
+    results_dir = os.path.dirname(perftest_exec_path)
+
+    check_for_csv_command = f"ssh {username}@{machine_ip} 'ls {results_dir}/*.csv'"
+    check_for_csv_process = subprocess.Popen(
+        check_for_csv_command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+
+    if check_for_csv_process.returncode != 0:
+        logger.error(
+            f"Error checking for CSV files on {machine_config['machine_name']}."
+        )
+        update_machine_status(
+            machine_statuses,
+            machine_config['ip'],
+            "error: couldn't check for CSV files"
+        )
+        return None
+
+    if check_for_csv_process.stdout == "":
+        logger.error(
+            f"No CSV files found on {machine_config['machine_name']}."
+        )
+        update_machine_status(
+            machine_statuses,
+            machine_config['ip'],
+            "error: no CSV files found"
+        )
+        return None
+
+    csv_files = check_for_csv_process.stdout.decode().split()
+    csv_file_count = len(csv_files)
+
+    if csv_file_count == 0:
+        logger.error(
+            f"No CSV files found on {machine_config['machine_name']}."
+        )
+        update_machine_status(
+            machine_statuses,
+            machine_config['ip'],
+            "error: no CSV files found"
+        )
+        return None
+
+    for csv_file in csv_files:
+        download_command = f"scp {username}@{machine_ip}:{csv_file} {local_results_dirpath}"
+        download_process = subprocess.Popen(
+            download_command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        if download_process.returncode != 0:
+            logger.error(
+                f"Error downloading {csv_file} from {machine_config['machine_name']}."
+            )
+            update_machine_status(
+                machine_statuses,
+                machine_config['ip'],
+                "error: couldn't download CSV files"
+            )
+            return None 
+
+
+    delete_all_csv_command = f"ssh {username}@{machine_ip} 'rm {results_dir}/*.csv'"
+    delete_all_csv_process = subprocess.Popen(
+        delete_all_csv_command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+
+    if delete_all_csv_process.returncode != 0:
+        logger.warning(
+            f"Couldn't delete CSV files on {machine_config['machine_name']}. Relying on next pre-test deletion."
+        )
+
+    update_machine_status(
+        machine_statuses,
+        machine_config['ip'],
+        "results downloaded"
+    )
+
                     
 def run_test(
-    next_test_config: Dict = {}, 
+    test_config: Dict = {}, 
     machine_configs: List = [],
-    ess_df: pd.DataFrame = pd.DataFrame()
+    ess_df: pd.DataFrame = pd.DataFrame(),
+    experiment_dirpath: str = ""
 ) -> Optional[pd.DataFrame]:
-    if next_test_config == {}:
+    if test_config == {}:
         logger.error(
             f"No test config passed."
         )
@@ -1073,7 +1193,7 @@ def run_test(
         )
         return None
 
-    if not isinstance(next_test_config, dict):
+    if not isinstance(test_config, dict):
         logger.error(
             f"Next test config is not a dictionary."
         )
@@ -1085,10 +1205,16 @@ def run_test(
         )
         return None
 
+    if experiment_dirpath == "":
+        logger.error(
+            f"No experiment dirpath passed."
+        )
+        return None
+
     new_ess_df = ess_df
 
-    next_test_name = get_test_name_from_combination_dict(next_test_config)
-    if next_test_name is None:
+    test_name = get_test_name_from_combination_dict(test_config)
+    if test_name is None:
         logger.error(
             f"Couldn't get the name of the next test to run."
         )
@@ -1199,7 +1325,7 @@ def run_test(
         )
 
     # 4. Get qos config.
-    qos_config = next_test_config
+    qos_config = test_config
 
     # 5. Generate scripts.
     scripts = generate_scripts_from_qos_config(
@@ -1281,6 +1407,7 @@ def run_test(
             return None
 
     # 8. Check and download results.
+    local_results_dir = os.path.join(experiment_dirpath, test_name)
     with Manager() as manager:
         machine_statuses = manager.dict()
 
@@ -1296,7 +1423,8 @@ def run_test(
                 target = download_results_from_machine,
                 args = (
                     machine_config,
-                    machine_statuses
+                    machine_statuses,
+                    local_results_dir
                 )
             )
             processes.append(process)
@@ -1417,7 +1545,8 @@ def main(sys_args: list[str] = []) -> None:
             run_test_return_value = run_test(
                 next_test_config, 
                 EXPERIMENT['slave_machines'],
-                ess_df
+                ess_df,
+                EXPERIMENT_DIRNAME
             )
             if run_test_return_value is None:
                 logger.error(
