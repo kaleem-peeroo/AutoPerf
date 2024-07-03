@@ -857,7 +857,7 @@ def get_buffer_duration_secs_from_test_duration_secs(test_duration_secs: int = 0
 
     return int(buffer_duration_sec)
 
-def has_failures_in_machine_statuses(machine_statuses: Dict = {}) -> Optional[bool]:
+def has_failures_in_machine_statuses(machine_statuses) -> Optional[bool]:
     if machine_statuses == {}:
         logger.error(
             f"No machine statuses passed."
@@ -1220,6 +1220,12 @@ def run_test(
         )
         return None
 
+    if len(scripts_per_machine) == 0:
+        logger.error(
+            f"No scripts allocated to machines."
+        )
+        return None
+
     # 7. Run scripts.
 
     test_duration_secs = qos_config['duration_secs']
@@ -1236,7 +1242,6 @@ def run_test(
             machine_statuses[machine_config['ip']] = "pending"
 
         processes = []
-
         for machine_config in scripts_per_machine:
             machine_ip = machine_config['ip']
 
@@ -1272,7 +1277,7 @@ def run_test(
 
             return None
 
-    # 8. Check results.
+    # 8. Check and download results.
 
     # 9. Update ESS.
 
