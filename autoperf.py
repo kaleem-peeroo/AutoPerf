@@ -9,6 +9,7 @@ import pytest
 import os
 import logging
 import json
+import datetime
 
 from icecream import ic
 from typing import Dict, List, Optional
@@ -82,24 +83,16 @@ def ping_machine(ip: str = "") -> Optional[bool]:
     else:
         return False
 
-def check_ssh_connection(ssh_key_path: str = "", username: str = "", ip: str = "") -> Optional[bool]:
-    if ssh_key_path == "":
+def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
+    if machine_config == {}:
         logger.error(
-            f"No SSH key path passed for connection check."
+            f"No machine config passed to check_ssh_connection()."
         )
         return None
-
-    if username == "":
-        logger.error(
-            f"No username passed for connection check."
-        )
-        return None
-
-    if ip == "":
-        logger.error(
-            f"No IP passed for connection check."
-        )
-        return None
+    
+    ssh_key_path = machine_config['ssh_key_path']
+    username = machine_config['username']
+    ip = machine_config['ip']
 
     logger.debug(
         f"Checking SSH connection to {username}@{ip}"
@@ -108,7 +101,7 @@ def check_ssh_connection(ssh_key_path: str = "", username: str = "", ip: str = "
     response = os.system(f"ssh -i {ssh_key_path} {username}@{ip} 'echo \"SSH connection successful.\"' > /dev/null 2>&1")
 
     if response == 0:
-       return True
+        return True
     else:
         return False
 
@@ -1133,7 +1126,8 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         remote_csv_filepath = os.path.join(results_dir, csv_filepath)
         local_csv_filepath = os.path.join(local_results_dirpath, csv_file)
         logger.debug(
-            f"{machine_name}: Downloading...\n\t{remote_csv_filepath} \n\tto \n\t{local_csv_filepath}"
+            # f"{machine_name}: Downloading...\n\t{remote_csv_filepath} \n\tto \n\t{local_csv_filepath}"
+            f"{machine_name}: Downloading {csv_file}..."
         )
         download_command = f"scp {username}@{machine_ip}:{remote_csv_filepath} {local_csv_filepath}"
         download_process = subprocess.Popen(
@@ -1284,6 +1278,7 @@ def run_test(
     """
 
     new_ess_row = {}
+    new_ess_row['test_name'] = test_name
 
     if not DEBUG_MODE:
         # 1. Check connections to machines.
@@ -1296,9 +1291,7 @@ def run_test(
                 return None
         
             if not check_ssh_connection(
-                machine_config['ssh_key_path'],
-                machine_config['username'],
-                machine_ip
+                machine_config
             ):
                 logger.error(
                     f"Couldn't SSH into {machine_ip}."
@@ -1354,9 +1347,7 @@ def run_test(
             # SSH into machine up to 5 times.
             for attempt in range(1, 6):
                 if check_ssh_connection(
-                    machine_config['ssh_key_path'],
-                    machine_config['username'],
-                    machine_ip
+                    machine_config
                 ):
                     new_ess_row['ssh_check_count'] = attempt
                     break
@@ -1432,6 +1423,9 @@ def run_test(
     )
     timeout_secs = test_duration_secs + buffer_duration_secs
 
+    # Start Timestamp
+    new_ess_row['start_timestamp'] = datetime.datetime.now()
+
     with Manager() as manager:
         machine_statuses = manager.dict()
 
@@ -1475,6 +1469,9 @@ def run_test(
 
             return None
 
+    # End timestamp
+    new_ess_row['end_timestamp'] = datetime.datetime.now()
+
     # 8. Check and download results.
     local_results_dir = os.path.join(experiment_dirpath, test_name)
     with Manager() as manager:
@@ -1510,6 +1507,7 @@ def run_test(
 
 
     # 9. Update ESS.
+    pprint(new_ess_row)
 
     # 10. Return ESS.
     return new_ess_df
