@@ -15,7 +15,8 @@ from typing import Dict, List, Optional
 from pprint import pprint
 from multiprocessing import Process, Manager
 
-DEBUG_MODE = True
+DEBUG_MODE = False
+SKIP_RESTART = True
 
 # Set up logging
 logging.basicConfig(
@@ -871,7 +872,8 @@ def has_failures_in_machine_statuses(machine_statuses) -> Optional[bool]:
         return None
 
     for _, status in machine_statuses.items():
-        if status != "complete" and status != "pending":
+        if status != "complete" and status != "pending" and status != "results
+        downloaded":
             return True
 
     return False
@@ -958,9 +960,6 @@ def run_script_on_machine(
         )
         return None
 
-    # TODO: Remove this line.
-    timeout_secs = 5
-
     logger.debug(
         f"Running script on {machine_config['machine_name']} ({machine_config['ip']})."
     )
@@ -1037,9 +1036,12 @@ def run_script_on_machine(
         update_machine_status(
             machine_statuses,
             machine_config['ip'],
-            "error: timed out"
+            f"error: timed out after {timeout_secs}"
         )
 
+    return None
+
+def download_results_from_machine(machine_config, machine_statuses):
     return None
                     
 def run_test(
@@ -1132,26 +1134,27 @@ def run_test(
         )
         
         # 2. Restart machines.
-        for machine_config in machine_configs:
-            logger.debug(
-                f"Restarting {machine_config['machine_name']}..."
-            )
-            machine_ip = machine_config['ip']
-            restart_command = f"ssh -i {machine_config['ssh_key_path']} {machine_config['username']}@{machine_ip} 'sudo reboot'"
-            with open(os.devnull, 'w') as devnull:
-                subprocess.run(
-                    restart_command, 
-                    shell=True, 
-                    stdout=devnull, 
-                    stderr=devnull
+        if not SKIP_RESTART:
+            for machine_config in machine_configs:
+                logger.debug(
+                    f"Restarting {machine_config['machine_name']}..."
                 )
-        
-        logger.debug(
-            f"All machines have been restarted. Waiting 15 seconds..."
-        )
-        
-        time.sleep(15)
-        
+                machine_ip = machine_config['ip']
+                restart_command = f"ssh -i {machine_config['ssh_key_path']} {machine_config['username']}@{machine_ip} 'sudo reboot'"
+                with open(os.devnull, 'w') as devnull:
+                    subprocess.run(
+                        restart_command, 
+                        shell=True, 
+                        stdout=devnull, 
+                        stderr=devnull
+                    )
+            
+            logger.debug(
+                f"All machines have been restarted. Waiting 15 seconds..."
+            )
+            
+            time.sleep(15)
+            
         # 3. Check connections to machines.
         for machine_config in machine_configs:
             machine_ip = machine_config['ip']
@@ -1260,7 +1263,7 @@ def run_test(
             process.join(timeout_secs)
             if process.is_alive():
                 logger.error(
-                    f"Process {process} is still alive after {timeout_secs} seconds. Terminating..."
+                    f"Process for running scripts is still alive after {timeout_secs} seconds. Terminating..."
                 )
                 process.terminate()
                 process.join()
@@ -1278,6 +1281,37 @@ def run_test(
             return None
 
     # 8. Check and download results.
+    with Manager() as manager:
+        machine_statuses = manager.dict()
+
+        # Initialise machine statuses with IP and "pending"
+        for machine_config in scripts_per_machine:
+            machine_statuses[machine_config['ip']] = "pending"
+
+        processes = []
+        for machine_config in scripts_per_machine:
+            machine_ip = machine_config['ip']
+
+            process = Process(
+                target = download_results_from_machine,
+                args = (
+                    machine_config,
+                    machine_statuses
+                )
+            )
+            processes.append(process)
+            process.start()
+
+        for process in processes:
+            process.join(60)
+            if process.is_alive():
+                logger.error(
+                    f"Process for downloading results is still alive after 60
+                    seconds. Terminating..."
+                )
+                process.terminate()
+                process.join()
+
 
     # 9. Update ESS.
 
