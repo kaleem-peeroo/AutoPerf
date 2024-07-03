@@ -872,8 +872,7 @@ def has_failures_in_machine_statuses(machine_statuses) -> Optional[bool]:
         return None
 
     for _, status in machine_statuses.items():
-        if status != "complete" and status != "pending" and status != "results
-        downloaded":
+        if status != "complete" and status != "pending" and status != "results downloaded":
             return True
 
     return False
@@ -1069,11 +1068,13 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         )
         return None
 
+    machine_name = machine_config['machine_name']
+    machine_ip = machine_config['ip']
+
     logger.debug(
-        f"Downloading results from {machine_config['machine_name']} ({machine_config['ip']})."
+        f"Downloading results from {machine_name} ({machine_ip})."
     )
 
-    machine_ip = machine_config['ip']
     username = machine_config['username']
     perftest_exec_path = machine_config['perftest_exec_path']
     results_dir = os.path.dirname(perftest_exec_path)
@@ -1085,10 +1086,13 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
+    stdout, stderr = check_for_csv_process.communicate(timeout=60)
+    stdout = stdout.decode('utf-8').strip()
+    stderr = stderr.decode('utf-8').strip()
 
     if check_for_csv_process.returncode != 0:
         logger.error(
-            f"Error checking for CSV files on {machine_config['machine_name']}."
+            f"Error checking for CSV files on {machine_name}: {stderr}"
         )
         update_machine_status(
             machine_statuses,
@@ -1097,9 +1101,9 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         )
         return None
 
-    if check_for_csv_process.stdout == "":
+    if stdout == "":
         logger.error(
-            f"No CSV files found on {machine_config['machine_name']}."
+            f"No CSV files found on {machine_name}."
         )
         update_machine_status(
             machine_statuses,
@@ -1108,12 +1112,12 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         )
         return None
 
-    csv_files = check_for_csv_process.stdout.decode().split()
+    csv_files = stdout.split()
     csv_file_count = len(csv_files)
 
     if csv_file_count == 0:
         logger.error(
-            f"No CSV files found on {machine_config['machine_name']}."
+            f"No CSV files found on {machine_name}."
         )
         update_machine_status(
             machine_statuses,
@@ -1122,18 +1126,29 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         )
         return None
 
-    for csv_file in csv_files:
-        download_command = f"scp {username}@{machine_ip}:{csv_file} {local_results_dirpath}"
+    os.makedirs(local_results_dirpath, exist_ok=True)
+
+    for csv_filepath in csv_files:
+        csv_file = os.path.basename(csv_filepath)
+        remote_csv_filepath = os.path.join(results_dir, csv_filepath)
+        local_csv_filepath = os.path.join(local_results_dirpath, csv_file)
+        logger.debug(
+            f"{machine_name}: Downloading...\n\t{remote_csv_filepath} \n\tto \n\t{local_csv_filepath}"
+        )
+        download_command = f"scp {username}@{machine_ip}:{remote_csv_filepath} {local_csv_filepath}"
         download_process = subprocess.Popen(
             download_command,
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
+        stdout, stderr = download_process.communicate(timeout=60)
+        stdout = stdout.decode('utf-8').strip()
+        stderr = stderr.decode('utf-8').strip()
 
         if download_process.returncode != 0:
             logger.error(
-                f"Error downloading {csv_file} from {machine_config['machine_name']}."
+                f"Error downloading {csv_file} from {machine_name}: {stderr}"
             )
             update_machine_status(
                 machine_statuses,
@@ -1150,10 +1165,13 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
+    stdout, stderr = delete_all_csv_process.communicate(timeout=60)
+    stdout = stdout.decode('utf-8').strip()
+    stderr = stderr.decode('utf-8').strip()
 
     if delete_all_csv_process.returncode != 0:
         logger.warning(
-            f"Couldn't delete CSV files on {machine_config['machine_name']}. Relying on next pre-test deletion."
+            f"Couldn't delete CSV files on {machine_name}. Relying on next pre-test deletion: {stderr}"
         )
 
     update_machine_status(
@@ -1162,6 +1180,38 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         "results downloaded"
     )
 
+    logger.debug(
+        f"Results downloaded from {machine_name} ({machine_ip})."
+    )
+
+def delete_csvs_from_machines(machine_config):
+    machine_ip = machine_config['ip']
+    machine_name = machine_config['machine_name']
+    username = machine_config['username']
+    perftest_exec_path = machine_config['perftest_exec_path']
+    results_dir = os.path.dirname(perftest_exec_path)
+
+    delete_all_csv_command = f"ssh {username}@{machine_ip} 'rm -rf {results_dir}/*.csv'"
+    delete_all_csv_process = subprocess.Popen(
+        delete_all_csv_command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    stdout, stderr = delete_all_csv_process.communicate(timeout=60)
+    stdout = stdout.decode('utf-8').strip()
+    stderr = stderr.decode('utf-8').strip()
+
+    if delete_all_csv_process.returncode != 0:
+        logger.error(
+            f"Error deleting csv files from {machine_name}: {stderr}"
+        )
+        update_machine_status(
+            machine_statuses,
+            machine_config['ip'],
+            "error: couldn't delete CSV files before test"
+        )
+        return None
                     
 def run_test(
     test_config: Dict = {}, 
@@ -1344,16 +1394,35 @@ def run_test(
         machine_configs
     )
     if scripts_per_machine is None:
-        logger.error(
-            f"Error distributing scripts to machines."
-        )
+        logger.error(f"Error distributing scripts to machines.")
         return None
 
     if len(scripts_per_machine) == 0:
-        logger.error(
-            f"No scripts allocated to machines."
-        )
+        logger.error(f"No scripts allocated to machines.")
         return None
+
+    # 6.1. Delete any old .csv files from previous tests.
+    logger.debug(f"Deleting csv files before test...")
+    with Manager() as manager:
+        processes = []
+        for machine_config in scripts_per_machine:
+            process = Process(
+                target=delete_csvs_from_machines,
+                args=(
+                    machine_config,
+                )
+            )
+            processes.append(process)
+            process.start()
+
+        for process in processes:
+            process.join(60)
+            if process.is_alive():
+                logger.error(
+                    f"Process for deleting old .csv files timed out after 60 seconds. Terminating..."
+                )
+                process.terminate()
+                process.join()
 
     # 7. Run scripts.
 
@@ -1434,8 +1503,7 @@ def run_test(
             process.join(60)
             if process.is_alive():
                 logger.error(
-                    f"Process for downloading results is still alive after 60
-                    seconds. Terminating..."
+                    f"Process for downloading results is still alive after 60 seconds. Terminating..."
                 )
                 process.terminate()
                 process.join()
@@ -1494,7 +1562,9 @@ def main(sys_args: list[str] = []) -> None:
         if is_pcg:
             logger.debug(f"Is PCG")
             logger.debug(f"Generating combinations from QoS settings.")
+
             COMBINATIONS = generate_combinations_from_qos(EXPERIMENT['qos_settings'])
+
             if COMBINATIONS is None:
                 logger.warning(
                     f"Error generating combinations for {EXPERIMENT['experiment_name']}"
@@ -1508,8 +1578,11 @@ def main(sys_args: list[str] = []) -> None:
                 continue
 
             logger.debug(f"Getting ESS dataframe.")
+
             ESS_FILEPATH = os.path.join(EXPERIMENT_DIRNAME, 'ess.csv')
+
             ess_df = get_ess_df(ESS_FILEPATH)
+
             if ess_df is None:
                 logger.warning(
                     f"Error getting ESS dataframe."
