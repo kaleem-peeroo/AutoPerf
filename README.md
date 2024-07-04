@@ -218,7 +218,6 @@ It contains the following columns:
 - pings count
 - ssh check count
 - end status
-- attempt #
 - qos settings
 - comments
 
