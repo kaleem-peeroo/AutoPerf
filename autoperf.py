@@ -1,4 +1,3 @@
-import pandas as pd
 import subprocess
 import sys
 import time
@@ -10,11 +9,16 @@ import os
 import logging
 import json
 import datetime
+import warnings
 
 from icecream import ic
 from typing import Dict, List, Optional
 from pprint import pprint
 from multiprocessing import Process, Manager
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+import pandas as pd
 
 DEBUG_MODE = False
 SKIP_RESTART = True
@@ -409,7 +413,6 @@ def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
             "pings_count",
             "ssh_check_count",
             "end_status",
-            "attempt_number",
             "qos_settings",
             "comments"
        ])
@@ -1206,6 +1209,35 @@ def delete_csvs_from_machines(machine_config):
             "error: couldn't delete CSV files before test"
         )
         return None
+def update_ess_df(
+    ess_df: pd.DataFrame = pd.DataFrame(),
+    start_timestamp: str = None,
+    end_timestamp: str = None,
+    test_name: str = "",
+    ping_count: int = 0,
+    ssh_check_count: int = 0,
+    end_status: str = "",
+    qos_settings: Dict = {},
+    comments: str = ""
+):
+    new_ess_row = {}
+    new_ess_row['start_timestamp'] = start_timestamp
+    new_ess_row['end_timestamp'] = end_timestamp
+    new_ess_row['test_name'] = test_name
+    new_ess_row['ping_count'] = ping_count
+    new_ess_row['ssh_check_count'] = ssh_check_count
+    new_ess_row['end_status'] = end_status
+    new_ess_row['qos_settings'] = qos_settings
+    new_ess_row['comments'] = comments
+
+    new_ess_row_df = pd.DataFrame([new_ess_row])
+    new_ess_df = pd.concat(
+        [ess_df, new_ess_row_df],
+        axis = 0,
+        ignore_index = True
+    )
+    return new_ess_df
+
                     
 def run_test(
     test_config: Dict = {}, 
@@ -1278,7 +1310,7 @@ def run_test(
     """
 
     new_ess_row = {}
-    new_ess_row['test_name'] = test_name
+    new_ess_row['comments'] = ""
 
     if not DEBUG_MODE:
         # 1. Check connections to machines.
@@ -1325,6 +1357,8 @@ def run_test(
             time.sleep(15)
             
         # 3. Check connections to machines.
+        ping_count = 0
+        ssh_check_count = 0
         for machine_config in machine_configs:
             machine_ip = machine_config['ip']
             machine_name = machine_config['machine_name']
@@ -1332,16 +1366,9 @@ def run_test(
             # Ping machine up to 5 times.
             for attempt in range(1, 6):
                 if ping_machine(machine_ip):
-                    new_ess_row['ping_count'] = attempt
+                    ping_count = attempt
                     break
-               
-                if attempt == 5:
-                    logger.error(
-                        f"Couldn't ping {machine_name} ({machine_ip}) after 5 attempts after restart."
-                    )
-                    new_ess_row['comments'] = new_ess_row['comments'] + f"Couldn't ping {machine_name} ({machine_ip}) after 5 attempts after restart. "
-                    break
-        
+                        
                 time.sleep(3)
         
             # SSH into machine up to 5 times.
@@ -1349,21 +1376,30 @@ def run_test(
                 if check_ssh_connection(
                     machine_config
                 ):
-                    new_ess_row['ssh_check_count'] = attempt
-                    break
-        
-                if attempt == 5:
-                    logger.error(
-                        f"Couldn't SSH into {machine_name} ({machine_ip}) after 5 attempts after restart."
-                    )
-                    new_ess_row['comments'] = new_ess_row['comments'] + f"Couldn't SSH into {machine_name} ({machine_ip}) after 5 attempts after restart. "
+                    ssh_check_count = attempt
                     break
         
                 time.sleep(1)
         
-        logger.debug(
-            f"All machines are up and running."
-        )
+        if ping_count == 5 and ssh_check_count == 5:
+            logger.warning(f"Machines failed connection checks.")
+
+            return update_ess_df(
+                new_ess_df,
+                None,
+                None,
+                test_name,
+                ping_count,
+                ssh_check_count,
+                "failed connection checks",
+                test_config,
+                new_ess_row['comments'] + f"Failed connection check after 5 pings and ssh checks."
+            )
+            
+        else:
+            logger.debug(
+                f"All machines are up and running."
+            )
 
     # 4. Get qos config.
     qos_config = test_config
@@ -1377,7 +1413,17 @@ def run_test(
         logger.error(
             f"Error generating scripts from: \n\t{qos_config}"
         )
-        return None
+        return update_ess_df(
+            new_ess_df,
+            None,
+            None,
+            test_name,
+            ping_count,
+            ssh_check_count,
+            "failed script generation",
+            qos_config,
+            new_ess_row['comments'] + " Failed to generate scripts from qos config."
+        )
 
     # 6. Allocate scripts to machines.
     scripts_per_machine = distribute_scripts_to_machines(
@@ -1386,11 +1432,31 @@ def run_test(
     )
     if scripts_per_machine is None:
         logger.error(f"Error distributing scripts to machines.")
-        return None
+        return update_ess_df(
+            new_ess_df,
+            None,
+            None,
+            test_name,
+            ping_count,
+            ssh_check_count,
+            "failed script distribution",
+            qos_config,
+            new_ess_row['comments'] + " Failed to distribute scripts across machines."
+        )
 
     if len(scripts_per_machine) == 0:
         logger.error(f"No scripts allocated to machines.")
-        return None
+        return update_ess_df(
+            new_ess_df,
+            None,
+            None,
+            test_name,
+            ping_count,
+            ssh_check_count,
+            "failed script distribution",
+            qos_config,
+            new_ess_row['comments'] + " No scripts allocated to machines."
+        )
 
     # 6.1. Delete any old .csv files from previous tests.
     logger.debug(f"Deleting csv files before test...")
@@ -1424,7 +1490,7 @@ def run_test(
     timeout_secs = test_duration_secs + buffer_duration_secs
 
     # Start Timestamp
-    new_ess_row['start_timestamp'] = datetime.datetime.now()
+    start_timestamp = datetime.datetime.now()
 
     with Manager() as manager:
         machine_statuses = manager.dict()
@@ -1467,10 +1533,21 @@ def run_test(
                         f"{machine_ip}: {status}"
                     )
 
-            return None
+            return update_ess_df(
+                new_ess_df,
+                start_timestamp,
+                datetime.datetime.now(),
+                test_name,
+                ping_count,
+                ssh_check_count,
+                "failed script execution",
+                qos_config,
+                new_ess_row['comments'] + " Errors running scripts on machines."
+            )
+
 
     # End timestamp
-    new_ess_row['end_timestamp'] = datetime.datetime.now()
+    end_timestamp = datetime.datetime.now()
 
     # 8. Check and download results.
     local_results_dir = os.path.join(experiment_dirpath, test_name)
@@ -1507,7 +1584,17 @@ def run_test(
 
 
     # 9. Update ESS.
-    pprint(new_ess_row)
+    new_ess_df = update_ess_df(
+        new_ess_df,
+        start_timestamp,
+        end_timestamp,
+        test_name,
+        ping_count,
+        ssh_check_count,
+        "success",
+        qos_config,
+        new_ess_row['comments']
+    )
 
     # 10. Return ESS.
     return new_ess_df
@@ -1587,43 +1674,35 @@ def main(sys_args: list[str] = []) -> None:
                 )
                 continue
 
-            logger.debug(f"Getting the next test to run.")
-            next_test_name = get_test_name_from_combination_dict(COMBINATIONS[0])
-            if next_test_name is None:
-                logger.warning(
-                    f"Couldn't get the name of the next test to run for {EXPERIMENT['experiment_name']}."
-                )
-                continue
+            ess_df_row_count = len(ess_df.index)
+            starting_test_index = ess_df_row_count
 
-            next_test_config = COMBINATIONS[0]
-            if len(ess_df.index) > 0:
-                if have_last_n_tests_failed(ess_df, 10):
-                    logger.error(
-                        f"Last 10 tests have failed. Quitting..."
+            for test_config in COMBINATIONS[starting_test_index:]:
+                test_index = COMBINATIONS.index(test_config)
+
+                test_name = get_test_name_from_combination_dict(COMBINATIONS[starting_test_index])
+                if test_name is None:
+                    logger.warning(
+                        f"Couldn't get the name of the next test to run for {EXPERIMENT['experiment_name']}."
                     )
-                    return None
+                    continue
 
-                next_test_config = get_next_test_from_ess(ess_df)
-                if next_test_config is None:
-                    next_test_config = COMBINATIONS[0]
+                if len(ess_df.index) > 10:
+                    if have_last_n_tests_failed(ess_df, 10):
+                        logger.error(
+                            f"Last 10 tests have failed. Quitting..."
+                        )
+                        return None
 
-                if next_test_config == {}:
-                    next_test_config = COMBINATIONS[0]
-
-            next_test_index = COMBINATIONS.index(next_test_config)
-
-            logger.debug(f"[{next_test_index + 1}/{len(COMBINATIONS)}] Running test {next_test_name}...")
-            run_test_return_value = run_test(
-                next_test_config, 
-                EXPERIMENT['slave_machines'],
-                ess_df,
-                EXPERIMENT_DIRNAME
-            )
-            if run_test_return_value is None:
-                logger.error(
-                    f"Error running test {next_test_name} for {EXPERIMENT['experiment_name']}."
+                logger.debug(f"[{test_index + 1}/{len(COMBINATIONS)}] Running test {test_name}...")
+                ess_df = run_test(
+                    test_config, 
+                    EXPERIMENT['slave_machines'],
+                    ess_df,
+                    EXPERIMENT_DIRNAME
                 )
-                continue
+
+                ess_df.to_csv(ESS_FILEPATH, index = False)
 
         else:
             logger.debug(f"Is RCG")
