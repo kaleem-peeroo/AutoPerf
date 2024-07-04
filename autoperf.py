@@ -10,6 +10,7 @@ import logging
 import json
 import datetime
 import warnings
+import random
 
 from icecream import ic
 from typing import Dict, List, Optional
@@ -20,7 +21,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 SKIP_RESTART = True
 
 # Set up logging
@@ -33,7 +34,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
+if DEBUG_MODE:
+    console_handler.setLevel(logging.DEBUG)
+else:
+    console_handler.setLevel(logging.INFO)
 formatter = logging.Formatter(
     '%(asctime)s \t%(levelname)s \t%(message)s'
 )
@@ -44,9 +48,9 @@ logger.addHandler(console_handler)
 REQUIRED_EXPERIMENT_KEYS = [
     'experiment_name',
     'combination_generation_type',
-    'resuming_test_name',
     'qos_settings',
-    'slave_machines'
+    'slave_machines',
+    'rcg_target_test_count'
 ]
 
 REQUIRED_QOS_KEYS = [
@@ -1320,19 +1324,39 @@ def run_test(
                 logger.error(
                     f"Couldn't ping {machine_ip}."
                 )
-                return None
-        
+                return update_ess_df(
+                    new_ess_df,
+                    None,
+                    None,
+                    test_name,
+                    0,
+                    0,
+                    "failed initial ping check",
+                    test_config,
+                    new_ess_row['comments'] + f"Failed to even ping {machine_ip} the first time."
+                )
+
+
             if not check_ssh_connection(
                 machine_config
             ):
                 logger.error(
                     f"Couldn't SSH into {machine_ip}."
                 )
-                return None
+                return update_ess_df(
+                    new_ess_df,
+                    None,
+                    None,
+                    test_name,
+                    1,
+                    0,
+                    "failed initial ssh check",
+                    test_config,
+                    new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
+                )
+
         
-        logger.debug(
-            f"Restarting all machines"
-        )
+        logger.debug(f"Restarting all machines")
         
         # 2. Restart machines.
         if not SKIP_RESTART:
@@ -1598,7 +1622,38 @@ def run_test(
 
     # 10. Return ESS.
     return new_ess_df
+def generate_test_config_from_qos(qos: Optional[Dict] = None) -> Optional[Dict]:
+    if qos is None:
+        logger.error("No QoS passed.")
+        return None
 
+    # TODO: Implement qos validation
+
+    test_config = {}
+    for qos_setting, qos_values in qos.items():
+        if len(qos_values) == 1:
+            test_config[qos_setting] = qos_values[0]
+            continue
+
+        if len(qos_values) > 2:
+            logger.error(f"Can't have more than 2 values for RCG qos setting: {qos_setting}")
+            return None
+
+        all_items_are_ints = all(isinstance(qos_value, int) for qos_value in qos_values)
+
+        if all_items_are_ints:
+            lower_bound = min(qos_values)
+            upper_bound = max(qos_values)
+
+            random_int_value = random.randint(lower_bound, upper_bound)
+
+            test_config[qos_setting] = random_int_value
+
+        else:
+            test_config[qos_setting] = random.choice(qos_values)
+        
+    return test_config
+    
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
         logger.error(
@@ -1662,12 +1717,10 @@ def main(sys_args: list[str] = []) -> None:
                 )
                 continue
 
-            logger.debug(f"Getting ESS dataframe.")
-
             ESS_FILEPATH = os.path.join(EXPERIMENT_DIRNAME, 'ess.csv')
 
+            logger.debug(f"Getting ESS dataframe.")
             ess_df = get_ess_df(ESS_FILEPATH)
-
             if ess_df is None:
                 logger.warning(
                     f"Error getting ESS dataframe."
@@ -1678,9 +1731,16 @@ def main(sys_args: list[str] = []) -> None:
             starting_test_index = ess_df_row_count
 
             for test_config in COMBINATIONS[starting_test_index:]:
+                ess_df = get_ess_df(ESS_FILEPATH)
+                if ess_df is None:
+                    logger.warning(
+                        f"Error getting ESS dataframe."
+                    )
+                    continue
+
                 test_index = COMBINATIONS.index(test_config)
 
-                test_name = get_test_name_from_combination_dict(COMBINATIONS[starting_test_index])
+                test_name = get_test_name_from_combination_dict(test_config)
                 if test_name is None:
                     logger.warning(
                         f"Couldn't get the name of the next test to run for {EXPERIMENT['experiment_name']}."
@@ -1692,20 +1752,85 @@ def main(sys_args: list[str] = []) -> None:
                         logger.error(
                             f"Last 10 tests have failed. Quitting..."
                         )
-                        return None
+                        break
 
-                logger.debug(f"[{test_index + 1}/{len(COMBINATIONS)}] Running test {test_name}...")
+                logger.info(f"[{test_index + 1}/{len(COMBINATIONS)}] Running test {test_name}...")
                 ess_df = run_test(
                     test_config, 
                     EXPERIMENT['slave_machines'],
                     ess_df,
                     EXPERIMENT_DIRNAME
                 )
+                if ess_df is None:
+                    logger.error(f"Error when running test #{test_index + 1}: {test_name}")
+                    continue
 
                 ess_df.to_csv(ESS_FILEPATH, index = False)
 
+            # TODO: Generate dataset with and without transient truncation
+
+            # TODO: Compress results at end of experiment
+
+            logger.debug("PCG experiment complete.")
+
         else:
             logger.debug(f"Is RCG")
+            target_test_count = EXPERIMENT['rcg_target_test_count']
+
+            ESS_FILEPATH = os.path.join(EXPERIMENT_DIRNAME, 'ess.csv')
+            logger.debug(f"Getting ESS dataframe.")
+            ess_df = get_ess_df(ESS_FILEPATH)
+            if ess_df is None:
+                logger.warning(
+                    f"Error getting ESS dataframe."
+                )
+                continue
+
+            ess_df_row_count = len(ess_df.index)
+            if ess_df_row_count == target_test_count:
+                logger.info(f"Finished running all {ess_df_row_count} tests for {EXPERIMENT['experiment_name']}")
+                continue
+
+            remaining_test_count = target_test_count - ess_df_row_count
+
+            for i in range(remaining_test_count):
+                ess_df = get_ess_df(ESS_FILEPATH)
+                if len(ess_df.index) > 10:
+                    if have_last_n_tests_failed(ess_df, 10):
+                        logger.error("Last 10 tests have failed. Quitting....")
+                        break
+
+                # Generate new combination configuration
+                test_config = generate_test_config_from_qos(EXPERIMENT['qos_settings'])
+                if test_config is None:
+                    logger.error("Error generating RCG config")
+                    continue
+
+                test_name = get_test_name_from_combination_dict(test_config)
+                if test_name is None:
+                    logger.error("Couldn't get test name for config")
+                    continue
+
+                # Run test
+                logger.info(f"[{i + 1}/{target_test_count}] Running test {test_name}...")
+                ess_df = run_test(
+                    test_config,
+                    EXPERIMENT['slave_machines'],
+                    ess_df,
+                    EXPERIMENT_DIRNAME
+                )
+
+                if ess_df is None:
+                    logger.error(f"Error when running test #{test_index + 1}: {test_name}")
+                    continue
+
+                ess_df.to_csv(ESS_FILEPATH, index = False)
+
+            # TODO: Generate dataset with and without transient truncation
+
+            # TODO: Compress results at end of experiment
+
+            logger.debug("RCG experiment complete.")
 
 if __name__ == "__main__":
     if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:

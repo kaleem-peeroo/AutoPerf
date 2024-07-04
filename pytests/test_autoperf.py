@@ -270,6 +270,22 @@ class TestAutoPerf(unittest.TestCase):
                 test_output
             )
 
+    def test_generate_test_config_from_qos(self):
+        qos_dict = {
+            'datalen_bytes': [100],
+            'durability_level': [0],
+            'duration_secs': [30],
+            'latency_count': [100],
+            'pub_count': [1, 20],
+            'sub_count': [1, 20],
+            'use_multicast': [True],
+            'use_reliable': [True, False]
+        }
+        
+        test_config = ap.generate_test_config_from_qos(qos_dict)
+        self.assertEqual(test_config.keys(), qos_dict.keys())
+
+
     def test_get_test_name_from_combination_dict(self):
         test_dict = {
             'duration_secs': 10,

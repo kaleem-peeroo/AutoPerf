@@ -1,6 +1,5 @@
 [
   {
-    'resuming_test_name': '',
     'qos_settings': {
       'duration_secs': [30],
       'datalen_bytes': [100],
