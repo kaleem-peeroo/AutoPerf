@@ -11,6 +11,7 @@ import json
 import datetime
 import warnings
 import random
+import shutil
 
 from icecream import ic
 from typing import Dict, List, Optional
@@ -356,6 +357,7 @@ def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[s
 
     experiment_name = experiment['experiment_name']
     experiment_dirname = get_valid_dirname(experiment_name)
+    experiment_dirname = os.path.join("data", experiment_dirname)
 
     return experiment_dirname
 
@@ -1862,6 +1864,15 @@ def main(sys_args: list[str] = []) -> None:
         # TODO: Generate dataset with and without transient truncation
 
         # TODO: Compress results at end of experiment
+        logger.info(f"Compressing {EXPERIMENT_DIRNAME} to {EXPERIMENT_DIRNAME}.zip...")
+        if os.path.exists(f"{EXPERIMENT_DIRNAME}.zip"):
+            logger.warning(f"A compressed version of the results already exists...")
+        else:
+            shutil.make_archive(
+                EXPERIMENT_DIRNAME,
+                'zip',
+                EXPERIMENT_DIRNAME
+            )
 
 if __name__ == "__main__":
     if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:

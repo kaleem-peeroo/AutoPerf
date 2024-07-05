@@ -1,9 +1,9 @@
 [{
   "experiment_name": "RCG Test 1",
   "combination_generation_type": "rcg",
-  "rcg_target_test_count": 2,
+  "rcg_target_test_count": 1,
   "qos_settings": {
-    "duration_secs": [30],
+    "duration_secs": [10],
     "datalen_bytes": [100],
     "pub_count": [1, 20],
     "sub_count": [1, 20],
