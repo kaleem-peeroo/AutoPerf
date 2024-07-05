@@ -487,7 +487,7 @@ class TestAutoPerf(unittest.TestCase):
         CONFIG = ap.read_config('./pytests/configs/good_config_1.json') 
         for EXPERIMENT in CONFIG:
             experiment_name = ap.get_dirname_from_experiment(EXPERIMENT)
-            self.assertEqual(experiment_name, "PCG_#1")
+            self.assertEqual(experiment_name, "data/PCG_#1")
 
     def test_get_if_pcg(self):
         self.assertEqual(
