@@ -1676,6 +1676,218 @@ def get_expected_csv_file_count_from_test_name(test_name: str = "") -> Optional[
     sub_count_from_name = int(test_name.split("SUB_")[0].split("_")[-1])
 
     return sub_count_from_name + 1
+
+def get_pub_df_from_pub_0_filepath(pub_file: str = "") -> Optional[pd.DataFrame]:
+    # TODO: Validate parameters
+
+    # ? Find out where to start parsing the file from 
+    with open(pub_file, "r") as pub_file_obj:
+        pub_first_5_lines = []
+        for i in range(5):
+            line = pub_file_obj.readline()
+            if not line:
+                break
+            pub_first_5_lines.append(line)
+    
+    start_index = 0    
+    for i, line in enumerate(pub_first_5_lines):
+        if "Ave" in line and "Length (Bytes)" in line:
+            start_index = i
+            break
+
+    if start_index == 0:
+        logger.warning(
+            f"Couldn't find start index for header row for {pub_file}."
+        )
+        return None
+
+    # ? Find out where to stop parsing the file from (ignore the summary stats at the end)
+    with open(pub_file, "r") as pub_file_obj:
+        pub_file_contents = pub_file_obj.readlines()
+
+    pub_last_5_lines = pub_file_contents[-5:]
+    line_count = len(pub_file_contents)
+    
+    end_index = 0
+    for i, line in enumerate(pub_last_5_lines):
+        if "latency summary" in line.lower():
+            end_index = line_count - 5 + i - 2
+            break
+    
+    if end_index == 0:
+        # console.print(f"Couldn't find end index for {pub_file}.", style="bold red")
+        logger.warning(
+            f"Couldn't find end index for summary row for {pub_file}."
+        )
+        return None
+
+    try:
+        lat_df = pd.read_csv(pub_file, skiprows=start_index, nrows=end_index-start_index, on_bad_lines="skip")
+    except pd.errors.EmptyDataError:
+        # console.print(f"EmptyDataError for {pub_file}.", style="bold red")
+        logger.warning(
+            f"EmptyDataError for {pub_file}."
+        )
+        return None
+    
+        # ? Pick out the latency column ONLY
+    latency_col = None
+    for col in lat_df.columns:
+        if "latency" in col.lower():
+            latency_col = col
+            break
+
+    if latency_col is None:
+        # console.print(f"Couldn't find latency column for {pub_file}.", style="bold red")
+        logger.warning(
+            f"Couldn't find latency column for {pub_file}."
+        )
+        return None
+
+    lat_df = lat_df[latency_col]
+    lat_df = lat_df.rename("latency_us")
+    
+    return lat_df
+
+def get_subs_df_from_sub_files(sub_files: [str] = []) -> Optional[pd.DataFrame]:
+    test_df = pd.DataFrame()
+    
+    for file in sub_files:
+        # ? Find out where to start parsing the file from 
+        with open(file, "r") as file_obj:
+            if os.stat(file).st_size == 0:
+                continue
+            file_obj.seek(0)
+            pub_first_5_lines = [next(file_obj) for x in range(5)]
+            
+        start_index = 0    
+        for i, line in enumerate(pub_first_5_lines):
+            if "Length (Bytes)" in line:
+                start_index = i
+                break
+        
+        if start_index == 0:
+            # print(f"Couldn't get start_index for header row from {file}.")
+            logger.warning(
+                f"Couldn't get start_index for header row from {file}."
+            )
+            continue
+
+        # ? Find out where to stop parsing the file from (ignore the summary stats at the end)
+        with open(file, "r") as file_obj:
+            file_contents = file_obj.readlines()
+        pub_last_5_lines = file_contents[-5:]
+        line_count = len(file_contents)
+        
+        end_index = 0
+        for i, line in enumerate(pub_last_5_lines):
+            if "throughput summary" in line.lower():
+                end_index = line_count - 5 + i - 2
+                break
+            
+        if end_index == 0:
+            # print(f"Couldn't get end_index for summary row from {file}.")
+            logger.warning(
+                f"Couldn't get end_index for summary row from {file}."
+            )
+            continue
+
+        nrows = end_index - start_index
+        nrows = 0 if nrows < 0 else nrows
+
+        try:
+            df = pd.read_csv(file, on_bad_lines="skip", skiprows=start_index, nrows=nrows)
+        except pd.errors.ParserError as e:
+            logger.warning(
+                f"Error when getting data from {file}:{e}"
+            )
+            continue
+        
+        desired_metrics = ["total samples", "samples/s", "mbps", "lost samples"]
+        
+        sub_name = os.path.basename(file).replace(".csv", "")
+
+        for col in df.columns:
+            for desired_metric in desired_metrics:
+                if desired_metric in col.lower() and "avg" not in col.lower():
+                    col_name = col.strip().lower().replace(" ", "_")
+                    if "samples/s" in col_name:
+                        col_name = "samples_per_sec"
+                    elif "%" in col_name:
+                        col_name = "lost_samples_percent"
+                    test_df[f"{sub_name}_{col_name}"] = df[col]
+
+        # ? Remove rows with strings in them
+        test_df = test_df[test_df.applymap(lambda x: not isinstance(x, str)).all(1)]
+
+        test_df = test_df.astype(float, errors="ignore")
+
+    return test_df
+
+def summarise_tests(dirpath: str = "") -> Optional[str]:
+    # TODO: Validate parameters
+
+    summaries_dirpath = os.path.join(dirpath, "summarised_data")
+    os.makedirs(summaries_dirpath, exist_ok=True)
+
+    test_dirpaths = [os.path.join(dirpath, _) for _ in os.listdir(dirpath)]
+    test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
+    test_dirpaths = [_ for _ in test_dirpaths if "summarised_data" not in _.lower()]
+
+    if len(test_dirpaths) == 0:
+        logger.warning("Found no test folders in {dirpath}")
+        return 
+
+    logger.debug(
+        f"Summarising {len(test_dirpaths)} tests..."
+    )
+
+    summarised_test_count = 0
+    for test_dirpath in test_dirpaths:
+        test_index = test_dirpaths.index(test_dirpath)
+        test_name = os.path.basename(test_dirpath)
+
+        expected_csv_file_count = get_expected_csv_file_count_from_test_name(test_name)
+        actual_csv_file_count = get_csv_file_count_from_dir(test_dirpath)
+
+        if expected_csv_file_count != actual_csv_file_count:
+            logger.warning(
+                f"Skipping {test_name} because its missing {expect_csv_file_count - actual_csv_file_count} files"
+            )
+            continue
+
+        csv_files = [os.path.join(test_dirpath, _) for _ in os.listdir(test_dirpath)]
+        csv_files = [_ for _ in csv_files if _.endswith("csv")]
+
+        pub_csv_files = [_ for _ in csv_files if os.path.basename(_).startswith("pub_")]
+
+        pub_0_filepath = [_ for _ in pub_csv_files if _.endswith("0.csv")][0]
+        pub_df = get_pub_df_from_pub_0_filepath(pub_0_filepath)
+        if pub_df is None:
+            logger.error(f"Couldn't get pub_df for {pub_0_filepath}")
+            continue
+
+        sub_csv_files = [_ for _ in csv_files if os.path.basename(_).startswith("sub_")]
+        subs_df = get_subs_df_from_sub_files(sub_csv_files)
+        
+        df_list = [pub_df, subs_df]
+        df = pd.concat(df_list, axis=1)
+        df.to_csv(
+            os.path.join(
+                summaries_dirpath,
+                f"{test_name}.csv"
+            ),
+            index=False
+        )
+
+        logger.debug(f"[{test_index + 1}/{len(test_dirpaths)}] Summarised {test_name}.csv")
+        summarised_test_count += 1
+
+    logger.debug(f"Summarised {summarised_test_count}/{len(test_dirpaths)} tests...")
+
+def generate_dataset(dirpath: str = "", truncation_percent: int = 0):
+    # TODO: Validate parameters
+    return
     
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
@@ -1831,7 +2043,7 @@ def main(sys_args: list[str] = []) -> None:
                     continue
 
                 # Run test
-                logger.info(f"[{i + 1}/{target_test_count}] Running test {test_name}...")
+                logger.info(f"[{i}/{target_test_count}] Running test {test_name}...")
                 ess_df = run_test(
                     test_config,
                     EXPERIMENT['slave_machines'],
@@ -1851,6 +2063,7 @@ def main(sys_args: list[str] = []) -> None:
         # Do a check on all tests to make sure expected number of pub and sub files are the same
         test_dirpaths = [os.path.join(EXPERIMENT_DIRNAME, _) for _ in os.listdir(EXPERIMENT_DIRNAME)]
         test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
+        test_dirpaths = [_ for _ in test_dirpaths if "data" not in _.lower()]
         for test_dirpath in test_dirpaths:
             test_name = os.path.basename(test_dirpath)
             expected_csv_file_count = get_expected_csv_file_count_from_test_name(test_name)
@@ -1861,12 +2074,21 @@ def main(sys_args: list[str] = []) -> None:
                     f"{test_name} has {actual_csv_file_count} .csv files instead of {expected_csv_file_count}"
                 )
 
-        # TODO: Generate dataset with and without transient truncation
+        # Summarise tests
+        # Reduce data from tests into a single file per test
+        summarise_tests(EXPERIMENT_DIRNAME) 
 
-        # TODO: Compress results at end of experiment
+        # TODO: Generate dataset with and without transient truncation
+        generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=0)
+        generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=10)
+        generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=25)
+        generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=50)
+
+        # Compress results at end of experiment
         logger.info(f"Compressing {EXPERIMENT_DIRNAME} to {EXPERIMENT_DIRNAME}.zip...")
         if os.path.exists(f"{EXPERIMENT_DIRNAME}.zip"):
             logger.warning(f"A compressed version of the results already exists...")
+
         else:
             shutil.make_archive(
                 EXPERIMENT_DIRNAME,

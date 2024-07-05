@@ -5,8 +5,8 @@
   "qos_settings": {
     "duration_secs": [10],
     "datalen_bytes": [100],
-    "pub_count": [1],
-    "sub_count": [1],
+    "pub_count": [1, 5, 10],
+    "sub_count": [1, 5, 10],
     "use_reliable": [true],
     "use_multicast": [true],
     "durability_level": [0],
