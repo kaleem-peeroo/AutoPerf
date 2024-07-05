@@ -1425,6 +1425,10 @@ def run_test(
                 f"All machines are up and running."
             )
 
+    if DEBUG_MODE:
+        ping_count = 0
+        ssh_check_count = 0
+
     # 4. Get qos config.
     qos_config = test_config
 
@@ -1653,6 +1657,23 @@ def generate_test_config_from_qos(qos: Optional[Dict] = None) -> Optional[Dict]:
             test_config[qos_setting] = random.choice(qos_values)
         
     return test_config
+
+def get_csv_file_count_from_dir(dirpath: str = "") -> Optional[int]:
+    # TODO: Validate parameters
+    # TODO: Implement unit tests for this function
+
+    files_in_dir = os.listdir(dirpath)
+    csv_files_in_dir = [_ for _ in files_in_dir if _.endswith(".csv")]
+
+    return len(csv_files_in_dir)
+
+def get_expected_csv_file_count_from_test_name(test_name: str = "") -> Optional[int]:
+    # TODO: Validate parameters
+    # TODO: Implement unit tests for this function
+
+    sub_count_from_name = int(test_name.split("SUB_")[0].split("_")[-1])
+
+    return sub_count_from_name + 1
     
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
@@ -1767,10 +1788,6 @@ def main(sys_args: list[str] = []) -> None:
 
                 ess_df.to_csv(ESS_FILEPATH, index = False)
 
-            # TODO: Generate dataset with and without transient truncation
-
-            # TODO: Compress results at end of experiment
-
             logger.debug("PCG experiment complete.")
 
         else:
@@ -1826,11 +1843,25 @@ def main(sys_args: list[str] = []) -> None:
 
                 ess_df.to_csv(ESS_FILEPATH, index = False)
 
-            # TODO: Generate dataset with and without transient truncation
-
-            # TODO: Compress results at end of experiment
-
+            
             logger.debug("RCG experiment complete.")
+
+        # Do a check on all tests to make sure expected number of pub and sub files are the same
+        test_dirpaths = [os.path.join(EXPERIMENT_DIRNAME, _) for _ in os.listdir(EXPERIMENT_DIRNAME)]
+        test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
+        for test_dirpath in test_dirpaths:
+            test_name = os.path.basename(test_dirpath)
+            expected_csv_file_count = get_expected_csv_file_count_from_test_name(test_name)
+            actual_csv_file_count = get_csv_file_count_from_dir(test_dirpath)
+
+            if expected_csv_file_count != actual_csv_file_count:
+                logger.warning(
+                    f"{test_name} has {actual_csv_file_count} .csv files instead of {expected_csv_file_count}"
+                )
+
+        # TODO: Generate dataset with and without transient truncation
+
+        # TODO: Compress results at end of experiment
 
 if __name__ == "__main__":
     if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
