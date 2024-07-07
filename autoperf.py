@@ -1221,8 +1221,8 @@ def delete_csvs_from_machines(machine_config):
 
 def update_ess_df(
     ess_df: pd.DataFrame = pd.DataFrame(),
-    start_timestamp: str = None,
-    end_timestamp: str = None,
+    start_timestamp: Optional[str] = None,
+    end_timestamp: Optional[str] = None,
     test_name: str = "",
     ping_count: int = 0,
     ssh_check_count: int = 0,
@@ -1248,7 +1248,6 @@ def update_ess_df(
     )
     return new_ess_df
 
-                    
 def run_test(
     test_config: Dict = {}, 
     machine_configs: List = [],
