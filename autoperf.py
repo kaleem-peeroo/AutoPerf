@@ -1632,11 +1632,39 @@ def run_test(
     # 10. Return ESS.
     return new_ess_df
 def generate_test_config_from_qos(qos: Optional[Dict] = None) -> Optional[Dict]:
+    # TODO: Implement qos validation
     if qos is None:
-        logger.error("No QoS passed.")
+        logger.error(
+            f"No QoS passed."
+        )
         return None
 
-    # TODO: Implement qos validation
+    keys = qos.keys()
+    if len(keys) == 0:
+        logger.error(
+            f"No options found for qos"
+        )
+        return None
+
+    for key in keys:
+        if key not in REQUIRED_QOS_KEYS:
+            logger.error(
+                f"Found an unexpected QoS setting: {key}"
+            )
+            return None
+
+    values = qos.values()
+    if len(values) == 0:
+        logger.error(
+            f"No values found for qos"
+        )
+        return None
+    for value in values:
+        if len(value) == 0:
+            logger.error(
+                f"One of the settings has no values."
+            )
+            return None
 
     test_config = {}
     for qos_setting, qos_values in qos.items():
