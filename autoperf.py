@@ -1856,7 +1856,11 @@ def get_subs_df_from_sub_files(sub_files: [str] = []) -> Optional[pd.DataFrame]:
     return test_df
 
 def summarise_tests(dirpath: str = "") -> Optional[str]:
-    # TODO: Validate parameters
+    if dirpath == "":
+        logger.error(
+            f"No dirpath passed."
+        )
+        return None
 
     summaries_dirpath = os.path.join(dirpath, "summarised_data")
     os.makedirs(summaries_dirpath, exist_ok=True)
