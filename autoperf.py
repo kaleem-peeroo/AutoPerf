@@ -1037,7 +1037,7 @@ def run_script_on_machine(
         update_machine_status(
             machine_statuses,
             machine_config['ip'],
-            f"error: timed out after {timeout_secs}"
+            f"error: timed out after {timeout_secs} seconds"
         )
 
     return None
@@ -2077,6 +2077,11 @@ def main(sys_args: list[str] = []) -> None:
         # Summarise tests
         # Reduce data from tests into a single file per test
         summarise_tests(EXPERIMENT_DIRNAME) 
+        if summarise_tests is None:
+            logger.error(
+                f"Error summarising tests for {EXPERIMENT['experiment_name']}"
+            )
+            continue
 
         # TODO: Generate dataset with and without transient truncation
         generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=0)
