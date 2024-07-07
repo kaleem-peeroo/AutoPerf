@@ -1088,7 +1088,7 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
-    stdout, stderr = check_for_csv_process.communicate(timeout=60)
+    stdout, stderr = check_for_csv_process.communicate(timeout=30)
     stdout = stdout.decode('utf-8').strip()
     stderr = stderr.decode('utf-8').strip()
 
@@ -1145,7 +1145,7 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
-        stdout, stderr = download_process.communicate(timeout=60)
+        stdout, stderr = download_process.communicate(timeout=30)
         stdout = stdout.decode('utf-8').strip()
         stderr = stderr.decode('utf-8').strip()
 
@@ -1168,7 +1168,7 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
-    stdout, stderr = delete_all_csv_process.communicate(timeout=60)
+    stdout, stderr = delete_all_csv_process.communicate(timeout=30)
     stdout = stdout.decode('utf-8').strip()
     stderr = stderr.decode('utf-8').strip()
 
@@ -1201,7 +1201,15 @@ def delete_csvs_from_machines(machine_config):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
-    stdout, stderr = delete_all_csv_process.communicate(timeout=60)
+    try:
+        stdout, stderr = delete_all_csv_process.communicate(timeout=30)
+    except subprocess.TimeoutExpired:
+        logger.error(
+            f"Timed out deleting CSV files from {machine_name}."
+        )
+        delete_all_csv_process.kill()
+        stdout, stderr = delete_all_csv_process.communicate()
+
     stdout = stdout.decode('utf-8').strip()
     stderr = stderr.decode('utf-8').strip()
 
