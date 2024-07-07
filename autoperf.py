@@ -1989,7 +1989,6 @@ def main(sys_args: list[str] = []) -> None:
 
             ESS_FILEPATH = os.path.join(EXPERIMENT_DIRNAME, 'ess.csv')
 
-            logger.debug(f"Getting ESS dataframe.")
             ess_df = get_ess_df(ESS_FILEPATH)
             if ess_df is None:
                 logger.warning(
