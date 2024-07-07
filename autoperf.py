@@ -1217,12 +1217,8 @@ def delete_csvs_from_machines(machine_config):
         logger.error(
             f"Error deleting csv files from {machine_name}: {stderr}"
         )
-        update_machine_status(
-            machine_statuses,
-            machine_config['ip'],
-            "error: couldn't delete CSV files before test"
-        )
         return None
+
 def update_ess_df(
     ess_df: pd.DataFrame = pd.DataFrame(),
     start_timestamp: str = None,
