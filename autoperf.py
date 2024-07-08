@@ -2279,7 +2279,7 @@ def main(sys_args: list[str] = []) -> None:
                     continue
 
                 # Run test
-                logger.info(f"[{i}/{target_test_count}] Running test {test_name}...")
+                logger.info(f"[{i + 1}/{target_test_count}] Running test {test_name}...")
                 ess_df = run_test(
                     test_config,
                     EXPERIMENT['slave_machines'],
