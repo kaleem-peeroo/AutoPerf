@@ -2311,7 +2311,6 @@ def main(sys_args: list[str] = []) -> None:
                 )
 
         # Summarise tests
-        # Reduce data from tests into a single file per test
         summarise_tests(EXPERIMENT_DIRNAME) 
         if summarise_tests is None:
             logger.error(
@@ -2319,18 +2318,17 @@ def main(sys_args: list[str] = []) -> None:
             )
             continue
 
-        # TODO: Generate dataset with and without transient truncation
         generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=0)
         generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=10)
         generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=25)
         generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=50)
 
         # Compress results at end of experiment
-        logger.info(f"Compressing {EXPERIMENT_DIRNAME} to {EXPERIMENT_DIRNAME}.zip...")
         if os.path.exists(f"{EXPERIMENT_DIRNAME}.zip"):
             logger.warning(f"A compressed version of the results already exists...")
 
         else:
+            logger.info(f"Compressing {EXPERIMENT_DIRNAME} to {EXPERIMENT_DIRNAME}.zip...")
             shutil.make_archive(
                 EXPERIMENT_DIRNAME,
                 'zip',
@@ -2338,9 +2336,8 @@ def main(sys_args: list[str] = []) -> None:
             )
 
 if __name__ == "__main__":
-    main(sys.argv)
-    # if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
-        # main(sys.argv)
-    # else:
-        # logger.error("Tests failed.")
-        # sys.exit(1)
+    if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
+        main(sys.argv)
+    else:
+        logger.error("Tests failed.")
+        sys.exit(1)
