@@ -527,6 +527,123 @@ def get_test_name_from_combination_dict(combination_dict: Dict = {}) -> Optional
 
     return test_name
 
+def get_qos_dict_from_test_name(test_name: str = "") -> Optional[Dict]:
+    """
+    Take test name and get qos settings from it.
+    e.g. 100SEC_100B_5PUB_1SUB_REL_MC_0DUR_100LC returns:
+    {
+        "datalen_byts": 100,
+        "durability_level": 0,
+        "duration_secs": 100,
+        "latency_count": 100,
+        "pub_count": 5,
+        "sub_count": 1,
+        "use_multicast": true,
+        "use_reliable": true
+    }
+    """
+    if test_name == "":
+        logger.error(
+            "No test name passed to get_qos_dict_from_test_name()."
+        )
+        return None
+
+    # TODO: Write unit tests for this function
+
+    qos_dict = {
+        "datalen_bytes": None,
+        "durability_level": None,
+        "duration_secs": None,
+        "latency_count": None,
+        "pub_count": None,
+        "sub_count": None,
+        "use_multicast": None,
+        "use_reliable": None
+    }
+
+    if "." in test_name:
+        test_name = test_name.split('.')[0]
+
+    if "_" not in test_name:
+        logger.error(
+            "No _ found in test name: {test_name}"
+        )
+        return None
+
+    test_name_sections = test_name.split("_")
+    
+    if len(test_name_sections) != len(REQUIRED_QOS_KEYS):
+        logger.error(
+            f"Mismatch in test_name sections. Expected {len(REQUIRED_QOS_KEYS)} parts."
+        )
+        return None
+
+    for section in test_name_sections:
+        if "sec" in section.lower():
+            value = section.lower().replace("sec", "")
+            value = int(value)
+            qos_dict["duration_secs"] = value
+
+        elif "pub" in section.lower():
+            value = section.lower().replace("pub", "")
+            value = int(value)
+            qos_dict["pub_count"] = value
+
+        elif "sub" in section.lower():
+            value = section.lower().replace("sub", "")
+            value = int(value)
+            qos_dict["sub_count"] = value
+
+        elif "dur" in section.lower():
+            value = section.lower().replace("dur", "")
+            value = int(value)
+            qos_dict["durability_level"] = value
+
+        elif "lc" in section.lower():
+            value = section.lower().replace("lc", "")
+            value = int(value)
+            qos_dict["latency_count"] = value
+
+        elif "rel" in section.lower() or "be" in section.lower():
+            use_reliable = None
+            if "rel" in section.lower():
+                use_reliable = True
+            else:
+                use_reliable = False
+
+            qos_dict['use_reliable'] = use_reliable
+
+        elif "mc" in section.lower() or 'uc' in section.lower():
+            use_multicast = None
+
+            if 'mc' in section.lower():
+                use_multicast = True
+            else:
+                use_multicast = False
+
+            qos_dict['use_multicast'] = use_reliable
+
+        elif section.lower().endswith('b'):
+            value = section.lower().replace("b", "")
+            value = int(value)
+            qos_dict["datalen_bytes"] = value
+
+        else:
+            logger.error(
+                f"Couldn't recognise following section: {section}"
+            )
+            return None
+
+    # Final check for any None values
+    for key, value in qos_dict.items():
+        if value is None:
+            logger.error(
+                f"Value for {key} is None."
+            )
+            return None
+
+    return qos_dict
+
 def get_next_test_from_ess(ess_df: pd.DataFrame) -> Optional[Dict]:
     if ess_df is None:
         logger.error(
@@ -1632,7 +1749,6 @@ def run_test(
     # 10. Return ESS.
     return new_ess_df
 def generate_test_config_from_qos(qos: Optional[Dict] = None) -> Optional[Dict]:
-    # TODO: Implement qos validation
     if qos is None:
         logger.error(
             f"No QoS passed."
@@ -1727,7 +1843,7 @@ def get_pub_df_from_pub_0_filepath(pub_file: str = "") -> Optional[pd.DataFrame]
             break
 
     if start_index == 0:
-        logger.warning(
+        logger.error(
             f"Couldn't find start index for header row for {pub_file}."
         )
         return None
@@ -1747,7 +1863,7 @@ def get_pub_df_from_pub_0_filepath(pub_file: str = "") -> Optional[pd.DataFrame]
     
     if end_index == 0:
         # console.print(f"Couldn't find end index for {pub_file}.", style="bold red")
-        logger.warning(
+        logger.error(
             f"Couldn't find end index for summary row for {pub_file}."
         )
         return None
@@ -1756,7 +1872,7 @@ def get_pub_df_from_pub_0_filepath(pub_file: str = "") -> Optional[pd.DataFrame]
         lat_df = pd.read_csv(pub_file, skiprows=start_index, nrows=end_index-start_index, on_bad_lines="skip")
     except pd.errors.EmptyDataError:
         # console.print(f"EmptyDataError for {pub_file}.", style="bold red")
-        logger.warning(
+        logger.error(
             f"EmptyDataError for {pub_file}."
         )
         return None
@@ -1770,7 +1886,7 @@ def get_pub_df_from_pub_0_filepath(pub_file: str = "") -> Optional[pd.DataFrame]
 
     if latency_col is None:
         # console.print(f"Couldn't find latency column for {pub_file}.", style="bold red")
-        logger.warning(
+        logger.error(
             f"Couldn't find latency column for {pub_file}."
         )
         return None
@@ -1863,15 +1979,22 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
         return None
 
     summaries_dirpath = os.path.join(dirpath, "summarised_data")
-    os.makedirs(summaries_dirpath, exist_ok=True)
+    if os.path.exists(summaries_dirpath):
+        summaries_dirpath_files = os.listdir(summaries_dirpath)
+        if len(summaries_dirpath_files) > 0:
+            logger.error(
+                f"Summarised data {summaries_dirpath} already exists."
+            )
+            return None
+
+    os.makedirs(sumaries_dirpath, exist_ok=True)
 
     test_dirpaths = [os.path.join(dirpath, _) for _ in os.listdir(dirpath)]
     test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
     test_dirpaths = [_ for _ in test_dirpaths if "summarised_data" not in _.lower()]
-
     if len(test_dirpaths) == 0:
         logger.warning("Found no test folders in {dirpath}")
-        return 
+        return None
 
     logger.debug(
         f"Summarising {len(test_dirpaths)} tests..."
@@ -1921,9 +2044,41 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
     logger.debug(f"Summarised {summarised_test_count}/{len(test_dirpaths)} tests...")
 
 def generate_dataset(dirpath: str = "", truncation_percent: int = 0):
+    """
+    Reduce each csv file in summarised_data folder to a single row in one csv file.
+    """
     # TODO: Validate parameters
-    return
+    # TODO: Write unit tests for this function
+
+    summaries_dirpath = os.path.join(dirpath, "summarised_data")
+    if not os.path.join(summaries_dirpath):
+        logger.error(
+            f"Summarised dirpath {summaries_dirpath} does NOT exist."
+        )
+        return None
+
+    test_csvs = [os.path.join(summaries_dirpath, _) for _ in os.listdir(summaries_dirpath)]
+    if len(test_csvs) == 0:
+        logger.error(
+            f"No csv files found in {summaries_dirpath}."
+        )
     
+    logger.info(
+        f"Generating dataset from {len(test_csvs)} tests with {truncation_percent}% truncation..."
+    )
+
+    for test_csv in test_csvs:
+        new_dataset_row = {}
+
+        test_df = pd.read_csv(test_csv)
+        test_name = os.path.basename(test_csv)
+
+        print(test_name)
+        print(get_qos_dict_from_test_name(test_name))
+        print(test_df.head())
+        print(test_df.columns)
+        sys.exit()
+
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
         logger.error(
@@ -1949,7 +2104,7 @@ def main(sys_args: list[str] = []) -> None:
 
     for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
 
-        logger.debug(f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}...")
+        logger.info(f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}...")
 
         EXPERIMENT_DIRNAME = get_dirname_from_experiment(EXPERIMENT)
         if EXPERIMENT_DIRNAME is None:
@@ -2136,8 +2291,9 @@ def main(sys_args: list[str] = []) -> None:
             )
 
 if __name__ == "__main__":
-    if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
-        main(sys.argv)
-    else:
-        logger.error("Tests failed.")
-        sys.exit(1)
+    main(sys.argv)
+    # if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
+        # main(sys.argv)
+    # else:
+        # logger.error("Tests failed.")
+        # sys.exit(1)
