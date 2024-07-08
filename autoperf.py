@@ -12,11 +12,13 @@ import datetime
 import warnings
 import random
 import shutil
+import rich
 
 from icecream import ic
 from typing import Dict, List, Optional
 from pprint import pprint
 from multiprocessing import Process, Manager
+from rich.progress import track
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -72,6 +74,13 @@ REQUIRED_SLAVE_MACHINE_KEYS = [
     'perftest_exec_path',
     'ssh_key_path',
     'username'
+]
+
+PERCENTILES = [
+    0, 1, 2, 3, 4, 5, 10,
+    20, 30, 40, 60, 70, 80, 90,
+    95, 96, 97, 98, 99, 100,
+    25, 50, 75
 ]
 
 def ping_machine(ip: str = "") -> Optional[bool]:
@@ -2067,17 +2076,55 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0):
         f"Generating dataset from {len(test_csvs)} tests with {truncation_percent}% truncation..."
     )
 
-    for test_csv in test_csvs:
+    experiment_name = os.path.basename(dirpath)
+    current_timestamp = datetime.datetime.today().strftime('%Y-%m-%d_%H-%M-%S')
+    filename = f"{current_timestamp}_{experiment_name}_dataset_{truncation_percent}_percent_truncation.csv"
+    filename = os.path.join("datasets", filename)
+
+    os.makedirs("datasets", exist_ok = True)
+
+    dataset_df = pd.DataFrame()
+    for test_csv in track(test_csvs, description="Processing..."):
         new_dataset_row = {}
 
         test_df = pd.read_csv(test_csv)
         test_name = os.path.basename(test_csv)
 
-        print(test_name)
-        print(get_qos_dict_from_test_name(test_name))
-        print(test_df.head())
-        print(test_df.columns)
-        sys.exit()
+        new_dataset_row = get_qos_dict_from_test_name(test_name)
+        if new_dataset_row is None:
+            logger.error(
+                f"Couldn't get qos dict for {test_name}."
+            )
+            continue
+
+        for column in test_df.columns:
+            column_values = test_df[column]
+            value_count = len(column_values)
+
+            values_to_truncate = int(
+                truncation_percent * (100 / value_count)
+            )
+
+            column_values = test_df[column].iloc[values_to_truncate:]
+            column_df = pd.DataFrame(column_values)
+            
+            for PERCENTILE in PERCENTILES:
+                new_dataset_row[f"{column}_{PERCENTILE}%"] = column_df.quantile(PERCENTILE / 100)
+
+        new_dataset_row_df = pd.DataFrame(
+            [new_dataset_row]
+        )
+
+        dataset_df = pd.concat(
+            [dataset_df, new_dataset_row_df],
+            axis = 0,
+            ignore_index = True
+        )
+
+    dataset_df.to_csv(filename, index=False)
+    logger.info(
+        f"Dataset writtent to {filename}"
+    )
 
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
