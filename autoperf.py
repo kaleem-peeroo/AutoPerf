@@ -1996,7 +1996,7 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
             )
             return None
 
-    os.makedirs(sumaries_dirpath, exist_ok=True)
+    os.makedirs(summaries_dirpath, exist_ok=True)
 
     test_dirpaths = [os.path.join(dirpath, _) for _ in os.listdir(dirpath)]
     test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
