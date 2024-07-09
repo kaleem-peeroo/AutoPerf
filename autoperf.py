@@ -2123,7 +2123,7 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0):
 
     dataset_df.to_csv(filename, index=False)
     logger.info(
-        f"Dataset writtent to {filename}"
+        f"Dataset written to {filename}"
     )
 
 def main(sys_args: list[str] = []) -> None:
