@@ -2038,7 +2038,7 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
         subs_df = get_subs_df_from_sub_files(sub_csv_files)
         
         df_list = [pub_df, subs_df]
-        df = pd.concat(df_list, axis=1)
+        df = pd.concat(df_list, axis=1, ignore_index=True)
         df.to_csv(
             os.path.join(
                 summaries_dirpath,
@@ -2102,14 +2102,14 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0):
             value_count = len(column_values)
 
             values_to_truncate = int(
-                truncation_percent * (100 / value_count)
+                value_count * (truncation_percent / 100)
             )
 
             column_values = test_df[column].iloc[values_to_truncate:]
             column_df = pd.DataFrame(column_values)
             
             for PERCENTILE in PERCENTILES:
-                new_dataset_row[f"{column}_{PERCENTILE}%"] = column_df.quantile(PERCENTILE / 100)
+                new_dataset_row[f"{column}_{PERCENTILE}%"] = column_df.quantile(PERCENTILE / 100).values[0]
 
         new_dataset_row_df = pd.DataFrame(
             [new_dataset_row]
