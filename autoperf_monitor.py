@@ -1174,6 +1174,141 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0):
         f"Dataset writtent to {filename}"
     )
 
+def run_command_via_ssh(machine_config: Dict = {}, command: str = "") -> Optional[str]:
+    if machine_config == {}:
+        logger.error(
+            f"No machine config passed."
+        )
+        return None
+
+    if command == "":
+        logger.error(
+            f"No command passed."
+        )
+        return None
+
+    machine_name = machine_config['name']
+    machine_ip = machine_config['ip']
+    username = machine_config['username']
+    ssh_key = machine_config['ssh_key_path']
+
+    logger.debug(
+        f"Running {command} on {machine_name} ({machine_ip})."
+    )
+
+    if not ping_machine(machine_ip):
+        logger.error(
+            f"Couldn't ping {machine_name} ({machine_ip})."
+        )
+        return None
+
+    if not check_ssh_connection(machine_config):
+        logger.error(
+            f"Couldn't SSH into {machine_name} ({machine_ip})."
+        )
+        return None
+
+    ssh_command = f"ssh -i {ssh_key} {username}@{machine_ip} '{command}'"
+    command_process = subprocess.Popen(
+        ssh_command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    stdout, stderr = command_process.communicate(timeout=30)
+    stdout = stdout.decode('utf-8').strip()
+    stderr = stderr.decode('utf-8').strip()
+
+    if command_process.returncode != 0:
+        logger.error(
+            f"Error running {command} over SSH on {machine_name}: {stderr}"
+        )
+        return None
+
+    return stdout
+
+def get_latest_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
+    if machine_config == {}:
+        logger.error(
+            f"No machine config passed."
+        )
+        return None
+
+    last_autoperf_command = "tail -n 50 ~/.bash_history | grep \"python autoperf.py\" | tail -n 1"
+    last_autoperf_output = run_command_via_ssh(
+        machine_config,
+        last_autoperf_command
+    )
+
+    if last_autoperf_output is None:
+        logger.error(
+            f"Couldn't get last autoperf command from {machine_config['name']} ({machine_config['ip']})."
+        )
+        return None
+
+    last_autoperf_output = last_autoperf_output.split()
+    if len(last_autoperf_output) == 0:
+        logger.error(
+            f"No autoperf commands found on {machine_config['name']} ({machine_config['ip']})."
+        )
+        return None
+
+    last_autoperf_output = last_autoperf_output[-1]
+    config_file_used = last_autoperf_output.split("autoperf.py")
+    if len(config_file_used) == 0:
+        logger.error(
+            f"No autoperf commands found on {machine_config['name']} ({machine_config['ip']})."
+        )
+        return None
+
+    config_file_used = config_file_used[-1].strip()
+
+    print(config_file_used)
+    config_filepath = os.path.join("~/AutoPerf", config_file_used)
+
+    read_config_command = f"cat {config_filepath}"
+    config_contents = run_command_via_ssh(
+        machine_config,
+        read_config_command
+    )
+    if config_contents is None:
+        logger.error(
+            f"Couldn't read config file from {machine_config['name']} ({machine_config['ip']})."
+        )
+        return None
+
+    config_dict = json.loads(config_contents)
+    if config_dict is None:
+        logger.error(
+            f"Couldn't parse config file from {machine_config['name']} ({machine_config['ip']})."
+        )
+        return None
+
+    return config_dict
+
+def get_experiments_from_configs(machine_config: Dict = {}) -> Optional[List[Dict]]:
+    if machine_config == {}:
+        logger.error(
+            f"No machine config passed."
+        )
+        return None
+
+    machine_name = machine_config['name']
+    machine_ip = machine_config['ip']
+
+    logger.debug(
+        f"Getting experiments from {machine_name} ({machine_ip})."
+    )
+
+    ap_config = get_latest_config_from_machine(machine_config)
+    if ap_config is None:
+        logger.error(
+            f"Couldn't get latest config from {machine_name} ({machine_ip})."
+        )
+        return None
+
+    pprint(ap_config)
+    
 def monitor_ongoing_tests(machine_config: Dict = {}) -> Optional[None]:
     if machine_config == {}:
         logger.error(
@@ -1193,6 +1328,41 @@ def monitor_ongoing_tests(machine_config: Dict = {}) -> Optional[None]:
             f"Couldn't ping {machine_name} ({machine_ip})."
         )
         return None
+
+    if not check_ssh_connection(machine_config):
+        logger.error(
+            f"Couldn't SSH into {machine_name} ({machine_ip})."
+        )
+        return None
+
+    """
+    What to do?
+    - Get a list of expected experiments from configs
+    - Of those experiments find out the following:
+        - how many tests are in the experiment?
+        - how many tests have been completed?
+        - if all tests have completed
+            - do the zip results exist?
+            - have the tests been summarised?
+            - have the datasets been created?
+        - get the last n test statuses from the ESS
+
+    Example output:
+    [
+        {
+            "name": "test pcg 1",
+            "expected_test_count": 1024,
+            "completed_test_count": 1024,
+            "zip_results_exist": True,
+            "summarised": True,
+            "datasets_created": True,
+            "last_n_test_statuses": "🟢🔴"
+        }
+    ]
+    """
+
+    last_config = get_latest_config_from_machine(machine_config)
+    configured_experiments = get_experiments_from_configs(machine_config)
 
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
