@@ -19,13 +19,17 @@ from typing import Dict, List, Optional
 from pprint import pprint
 from multiprocessing import Process, Manager
 from rich.progress import track
+from rich.table import Table
+from rich.console import Console
+from io import StringIO
+
+console = Console()
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
-DEBUG_MODE = True
-SKIP_RESTART = True
+DEBUG_MODE = False
 
 # Set up logging
 logging.basicConfig(
@@ -1220,10 +1224,11 @@ def run_command_via_ssh(machine_config: Dict = {}, command: str = "") -> Optiona
     stderr = stderr.decode('utf-8').strip()
 
     if command_process.returncode != 0:
-        logger.error(
-            f"Error running {command} over SSH on {machine_name}: {stderr}"
-        )
-        return None
+        if "No such file or directory" not in stderr:
+            logger.error(
+                f"Error running {command} over SSH on {machine_name}: {stderr}"
+            )
+            return None
 
     return stdout
 
@@ -1363,7 +1368,78 @@ def calculate_completed_tests_for_experiments(config: Dict = {}, machine_config:
 
     return config
 
-def monitor_ongoing_tests(machine_config: Dict = {}) -> Optional[None]:
+def check_for_zip_results(config: Dict = {}, machine_config: Dict = {}) -> Optional[Dict]:
+    # TODO: Validate parameters
+    # TODO: Write unit tests for this function
+
+    for experiment in config:
+        experiment_dirname = get_dirname_from_experiment(experiment)
+        if experiment_dirname is None:
+            logger.error(
+                f"Couldn't get experiment dirname for {experiment['experiment_name']}."
+            )
+            continue
+
+        experiment_zip_filepath = os.path.join("~/AutoPerf", f"{experiment_dirname}.zip")
+        check_zip_exists_command = f"ls {experiment_zip_filepath}"
+        check_zip_exists_output = run_command_via_ssh(
+            machine_config,
+            check_zip_exists_command
+        )
+        if check_zip_exists_output is None:
+            experiment['zip_results_exist'] = False
+            continue
+
+        if "No such file or directory" in check_zip_exists_output:
+            experiment['zip_results_exist'] = False
+        else:
+            experiment['zip_results_exist'] = True
+
+    return config
+
+def get_ess_df_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> Optional[Dict]:
+    # TODO: Validate parameters
+    # TODO: Write unit tests for this function
+
+    for experiment in config:
+        experiment_dirname = get_dirname_from_experiment(experiment)
+        if experiment_dirname is None:
+            logger.error(
+                f"Couldn't get experiment dirname for {experiment['experiment_name']}."
+            )
+            continue
+
+        ess_filepath = os.path.join("~/AutoPerf", experiment_dirname, "ess.csv")
+        check_ess_exists_command = f"ls {ess_filepath}"
+        check_ess_exists_output = run_command_via_ssh(
+            machine_config,
+            check_ess_exists_command
+        )
+        if check_ess_exists_output is None:
+            experiment['ess_df'] = None
+            continue
+
+        if "No such file or directory" in check_ess_exists_output:
+            experiment['ess_df'] = None
+            continue
+
+        ess_file_cat_command = f"cat {ess_filepath}"
+        ess_file_cat_output = run_command_via_ssh(
+            machine_config,
+            ess_file_cat_command
+        )
+        if ess_file_cat_output is None:
+            experiment['ess_df'] = None
+            continue
+
+        ess_file_contents = StringIO(ess_file_cat_output)
+        ess_df = pd.read_csv(ess_file_contents)
+        
+        experiment['ess_df'] = ess_df
+
+    return config
+
+def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[None]:
     if machine_config == {}:
         logger.error(
             f"No machine config passed."
@@ -1378,47 +1454,93 @@ def monitor_ongoing_tests(machine_config: Dict = {}) -> Optional[None]:
     )
 
     """
-    What to do?
-    - Get a list of expected experiments from configs
-    - Of those experiments find out the following:
-        - how many tests are in the experiment?
-        - how many tests have been completed?
-        - if all tests have completed
-            - do the zip results exist?
-            - have the tests been summarised?
-            - have the datasets been created?
-        - get the last n test statuses from the ESS
-
-    Example output:
-    [
-        {
-            "name": "test pcg 1",
-            "expected_test_count": 1024,
-            "completed_test_count": 1024,
-            "zip_results_exist": True,
-            "summarised": True,
-            "datasets_created": True,
-            "last_n_test_statuses": "🟢🔴"
-        }
-    ]
+    - Get latest config from machine
+    - Calculate target test count for experiments
+    - Calculate completed tests for experiments
+    - Check for zip results
+    - Get ESS for experiments
     """
 
-    ap_config = get_latest_config_from_machine(machine_config)
-    if ap_config is None:
-        logger.error(
-            f"Couldn't get latest config from {machine_name} ({machine_ip})."
+    with console.status(f"Getting latest config from {machine_name} ({machine_ip})...") as status:
+        ap_config = get_latest_config_from_machine(machine_config)
+        if ap_config is None:
+            logger.error(
+                f"Couldn't get latest config from {machine_name} ({machine_ip})."
+            )
+            return
+
+        status.update(f"Calculating target test count for experiments on {machine_name} ({machine_ip})...")
+        ap_config = calculate_target_test_count_for_experiments(ap_config)
+        if ap_config is None:
+            logger.error(
+                f"Couldn't calculate target test count for experiments."
+            )
+            return
+
+        status.update(f"Counting completed tests for experiments on {machine_name} ({machine_ip})...")
+        ap_config = calculate_completed_tests_for_experiments(ap_config, machine_config)
+        if ap_config is None:
+            logger.error(
+                f"Couldn't calculate completed tests for experiments."
+            )
+            return
+
+        status.update(f"Checking for zip results for experiments on {machine_name} ({machine_ip})...")
+        ap_config = check_for_zip_results(ap_config, machine_config)
+        if ap_config is None:
+            logger.error(
+                f"Couldn't check for zip results for experiments."
+            )
+            return
+
+        status.update(f"Getting ESS for experiments on {machine_name} ({machine_ip})...")
+        ap_config = get_ess_df_for_experiments(ap_config, machine_config)
+        if ap_config is None:
+            logger.error(
+                f"Couldn't get ESS for experiments."
+            )
+            return
+
+    return ap_config
+
+def display_experiments_overview_table(ongoing_info: Dict = {}) -> Optional[None]:
+    # TODO: Validate parameters
+
+    table = Table(title="Experiments Overview")
+    table.add_column("Experiment Name", style="bold")
+    table.add_column("Count", style="bold")
+    # table.add_column("Zip Results Exist", style="bold")
+
+    for experiment in ongoing_info:
+        experiment_name = experiment['experiment_name']
+        target_test_count = experiment['target_test_count']
+        completed_test_count = len(experiment['completed_tests'])
+        zip_results_exist = experiment['zip_results_exist']
+
+        if zip_results_exist:
+            zip_colour = "green"
+        else:
+            zip_colour = "white"
+
+        table.add_row(
+            experiment_name,
+            f"[{zip_colour}]{completed_test_count} / {target_test_count}[/{zip_colour}]"
         )
-        return
 
-    ap_config = calculate_target_test_count_for_experiments(ap_config)
-    if ap_config is None:
-        logger.error(
-            f"Couldn't calculate target test count for experiments."
-        )
-        return
+    console.print(table)
+        
+def display_experiments_details_table(ongoing_info: Dict = {}) -> Optional[None]:
+    # TODO: Validate parameters
 
-    ap_config = calculate_completed_tests_for_experiments(ap_config, machine_config)
+    return
 
+def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
+    # TODO: Validate parameters
+    
+    display_experiments_overview_table(ongoing_info)
+
+    display_experiments_details_table(ongoing_info)
+    
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
         logger.error(
@@ -1443,7 +1565,14 @@ def main(sys_args: list[str] = []) -> None:
         return None
 
     for MACHINE_CONFIG in CONFIG:
-        monitor_ongoing_tests(MACHINE_CONFIG)
+        ongoing_info = get_ongoing_info_from_machine(MACHINE_CONFIG)
+        if ongoing_info is None:
+            logger.error(
+                f"Couldn't get ongoing info from {MACHINE_CONFIG['name']} ({MACHINE_CONFIG['ip']})."
+            )
+            continue
+
+        display_as_table(ongoing_info)
 
 if __name__ == "__main__":
     if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
