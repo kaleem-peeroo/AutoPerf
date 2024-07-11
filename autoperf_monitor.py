@@ -29,7 +29,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 # Set up logging
 logging.basicConfig(
@@ -57,6 +57,17 @@ REQUIRED_MACHINE_KEYS = [
     'ip',
     'username',
     'ssh_key_path',
+]
+
+REQUIRED_QOS_KEYS = [
+    "datalen_bytes",
+    'durability_level',
+    'duration_secs',
+    'latency_count',
+    'pub_count',
+    'sub_count',
+    'use_multicast',
+    'use_reliable'
 ]
 
 PERCENTILES = [
@@ -1266,6 +1277,10 @@ def get_latest_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
         return None
 
     config_file_used = config_file_used[-1].strip()
+    
+    logger.debug(
+        f"Using config file: {config_file_used}"
+    )
 
     config_filepath = os.path.join("~/AutoPerf", config_file_used)
 
@@ -1289,14 +1304,63 @@ def get_latest_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     return config_dict
 
+def generate_combinations_from_qos(qos: Optional[Dict] = None) -> Optional[List]:
+    if qos is None:
+        logger.error(
+            f"No QoS passed."
+        )
+        return None
+
+
+    keys = qos.keys()
+    if len(keys) == 0:
+        logger.error(
+            f"No options found for qos"
+        )
+        return None
+
+    for key in keys:
+        if key not in REQUIRED_QOS_KEYS:
+            logger.error(
+                f"Found an unexpected QoS setting: {key}"
+            )
+            return None
+
+    values = qos.values()
+    if len(values) == 0:
+        logger.error(
+            f"No values found for qos"
+        )
+        return None
+    for value in values:
+        if len(value) == 0:
+            logger.error(
+                f"One of the settings has no values."
+            )
+            return None
+
+    combinations = list(itertools.product(*values))
+    combination_dicts = [dict(zip(keys, combination)) for combination in combinations]
+
+    return combination_dicts
+
+
 def calculate_pcg_target_test_count(experiment_config: Dict = {}) -> Optional[int]:
     # TODO: Validate parameters
     # TODO: Write unit tests for this function
     # TODO: Implement this function.
 
-    qos = experiment_config['qos']
-    pprint(experiment_config)
+    qos = experiment_config['qos_settings']
+    combinations = generate_combinations_from_qos(qos)
+    if combinations is None:
+        logger.error(
+            f"Couldn't get combinations from qos."
+        )
+        return None
 
+    target_test_count = len(combinations)
+    return target_test_count
+   
 def calculate_target_test_count_for_experiments(config: Dict = {}) -> Optional[Dict]:
     # TODO: Validate parameters
     # TODO: Write unit tests for this function
