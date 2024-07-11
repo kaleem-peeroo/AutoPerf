@@ -1239,7 +1239,6 @@ def get_latest_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
         machine_config,
         last_autoperf_command
     )
-
     if last_autoperf_output is None:
         logger.error(
             f"Couldn't get last autoperf command from {machine_config['name']} ({machine_config['ip']})."
@@ -1286,29 +1285,35 @@ def get_latest_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     return config_dict
 
-def get_experiments_from_configs(machine_config: Dict = {}) -> Optional[List[Dict]]:
-    if machine_config == {}:
-        logger.error(
-            f"No machine config passed."
-        )
-        return None
+def calculate_pcg_target_test_count(experiment_config: Dict = {}) -> Optional[int]:
+    # TODO: Validate parameters
+    # TODO: Write unit tests for this function
+    # TODO: Implement this function.
 
-    machine_name = machine_config['name']
-    machine_ip = machine_config['ip']
+    qos = experiment_config['qos']
+    pprint(experiment_config)
 
-    logger.debug(
-        f"Getting experiments from {machine_name} ({machine_ip})."
-    )
+def calculate_target_test_count_for_experiments(config: Dict = {}) -> Optional[Dict]:
+    # TODO: Validate parameters
+    # TODO: Write unit tests for this function
 
-    ap_config = get_latest_config_from_machine(machine_config)
-    if ap_config is None:
-        logger.error(
-            f"Couldn't get latest config from {machine_name} ({machine_ip})."
-        )
-        return None
+    for experiment in config:
+        is_pcg = experiment['combination_generation_type'] == "pcg"
 
-    pprint(ap_config)
-    
+        if not is_pcg:
+            experiment['target_test_count'] = experiment['rcg_target_test_count']
+        else:
+            experiment['target_test_count'] = calculate_pcg_target_test_count(experiment)
+
+    return config
+   
+def calculate_completed_test_count_for_experiments(config: Dict = {}) -> Optional[Dict]:
+    # TODO: Validate parameters
+    # TODO: Write unit tests for this function
+    # TOOD: Implement this function
+
+    return 
+
 def monitor_ongoing_tests(machine_config: Dict = {}) -> Optional[None]:
     if machine_config == {}:
         logger.error(
@@ -1322,18 +1327,6 @@ def monitor_ongoing_tests(machine_config: Dict = {}) -> Optional[None]:
     logger.debug(
         f"Monitoring ongoing tests on {machine_name} ({machine_ip})."
     )
-
-    if not ping_machine(machine_ip):
-        logger.error(
-            f"Couldn't ping {machine_name} ({machine_ip})."
-        )
-        return None
-
-    if not check_ssh_connection(machine_config):
-        logger.error(
-            f"Couldn't SSH into {machine_name} ({machine_ip})."
-        )
-        return None
 
     """
     What to do?
@@ -1360,9 +1353,21 @@ def monitor_ongoing_tests(machine_config: Dict = {}) -> Optional[None]:
         }
     ]
     """
+    config = get_latest_config_from_machine(machine_config)
+    if config is None:
+        logger.error(
+            f"Couldn't get latest config from {machine_name} ({machine_ip})."
+        )
+        return None
 
-    last_config = get_latest_config_from_machine(machine_config)
-    configured_experiments = get_experiments_from_configs(machine_config)
+    config = calculate_target_test_count_for_experiments(config)
+    if config is None:
+        logger.error(
+            f"Couldn't calculate target test count for experiments."
+        )
+        return None
+
+    config =  calculate_completed_test_count_for_experiments(config)
 
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
