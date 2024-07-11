@@ -29,7 +29,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 # Set up logging
 logging.basicConfig(
