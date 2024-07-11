@@ -1440,7 +1440,14 @@ def get_ess_df_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> 
             continue
 
         ess_file_contents = StringIO(ess_file_cat_output)
-        ess_df = pd.read_csv(ess_file_contents)
+        try:
+            ess_df = pd.read_csv(ess_file_contents)
+        except pd.errors.EmptyDataError:
+            experiment['ess_df'] = None
+            continue
+        except pd.errors.ParserError:
+            experiment['ess_df'] = None
+            continue
         
         experiment['ess_df'] = ess_df
 
