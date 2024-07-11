@@ -1513,6 +1513,8 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[None]:
 def display_experiments_overview_table(ongoing_info: Dict = {}) -> Optional[None]:
     # TODO: Validate parameters
 
+    console.print(f"Legend: [green]Completed[/green]")
+
     table = Table(title="Experiments Overview")
     table.add_column("Experiment Name", style="bold")
     table.add_column("Count", style="bold")
@@ -1524,13 +1526,13 @@ def display_experiments_overview_table(ongoing_info: Dict = {}) -> Optional[None
         zip_results_exist = experiment['zip_results_exist']
 
         if zip_results_exist:
-            zip_colour = "green"
+            completed_colour = "green"
         else:
-            zip_colour = "white"
+            completed_colour = "white"
 
         table.add_row(
-            experiment_name,
-            f"[{zip_colour}]{completed_test_count} / {target_test_count}[/{zip_colour}]"
+            f"[{completed_colour}]{experiment_name}[/{completed_colour}]",
+            f"[{completed_colour}]{completed_test_count} / {target_test_count}[/{completed_colour}]"
         )
 
     console.print(table)
