@@ -1372,6 +1372,20 @@ def check_for_zip_results(config: Dict = {}, machine_config: Dict = {}) -> Optio
     # TODO: Validate parameters
     # TODO: Write unit tests for this function
 
+    get_zips_command = "ls ~/AutoPerf/data/*.zip"
+    get_zips_output = run_command_via_ssh(
+        machine_config,
+        get_zips_command
+    )
+    if get_zips_output is None:
+        logger.error(
+            f"Couldn't get zip files from {machine_config['name']} ({machine_config['ip']})."
+        )
+        return None
+
+    zips = get_zips_output.split()
+    zips = [os.path.basename(_) for _ in zips]
+
     for experiment in config:
         experiment_dirname = get_dirname_from_experiment(experiment)
         if experiment_dirname is None:
@@ -1380,17 +1394,10 @@ def check_for_zip_results(config: Dict = {}, machine_config: Dict = {}) -> Optio
             )
             continue
 
-        experiment_zip_filepath = os.path.join("~/AutoPerf", f"{experiment_dirname}.zip")
-        check_zip_exists_command = f"ls {experiment_zip_filepath}"
-        check_zip_exists_output = run_command_via_ssh(
-            machine_config,
-            check_zip_exists_command
-        )
-        if check_zip_exists_output is None:
-            experiment['zip_results_exist'] = False
-            continue
+        experiment_name = os.path.basename(experiment_dirname)
+        experiment_zip_filename = f"{experiment_name}.zip"
 
-        if "No such file or directory" in check_zip_exists_output:
+        if experiment_zip_filename not in zips:
             experiment['zip_results_exist'] = False
         else:
             experiment['zip_results_exist'] = True
@@ -1509,7 +1516,6 @@ def display_experiments_overview_table(ongoing_info: Dict = {}) -> Optional[None
     table = Table(title="Experiments Overview")
     table.add_column("Experiment Name", style="bold")
     table.add_column("Count", style="bold")
-    # table.add_column("Zip Results Exist", style="bold")
 
     for experiment in ongoing_info:
         experiment_name = experiment['experiment_name']
