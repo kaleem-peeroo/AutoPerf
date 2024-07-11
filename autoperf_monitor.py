@@ -69,9 +69,9 @@ def ping_machine(ip: str = "") -> Optional[bool]:
         )
         return None
 
-    logger.debug(
-        f"Pinging {ip}"
-    )
+    # logger.debug(
+    #     f"Pinging {ip}"
+    # )
 
     response = os.system(f"ping -c 1 {ip} > /dev/null 2>&1")
 
@@ -91,9 +91,9 @@ def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
     username = machine_config['username']
     ip = machine_config['ip']
 
-    logger.debug(
-        f"Checking SSH connection to {username}@{ip}"
-    )
+    # logger.debug(
+    #     f"Checking SSH connection to {username}@{ip}"
+    # )
 
     response = os.system(f"ssh -i {ssh_key_path} {username}@{ip} 'echo \"SSH connection successful.\"' > /dev/null 2>&1")
 
@@ -1262,7 +1262,6 @@ def get_latest_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     config_file_used = config_file_used[-1].strip()
 
-    print(config_file_used)
     config_filepath = os.path.join("~/AutoPerf", config_file_used)
 
     read_config_command = f"cat {config_filepath}"
@@ -1306,13 +1305,63 @@ def calculate_target_test_count_for_experiments(config: Dict = {}) -> Optional[D
             experiment['target_test_count'] = calculate_pcg_target_test_count(experiment)
 
     return config
+
+def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[str]:
+    if experiment is None:
+        logger.error(
+            f"No experiment config passed."
+        )
+        return None
+
+    experiment_name = experiment['experiment_name']
+    experiment_dirname = get_valid_dirname(experiment_name)
+    if experiment_dirname is None:
+        logger.error(
+            f"Couldn't get valid dirname for {experiment_name}."
+        )
+        return None
+    experiment_dirname = os.path.join("data", experiment_dirname)
+
+    return experiment_dirname
+
    
-def calculate_completed_test_count_for_experiments(config: Dict = {}) -> Optional[Dict]:
+def calculate_completed_tests_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> Optional[Dict]:
     # TODO: Validate parameters
     # TODO: Write unit tests for this function
-    # TOOD: Implement this function
 
-    return 
+    for experiment in config:
+        experiment_dirname = get_dirname_from_experiment(experiment)
+        if experiment_dirname is None:
+            logger.error(
+                f"Couldn't get experiment dirname for {experiment['experiment_name']}."
+            )
+            continue
+
+        experiment_dirname = os.path.join("~/AutoPerf", experiment_dirname)
+
+        check_dir_exists_command = f"ls {experiment_dirname}"
+        check_dir_exists_output = run_command_via_ssh(
+            machine_config, 
+            check_dir_exists_command
+        )
+        if check_dir_exists_output is None:
+            logger.error(
+                f"Couldn't check if {experiment_dirname} exists on {machine_config['name']} ({machine_config['ip']})."
+            )
+            continue
+
+        if "No such file or directory" in check_dir_exists_output:
+            logger.error(
+                f"{experiment_dirname} doesn't exist on {machine_config['name']} ({machine_config['ip']})."
+            )
+            continue
+
+        dir_contents = check_dir_exists_output.split()        
+        dir_contents = [_ for _ in dir_contents if not _.endswith(".csv") and not _.startswith("summarised_data")]
+        
+        experiment['completed_tests'] = dir_contents
+
+    return config
 
 def monitor_ongoing_tests(machine_config: Dict = {}) -> Optional[None]:
     if machine_config == {}:
@@ -1353,21 +1402,22 @@ def monitor_ongoing_tests(machine_config: Dict = {}) -> Optional[None]:
         }
     ]
     """
-    config = get_latest_config_from_machine(machine_config)
-    if config is None:
+
+    ap_config = get_latest_config_from_machine(machine_config)
+    if ap_config is None:
         logger.error(
             f"Couldn't get latest config from {machine_name} ({machine_ip})."
         )
-        return None
+        return
 
-    config = calculate_target_test_count_for_experiments(config)
-    if config is None:
+    ap_config = calculate_target_test_count_for_experiments(ap_config)
+    if ap_config is None:
         logger.error(
             f"Couldn't calculate target test count for experiments."
         )
-        return None
+        return
 
-    config =  calculate_completed_test_count_for_experiments(config)
+    ap_config = calculate_completed_tests_for_experiments(ap_config, machine_config)
 
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
