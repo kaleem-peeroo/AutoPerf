@@ -613,8 +613,43 @@ class TestAutoPerf(unittest.TestCase):
             )
 
     def test_get_shorter_list(self):
-        # TODO
-        pass
+        test_cases = [
+            {
+                'list1': [1, 2, 3],
+                'list2': [],
+                'expected_output': []
+            },
+            {
+                'list1': [],
+                'list2': [1, 2, 3],
+                'expected_output': []
+            },
+            {
+                'list1': [1, 2, 3],
+                'list2': [1, 2, 3],
+                'expected_output': [1, 2, 3]
+            },
+            {
+                'list1': [1, 2, 3],
+                'list2': [1, 2, 3, 4],
+                'expected_output': [1, 2, 3]
+            },
+            {
+                'list1': [],
+                'list2': [],
+                'expected_output': []
+            }
+
+        ]
+
+        for test_case in test_cases:
+            list1 = test_case['list1']
+            list2 = test_case['list2']
+            expected_output = test_case['expected_output']
+            self.assertEqual(
+                ap.get_shorter_list(list1, list2),
+                expected_output
+            )
 
     def test_check_ssh_connection(self):
         # TODO
