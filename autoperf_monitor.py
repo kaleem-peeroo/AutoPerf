@@ -1581,6 +1581,43 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[None]:
 
     return ap_config
 
+def get_status_percentage_from_ess_df(ess_df: pd.DataFrame = None, status: str = "") -> Optional[float]:
+    if ess_df is None:
+        logger.error(
+            f"No ESS DataFrame passed."
+        )
+        return None
+
+    if ess_df.empty:
+        logger.error(
+            f"ESS DataFrame is empty."
+        )
+        return None
+
+    if status == "":
+        logger.error(
+            f"No status passed."
+        )
+        return None
+
+    if status not in ["success", "fail"]:
+        logger.error(
+            f"Invalid status passed."
+        )
+        return None
+
+    print(ess_df['end_status'].unique())
+    if status == "success":
+        chosen_tests = ess_df[ess_df['end_status'] == status]
+    else:
+        chosen_tests = ess_df[ess_df['end_status'].str.contains(status)]
+    chosest_test_count = len(chosen_tests.index)
+    total_test_count = len(ess_df.index)
+
+    status_percent = (chosest_test_count / total_test_count) * 100
+    status_percent = round(status_percent, 1)
+    return status_percent
+
 def display_experiments_overview_table(ongoing_info: Dict = {}) -> Optional[None]:
     # TODO: Validate parameters
 
@@ -1589,12 +1626,16 @@ def display_experiments_overview_table(ongoing_info: Dict = {}) -> Optional[None
     table = Table(title="Experiments Overview")
     table.add_column("Experiment Name", style="bold")
     table.add_column("Count", style="bold")
+    table.add_column("Status", style="bold")
 
     for experiment in ongoing_info:
         experiment_name = experiment['experiment_name']
         target_test_count = experiment['target_test_count']
         completed_test_count = len(experiment['completed_tests'])
         zip_results_exist = experiment['zip_results_exist']
+
+        failed_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "fail")
+        succes_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "success")
 
         if zip_results_exist:
             completed_colour = "green"
@@ -1603,22 +1644,16 @@ def display_experiments_overview_table(ongoing_info: Dict = {}) -> Optional[None
 
         table.add_row(
             f"[{completed_colour}]{experiment_name}[/{completed_colour}]",
-            f"[{completed_colour}]{completed_test_count} / {target_test_count}[/{completed_colour}]"
+            f"[{completed_colour}]{completed_test_count} / {target_test_count}[/{completed_colour}]",
+            f"[green]{succes_percent}%[/green] [red]{failed_percent}%[/red]"
         )
 
     console.print(table)
         
-def display_experiments_details_table(ongoing_info: Dict = {}) -> Optional[None]:
-    # TODO: Validate parameters
-
-    return
-
 def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     # TODO: Validate parameters
     
     display_experiments_overview_table(ongoing_info)
-
-    display_experiments_details_table(ongoing_info)
     
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
