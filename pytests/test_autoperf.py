@@ -651,14 +651,12 @@ class TestAutoPerf(unittest.TestCase):
                 expected_output
             )
 
-    def test_check_ssh_connection(self):
-        # TODO
-        pass
-
     def test_ping_machine(self):
-        # TODO
-        pass
-
+        self.assertEqual(
+            ap.ping_machine('www.google.com'),
+            True
+        )
+        
     def test_generate_scripts_from_qos_config(self):
         qos_config = {
             'datalen_bytes': 100,
