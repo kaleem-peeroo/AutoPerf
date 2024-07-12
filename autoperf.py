@@ -2259,6 +2259,7 @@ def main(sys_args: list[str] = []) -> None:
                 continue
 
             remaining_test_count = target_test_count - ess_df_row_count
+            completed_test_count = ess_df_row_count
 
             for i in range(remaining_test_count):
                 ess_df = get_ess_df(ESS_FILEPATH)
@@ -2279,7 +2280,7 @@ def main(sys_args: list[str] = []) -> None:
                     continue
 
                 # Run test
-                logger.info(f"[{i + 1}/{target_test_count}] Running test {test_name}...")
+                logger.info(f"[{completed_test_count + i + 1}/{target_test_count}] Running test {test_name}...")
                 ess_df = run_test(
                     test_config,
                     EXPERIMENT['slave_machines'],
