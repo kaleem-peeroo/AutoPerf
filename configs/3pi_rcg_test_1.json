@@ -1,12 +1,12 @@
 [{
-  "experiment_name": "RCG Test 1",
+  "experiment_name": "DevTest RCG 100 1Min Tests",
   "combination_generation_type": "rcg",
-  "rcg_target_test_count": 1,
+  "rcg_target_test_count": 100,
   "qos_settings": {
-    "duration_secs": [10],
-    "datalen_bytes": [100],
-    "pub_count": [1, 20],
-    "sub_count": [1, 20],
+    "duration_secs": [60],
+    "datalen_bytes": [1, 1000000],
+    "pub_count": [1, 25],
+    "sub_count": [1, 25],
     "use_reliable": [true, false],
     "use_multicast": [true, false],
     "durability_level": [0, 3],

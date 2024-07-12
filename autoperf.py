@@ -24,8 +24,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
-DEBUG_MODE = True
-SKIP_RESTART = True
+DEBUG_MODE = False
+SKIP_RESTART = False
 
 # Set up logging
 logging.basicConfig(
