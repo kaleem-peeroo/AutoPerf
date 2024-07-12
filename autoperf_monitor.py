@@ -1582,6 +1582,8 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[None]:
     return ap_config
 
 def get_status_percentage_from_ess_df(ess_df: pd.DataFrame = None, status: str = "") -> Optional[float]:
+    # TODO: Write unit tests
+
     if ess_df is None:
         logger.error(
             f"No ESS DataFrame passed."
@@ -1606,7 +1608,6 @@ def get_status_percentage_from_ess_df(ess_df: pd.DataFrame = None, status: str =
         )
         return None
 
-    print(ess_df['end_status'].unique())
     if status == "success":
         chosen_tests = ess_df[ess_df['end_status'] == status]
     else:
@@ -1618,15 +1619,58 @@ def get_status_percentage_from_ess_df(ess_df: pd.DataFrame = None, status: str =
     status_percent = round(status_percent, 1)
     return status_percent
 
+def get_last_n_statuses_from_ess_df(ess_df: pd.DataFrame = None, n: int = 0) -> Optional[str]:
+    # TODO: Write unit tests
+
+    if ess_df is None:
+        logger.error(
+            f"No ESS DataFrame passed."
+        )
+        return None
+
+    if ess_df.empty:
+        logger.error(
+            f"ESS DataFrame is empty."
+        )
+        return None
+
+    if n == 0:
+        logger.error(
+            f"No n passed."
+        )
+        return None
+
+    if n < 0:
+        logger.error(
+            f"Invalid n passed."
+        )
+        return None
+
+    last_n_statuses = ess_df['end_status'].tail(n)
+    last_n_statuses_output = ""
+    for status in last_n_statuses:
+        if "success" in status:
+            last_n_statuses_output += "🟢"
+        else:
+            last_n_statuses_output += "🔴"
+
+    # Add a line break after every 20
+    last_n_statuses_output = "\n".join(
+        last_n_statuses_output[i:i+20] for i in range(0, len(last_n_statuses_output), 20)
+    )
+
+    return last_n_statuses_output
+
 def display_experiments_overview_table(ongoing_info: Dict = {}) -> Optional[None]:
     # TODO: Validate parameters
 
     console.print(f"Legend: [green]Completed[/green]")
 
-    table = Table(title="Experiments Overview")
+    table = Table(title="Experiments Overview", show_lines=True)
     table.add_column("Experiment Name", style="bold")
     table.add_column("Count", style="bold")
     table.add_column("Status", style="bold")
+    table.add_column("Last 100 Statuses", style="bold")
 
     for experiment in ongoing_info:
         experiment_name = experiment['experiment_name']
@@ -1637,6 +1681,8 @@ def display_experiments_overview_table(ongoing_info: Dict = {}) -> Optional[None
         failed_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "fail")
         succes_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "success")
 
+        last_n_statuses = get_last_n_statuses_from_ess_df(experiment['ess_df'], 100)
+
         if zip_results_exist:
             completed_colour = "green"
         else:
@@ -1645,7 +1691,8 @@ def display_experiments_overview_table(ongoing_info: Dict = {}) -> Optional[None
         table.add_row(
             f"[{completed_colour}]{experiment_name}[/{completed_colour}]",
             f"[{completed_colour}]{completed_test_count} / {target_test_count}[/{completed_colour}]",
-            f"[green]{succes_percent}%[/green] [red]{failed_percent}%[/red]"
+            f"[green]{succes_percent}%[/green] [red]{failed_percent}%[/red]",
+            last_n_statuses
         )
 
     console.print(table)
