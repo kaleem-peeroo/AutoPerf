@@ -1619,7 +1619,7 @@ def get_status_percentage_from_ess_df(ess_df: pd.DataFrame = None, status: str =
     status_percent = round(status_percent, 1)
     return status_percent
 
-def get_last_n_statuses_from_ess_df(ess_df: pd.DataFrame = None, n: int = 0) -> Optional[str]:
+def get_last_n_statuses_from_ess_df(ess_df: pd.DataFrame = None, n: int = 0, line_break_point: int = 20) -> Optional[str]:
     # TODO: Write unit tests
 
     if ess_df is None:
@@ -1646,6 +1646,12 @@ def get_last_n_statuses_from_ess_df(ess_df: pd.DataFrame = None, n: int = 0) -> 
         )
         return None
 
+    if line_break_point < 0:
+        logger.error(
+            f"Invalid line_break_point passed."
+        )
+        return None
+
     last_n_statuses = ess_df['end_status'].tail(n)
     last_n_statuses_output = ""
     for status in last_n_statuses:
@@ -1654,9 +1660,9 @@ def get_last_n_statuses_from_ess_df(ess_df: pd.DataFrame = None, n: int = 0) -> 
         else:
             last_n_statuses_output += "🔴"
 
-    # Add a line break after every 20
+    # Add a line break after every line_break_point
     last_n_statuses_output = "\n".join(
-        last_n_statuses_output[i:i+20] for i in range(0, len(last_n_statuses_output), 20)
+        last_n_statuses_output[i:i+line_break_point] for i in range(0, len(last_n_statuses_output), 20)
     )
 
     return last_n_statuses_output
@@ -1670,7 +1676,7 @@ def display_experiments_overview_table(ongoing_info: Dict = {}) -> Optional[None
     table.add_column("Experiment Name", style="bold")
     table.add_column("Count", style="bold")
     table.add_column("Status", style="bold")
-    table.add_column("Last 100 Statuses", style="bold")
+    table.add_column("Last 500 Statuses", style="bold")
 
     for experiment in ongoing_info:
         experiment_name = experiment['experiment_name']
@@ -1681,7 +1687,7 @@ def display_experiments_overview_table(ongoing_info: Dict = {}) -> Optional[None
         failed_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "fail")
         succes_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "success")
 
-        last_n_statuses = get_last_n_statuses_from_ess_df(experiment['ess_df'], 100)
+        last_n_statuses = get_last_n_statuses_from_ess_df(experiment['ess_df'], 500, 40)
 
         if zip_results_exist:
             completed_colour = "green"
