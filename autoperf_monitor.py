@@ -29,7 +29,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 # Set up logging
 logging.basicConfig(
@@ -774,6 +774,8 @@ def read_ap_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     if "~" not in config_path:
         config_path = os.path.join("~/AutoPerf", config_path)
+
+    console.print(f"Last config file used: {config_path}", style="bold green")
 
     read_config_command = f"cat {config_path}"
     config_contents = run_command_via_ssh(
