@@ -2019,7 +2019,7 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
 
         if expected_csv_file_count != actual_csv_file_count:
             logger.warning(
-                f"Skipping {test_name} because its missing {expect_csv_file_count - actual_csv_file_count} files"
+                f"Skipping {test_name} because its missing {expected_csv_file_count - actual_csv_file_count} files"
             )
             continue
 
