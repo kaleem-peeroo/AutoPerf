@@ -3,6 +3,7 @@
     "name": "3pi",
     "ip": "10.210.44.247",
     "ssh_key_path": "~/.ssh/id_rsa",
-    "username": "acwh025"
+    "username": "acwh025",
+    "config_path": "./configs/3pi_mcast_exploration.json"
   }
 ]

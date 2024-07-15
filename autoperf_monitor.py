@@ -29,7 +29,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 # Set up logging
 logging.basicConfig(
@@ -57,6 +57,7 @@ REQUIRED_MACHINE_KEYS = [
     'ip',
     'username',
     'ssh_key_path',
+    'config_path'
 ]
 
 REQUIRED_QOS_KEYS = [
@@ -517,7 +518,9 @@ def get_latest_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
         return None
 
     config_file_used = config_file_used[-1].strip()
-    
+
+    console.print(f"Last config file used: {config_file_used}", style="bold green")
+        
     logger.debug(
         f"Using config file: {config_file_used}"
     )
@@ -755,6 +758,43 @@ def get_ess_df_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> 
 
     return config
 
+def read_ap_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
+    config_path = machine_config['config_path']
+    if config_path == "":
+        logger.error(
+            f"No config path passed to read_ap_config_from_machine()"
+        )
+        return None
+
+    if not config_path.endswith(".json"):
+        logger.error(
+            f"Invalid config path passed: {config_path}"
+        )
+        return None
+
+    if "~" not in config_path:
+        config_path = os.path.join("~/AutoPerf", config_path)
+
+    read_config_command = f"cat {config_path}"
+    config_contents = run_command_via_ssh(
+        machine_config,
+        read_config_command
+    )
+    if config_contents is None:
+        logger.error(
+            f"Couldn't read config file from {machine_config['name']} ({machine_config['ip']})."
+        )
+        return None
+
+    config_dict = json.loads(config_contents)
+    if config_dict is None:
+        logger.error(
+            f"Couldn't parse config file from {machine_config['name']} ({machine_config['ip']})."
+        )
+        return None
+
+    return config_dict
+
 def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[None]:
     if machine_config == {}:
         logger.error(
@@ -778,12 +818,20 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[None]:
     """
 
     with console.status(f"Getting latest config from {machine_name} ({machine_ip})...") as status:
-        ap_config = get_latest_config_from_machine(machine_config)
-        if ap_config is None:
-            logger.error(
-                f"Couldn't get latest config from {machine_name} ({machine_ip})."
-            )
-            return
+        if machine_config['config_path'] == "":
+            ap_config = get_latest_config_from_machine(machine_config)
+            if ap_config is None:
+                logger.error(
+                    f"Couldn't get latest config from {machine_name} ({machine_ip})."
+                )
+                return
+        else:
+            ap_config = read_ap_config_from_machine(machine_config)
+            if ap_config is None:
+                logger.error(
+                    f"Couldn't read config from {machine_name} ({machine_ip})."
+                )
+                return
 
         status.update(f"Calculating target test count for experiments on {machine_name} ({machine_ip})...")
         ap_config = calculate_target_test_count_for_experiments(ap_config)
