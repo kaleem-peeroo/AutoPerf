@@ -3,6 +3,7 @@
     "experiment_name": "PCG #1",
     "combination_generation_type": "",
     "rcg_target_test_count": 0,
+    "quit_after_n_failed_tests": 0,
     "qos_settings": {
       "duration_secs": [30],
       "datalen_bytes": [100],

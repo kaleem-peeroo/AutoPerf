@@ -24,8 +24,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
-DEBUG_MODE = False
-SKIP_RESTART = False
+DEBUG_MODE = True
+SKIP_RESTART = True
 
 # Set up logging
 logging.basicConfig(
@@ -53,7 +53,8 @@ REQUIRED_EXPERIMENT_KEYS = [
     'combination_generation_type',
     'qos_settings',
     'slave_machines',
-    'rcg_target_test_count'
+    'rcg_target_test_count',
+    'quit_after_n_failed_tests'
 ]
 
 REQUIRED_QOS_KEYS = [
@@ -2218,12 +2219,14 @@ def main(sys_args: list[str] = []) -> None:
                     )
                     continue
 
-                if len(ess_df.index) > 10:
-                    if have_last_n_tests_failed(ess_df, 10):
-                        logger.error(
-                            f"Last 10 tests have failed. Quitting..."
-                        )
-                        break
+                quit_after_n_failed_test_count = EXPERIMENT['quit_after_n_failed_tests']
+                if quit_after_n_failed_test_count > 0:
+                    if len(ess_df.index) > quit_after_n_failed_test_count:
+                        if have_last_n_tests_failed(ess_df, quit_after_n_failed_test_count):
+                            logger.error(
+                                f"Last {quit_after_n_failed_test_count} tests have failed. Quitting..."
+                            )
+                            break
 
                 logger.info(f"[{test_index + 1}/{len(COMBINATIONS)}] Running test {test_name}...")
                 ess_df = run_test(
@@ -2263,10 +2266,13 @@ def main(sys_args: list[str] = []) -> None:
 
             for i in range(remaining_test_count):
                 ess_df = get_ess_df(ESS_FILEPATH)
-                if len(ess_df.index) > 10:
-                    if have_last_n_tests_failed(ess_df, 10):
-                        logger.error("Last 10 tests have failed. Quitting....")
-                        break
+
+                quit_after_n_failed_test_count = EXPERIMENT['quit_after_n_failed_tests']
+                if quit_after_n_failed_test_count > 0:
+                    if len(ess_df.index) > quit_after_n_failed_test_count:
+                        if have_last_n_tests_failed(ess_df, quit_after_n_failed_test_count):
+                            logger.error(f"Last {quit_after_n_failed_test_count} tests have failed. Quitting....")
+                            break
 
                 # Generate new combination configuration
                 test_config = generate_test_config_from_qos(EXPERIMENT['qos_settings'])

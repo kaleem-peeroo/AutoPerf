@@ -2,6 +2,7 @@
   "experiment_name": "PCG #1",
   "combination_generation_type": "pcg",
   "resuming_test_name": "",
+  "quit_after_n_tests": 0,
   "qos_settings": {
     "duration_secs": [30],
     "datalen_bytes": [100],
