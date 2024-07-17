@@ -975,7 +975,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         failed_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "fail")
         succes_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "success")
 
-        last_n_statuses = get_last_n_statuses_from_ess_df(experiment['ess_df'], 500, 40)
+        last_n_statuses = get_last_n_statuses_from_ess_df(experiment['ess_df'], 500, 10)
 
         if zip_results_exist:
             completed_colour = "green"
