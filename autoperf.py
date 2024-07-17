@@ -85,6 +85,15 @@ PERCENTILES = [
 ]
 
 def ping_machine(ip: str = "") -> Optional[bool]:
+    """
+    Ping a machine to check if it's online.
+
+    Params:
+        - ip (str): IP address of the machine to ping.
+
+    Returns:
+        - bool: True if machine is online, False if machine is offline.
+    """
     if ip == "":
         logger.error(
             f"No IP passed for connection check."
@@ -103,6 +112,15 @@ def ping_machine(ip: str = "") -> Optional[bool]:
         return False
 
 def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
+    """
+    Check if an SSH connection can be established to a machine.
+
+    Params:
+        - machine_config (Dict): Configuration for the machine to connect to.
+
+    Returns:
+        - bool: True if SSH connection is successful, False
+    """
     if machine_config == {}:
         logger.error(
             f"No machine config passed to check_ssh_connection()."
@@ -125,6 +143,16 @@ def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
         return False
 
 def get_difference_between_lists(list_one: List = [], list_two: List = []):
+    """
+    Get the difference between two lists.
+
+    Params:
+        - list_one (List): First list.
+        - list_two (List): Second list.
+
+    Returns:
+        - List: List of items that are in list_one but not in list_two.
+    """
     if list_one is None:
         logger.error(
             f"List one is none."
@@ -160,6 +188,16 @@ def get_difference_between_lists(list_one: List = [], list_two: List = []):
     return [item for item in longer_list if item not in shorter_list]
 
 def get_longer_list(list_one: List = [], list_two: List = []):
+    """
+    Get the longer of two lists.
+
+    Params:
+        - list_one (List): First list.
+        - list_two (List): Second list.
+
+    Returns:
+        - List: Longer of the two lists.
+    """
     if list_one is None:
         logger.error(
             f"List one is none."
@@ -178,6 +216,16 @@ def get_longer_list(list_one: List = [], list_two: List = []):
         return list_two
 
 def get_shorter_list(list_one: List = [], list_two: List = []):
+    """
+    Get the shorter of two lists.
+
+    Params:
+        - list_one (List): First list.
+        - list_two (List): Second list.
+
+    Returns:
+        - List: Shorter of the two lists.
+    """
     if list_one is None:
         logger.error(
             f"List one is none."
@@ -196,6 +244,16 @@ def get_shorter_list(list_one: List = [], list_two: List = []):
         return list_one
 
 def validate_dict_using_keys(given_keys: List = [], required_keys: List = []) -> Optional[bool]:
+    """
+    Validate a dictionary using a list of required keys.
+
+    Params:
+        - given_keys (List): Keys in the dictionary to validate.
+        - required_keys (List): Required keys for the dictionary.
+
+    Returns:
+        - bool: True if all required keys are present in the given keys, False otherwise.
+    """
     if given_keys == []:
         logger.error(
             f"No given_keys given."
@@ -227,6 +285,16 @@ def validate_dict_using_keys(given_keys: List = [], required_keys: List = []) ->
     return True
 
 def read_config(config_path: str = ""):
+    """
+    Read a JSON config file.
+
+    Params:
+        - config_path (str): Path to the JSON config file.
+
+    Returns:
+        - List: List of dictionaries if the config file is valid, None otherwise.
+
+    """
     if config_path == "":
         logger.error(
             f"No config path passed to read_config()"
@@ -306,6 +374,15 @@ def read_config(config_path: str = ""):
     return config
 
 def get_if_pcg(experiment: Optional[Dict] = None) -> Optional[bool]:
+    """
+    Check if the experiment is PCG or RCG by checking the combination_generation_type.
+
+    Params:
+        - experiment (Dict): Experiment config.
+
+    Returns:
+        - bool: True if PCG, False if RCG, None otherwise.
+    """
     if experiment is None:
         logger.error(
             f"No experiment given."
@@ -334,6 +411,15 @@ def get_if_pcg(experiment: Optional[Dict] = None) -> Optional[bool]:
     return experiment['combination_generation_type'] == 'pcg'
 
 def get_valid_dirname(dir_name: str = "") -> Optional[str]:
+    """
+    Validate a directory name by replacing invalid characters with underscores.
+
+    Params:
+        - dir_name (str): Directory name to validate.
+
+    Returns:
+        - str: Valid directory name if valid, None otherwise
+    """
     if dir_name == "":
         logger.error(
             f"No dirname passed for validation."
@@ -359,6 +445,15 @@ def get_valid_dirname(dir_name: str = "") -> Optional[str]:
     return dir_name
 
 def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[str]:
+    """
+    Get a valid dirname from the experiment config by appending the experiment name to the data directory.
+
+    Params:
+        - experiment (Dict): Experiment config.
+
+    Returns:
+        - str: Valid dirname if valid, None otherwise.
+    """
     if experiment is None:
         logger.error(
             f"No experiment config passed."
@@ -367,11 +462,25 @@ def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[s
 
     experiment_name = experiment['experiment_name']
     experiment_dirname = get_valid_dirname(experiment_name)
+    if experiment_dirname is None:
+        logger.error(
+            f"Couldn't get a valid dirname for {experiment_name}"
+        )
+        return None
     experiment_dirname = os.path.join("data", experiment_dirname)
 
     return experiment_dirname
 
 def generate_combinations_from_qos(qos: Optional[Dict] = None) -> Optional[List]:
+    """
+    Generate combinations of QoS settings from the given QoS settings.
+
+    Params:
+        - qos (Dict): QoS settings.
+
+    Returns:
+        - List: List of dictionaries containing all possible combinations of QoS settings.
+    """
     if qos is None:
         logger.error(
             f"No QoS passed."
@@ -412,6 +521,15 @@ def generate_combinations_from_qos(qos: Optional[Dict] = None) -> Optional[List]
     return combination_dicts
 
 def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
+    """
+    Get the ESS dataframe from the given filepath.
+
+    Params:
+        - ess_filepath (str): Filepath for the ESS dataframe.
+
+    Returns:
+        - pd.DataFrame: ESS dataframe if valid, None otherwise.
+    """
     if ess_filepath == "":
         logger.error(
             f"No filepath passes for ESS."
@@ -436,6 +554,15 @@ def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
     return ess_df
 
 def get_test_name_from_combination_dict(combination_dict: Dict = {}) -> Optional[str]:
+    """
+    Get the test name from the combination dict by concatenating the values of the dict together.
+
+    Params:
+        - combination_dict (Dict): Combination dict.
+
+    Returns:
+        - str: Test name if valid, None otherwise.
+    """
     if combination_dict == {}:
         logger.error(
             f"No combination dict passed."
@@ -454,10 +581,16 @@ def get_test_name_from_combination_dict(combination_dict: Dict = {}) -> Optional
         )
         return None
 
-    if len(get_difference_between_lists(
+    diff_between_keys = get_difference_between_lists(
         list(combination_dict.keys()),
         REQUIRED_QOS_KEYS
-    )) > 0:
+    )
+    if diff_between_keys is None:
+        logger.error(
+            f"Error comparing keys for {combination_dict}"
+        )
+        return None
+    if len(diff_between_keys) > 0:
         logger.error(
             f"Invalid configuration options in combination dict."
         )
@@ -655,6 +788,15 @@ def get_qos_dict_from_test_name(test_name: str = "") -> Optional[Dict]:
     return qos_dict
 
 def get_next_test_from_ess(ess_df: pd.DataFrame) -> Optional[Dict]:
+    """
+    Get the next test from the ESS dataframe by checking the last test.
+
+    Params:
+        - ess_df (pd.DataFrame): ESS dataframe.
+
+    Returns:
+        - Dict: Dictionary containing qos values for the next test.
+    """
     if ess_df is None:
         logger.error(
             f"No ESS dataframe passed."
@@ -684,6 +826,16 @@ def get_next_test_from_ess(ess_df: pd.DataFrame) -> Optional[Dict]:
     return last_test_qos
 
 def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool]:
+    """
+    Check if the last n tests have failed from the ESS.
+
+    Params:
+        - ess_df (pd.DataFrame): ESS dataframe.
+        - n (int): Number of tests to check.
+
+    Returns:
+        - bool: True if the last n tests have failed, False otherwise
+    """
     if ess_df is None:
         logger.error(
             f"No ESS dataframe passed."
@@ -728,6 +880,15 @@ def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool
     return False
 
 def generate_scripts_from_qos_config(qos_config: Dict = {}) -> Optional[List]:
+    """
+    Generate executable shell scripts from the given QoS config.
+
+    Params:
+        - qos_config (Dict): QoS config.
+
+    Returns:
+        - List: List of scripts if valid, None otherwise.
+    """
     if qos_config == {}:
         logger.error(
             f"No QoS config passed."
@@ -856,6 +1017,16 @@ def generate_scripts_from_qos_config(qos_config: Dict = {}) -> Optional[List]:
     return scripts
     
 def get_machines_by_type(machine_configs: List = [], machine_type: str = "") -> Optional[List]:
+    """
+    Get machines by type from the given machine configs e.g. pub or sub.
+
+    Params:
+        - machine_configs (List): List of machine configs.
+        - machine_type (str): Type of machine to get.
+
+    Returns:
+        - List: List of machines of the given type.
+    """
     if machine_configs == []:
         logger.error(
             f"No machine configs passed."
@@ -882,6 +1053,16 @@ def get_machines_by_type(machine_configs: List = [], machine_type: str = "") -> 
     return machines_to_return
 
 def distribute_scripts_to_machines(scripts: List = [], machine_configs: List = []) -> Optional[List]:
+    """
+    Distribute scripts to machines based on the machine type.
+
+    Params:
+        - scripts (List): List of scripts to distribute.
+        - machine_configs (List): List of machine configs.
+
+    Returns:
+        - List: List of machine configs with scripts distributed.
+    """
     if scripts == []:
         logger.error(
             f"No scripts passed."
@@ -968,6 +1149,16 @@ def distribute_scripts_to_machines(scripts: List = [], machine_configs: List = [
     return machine_configs
 
 def get_buffer_duration_secs_from_test_duration_secs(test_duration_secs: int = 0) -> Optional[int]:
+    """
+    Get the buffer duration in seconds from the test duration.
+    This is 5% of the test duration with a minimum of 30 seconds.
+
+    Params:
+        - test_duration_secs (int): Test duration in seconds.
+
+    Returns:
+        - int: Buffer duration in seconds.
+    """
     if test_duration_secs == 0:
         logger.error(
             f"Test duration is 0."
@@ -988,6 +1179,15 @@ def get_buffer_duration_secs_from_test_duration_secs(test_duration_secs: int = 0
     return int(buffer_duration_sec)
 
 def has_failures_in_machine_statuses(machine_statuses) -> Optional[bool]:
+    """
+    Check if there are any failures in the machine statuses.
+
+    Params:
+        - machine_statuses (Dict): Machine statuses.
+
+    Returns:
+        - bool: True if there are failures, False otherwise.
+    """
     if machine_statuses == {}:
         logger.error(
             f"No machine statuses passed."
@@ -1007,6 +1207,17 @@ def has_failures_in_machine_statuses(machine_statuses) -> Optional[bool]:
     return False
 
 def update_machine_status(machine_statuses: Dict = {}, machine_ip: str = "", new_status: str = "") -> Optional[Dict]:
+    """
+    Update the machine status in the machine statuses.
+
+    Params:
+        - machine_statuses (Dict): Machine statuses.
+        - machine_ip (str): Machine IP.
+        - new_status (str): New status.
+
+    Returns:
+        - Dict: Updated machine statuses if valid, None otherwise.
+    """
     if machine_statuses == {}:
         logger.error(
             f"No machine statuses passed."
@@ -1041,6 +1252,17 @@ def run_script_on_machine(
         timeout_secs: int = 0
     ) -> None:
 
+    """
+    Run a script on a machine using SSH.
+
+    Params:
+        - machine_config (Dict): Machine config.
+        - machine_statuses (Dict): Machine statuses.
+        - timeout_secs (int): Timeout in seconds.
+
+    Returns:
+        - None
+    """
     if machine_config == {}:
         logger.error(
             f"No machine config passed."
@@ -1169,7 +1391,18 @@ def run_script_on_machine(
 
     return None
 
-def download_results_from_machine(machine_config, machine_statuses, local_results_dirpath):
+def download_results_from_machine(machine_config, machine_statuses, local_results_dirpath) -> Optional[None]:
+    """
+    Download results from the machine to the local results directory.
+
+    Params:
+        - machine_config (Dict): Machine config.
+        - machine_statuses (Dict): Machine statuses.
+        - local_results_dirpath (str): Local results directory path.
+
+    Returns:
+        - None
+    """
     if machine_config == {}:
         logger.error(
             f"No machine config passed."
@@ -1314,7 +1547,16 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         f"Results downloaded from {machine_name} ({machine_ip})."
     )
 
-def delete_csvs_from_machines(machine_config):
+def delete_csvs_from_machines(machine_config) -> Optional[None]:
+    """
+    Delete all CSV files in the Perftest directory from the machine.
+
+    Params:
+        - machine_config (Dict): Machine config.
+
+    Returns:
+        - None
+    """
     machine_ip = machine_config['ip']
     machine_name = machine_config['machine_name']
     username = machine_config['username']
@@ -1356,7 +1598,24 @@ def update_ess_df(
     end_status: str = "",
     qos_settings: Dict = {},
     comments: str = ""
-):
+) -> Optional[pd.DataFrame]:
+    """
+    Update the ESS dataframe with the new test results.
+
+    Params:
+        - ess_df (pd.DataFrame): ESS dataframe.
+        - start_timestamp (str): Start timestamp.
+        - end_timestamp (str): End timestamp.
+        - test_name (str): Test name.
+        - ping_count (int): Ping count.
+        - ssh_check_count (int): SSH check count.
+        - end_status (str): End status.
+        - qos_settings (Dict): QoS settings.
+        - comments (str): Comments.
+
+    Returns:
+        - pd.DataFrame: Updated ESS dataframe if valid, None otherwise.
+    """
     new_ess_row = {}
     new_ess_row['start_timestamp'] = start_timestamp
     new_ess_row['end_timestamp'] = end_timestamp
@@ -1381,6 +1640,18 @@ def run_test(
     ess_df: pd.DataFrame = pd.DataFrame(),
     experiment_dirpath: str = ""
 ) -> Optional[pd.DataFrame]:
+    """
+    Run the test using the given test config, machine configs and ESS dataframe.
+
+    Params:
+        - test_config (Dict): Test config.
+        - machine_configs (List): List of machine configs.
+        - ess_df (pd.DataFrame): ESS dataframe.
+        - experiment_dirpath (str): Experiment directory path.
+
+    Returns:
+        - pd.DataFrame: Updated ESS dataframe if valid, None otherwise.
+    """
     if test_config == {}:
         logger.error(
             f"No test config passed."
@@ -1758,7 +2029,17 @@ def run_test(
 
     # 10. Return ESS.
     return new_ess_df
+
 def generate_test_config_from_qos(qos: Optional[Dict] = None) -> Optional[Dict]:
+    """
+    Generate a test config from the given qos settings.
+
+    Params:
+        - qos (Dict): QoS settings.
+
+    Returns:
+        - Dict: Test config if valid, None otherwise.
+    """
     if qos is None:
         logger.error(
             f"No QoS passed."
@@ -1818,8 +2099,33 @@ def generate_test_config_from_qos(qos: Optional[Dict] = None) -> Optional[Dict]:
     return test_config
 
 def get_csv_file_count_from_dir(dirpath: str = "") -> Optional[int]:
-    # TODO: Validate parameters
     # TODO: Implement unit tests for this function
+    """
+    Get the number of CSV files in the given directory.
+
+    Params:
+        - dirpath (str): Directory path.
+
+    Returns:
+        - int: Number of CSV files if valid, None otherwise
+    """
+    if dirpath == "":
+        logger.error(
+            f"No directory path passed."
+        )
+        return None
+
+    if not os.path.exists(dirpath):
+        logger.error(
+            f"Directory path does not exist."
+        )
+        return None
+
+    if not os.path.isdir(dirpath):
+        logger.error(
+            f"Directory path is not a directory."
+        )
+        return None
 
     files_in_dir = os.listdir(dirpath)
     csv_files_in_dir = [_ for _ in files_in_dir if _.endswith(".csv")]
@@ -1827,15 +2133,66 @@ def get_csv_file_count_from_dir(dirpath: str = "") -> Optional[int]:
     return len(csv_files_in_dir)
 
 def get_expected_csv_file_count_from_test_name(test_name: str = "") -> Optional[int]:
-    # TODO: Validate parameters
     # TODO: Implement unit tests for this function
+    """
+    Get the expected number of CSV files from the test name by counting the number of SUBs and adding 1.
+
+    Params:
+        - test_name (str): Test name.
+
+    Returns:
+        - int: Expected number of CSV files if valid, None
+    """
+
+    if test_name == "":
+        logger.error(
+            f"No test name passed."
+        )
+        return None
+
+    if test_name.strip() == "":
+        logger.error(
+            f"Empty test name passed."
+        )
+        return None
+
+    if "SUB" not in test_name:
+        logger.error(
+            f"Test name does not contain 'SUB'."
+        )
+        return None
 
     sub_count_from_name = int(test_name.split("SUB_")[0].split("_")[-1])
 
     return sub_count_from_name + 1
 
 def get_pub_df_from_pub_0_filepath(pub_file: str = "") -> Optional[pd.DataFrame]:
-    # TODO: Validate parameters
+    """
+    Get the publisher dataframe from the pub_0 file.
+
+    Params:
+        - pub_file (str): Publisher file path.
+
+    Returns:
+        - pd.DataFrame: Publisher dataframe if valid, None otherwise
+    """
+    if pub_file == "":
+        logger.error(
+            f"No pub file passed."
+        )
+        return None
+
+    if not os.path.exists(pub_file):
+        logger.error(
+            f"Pub file does not exist."
+        )
+        return None
+
+    if not os.path.isfile(pub_file):
+        logger.error(
+            f"Pub file is not a file."
+        )
+        return None
 
     # ? Find out where to start parsing the file from 
     with open(pub_file, "r") as pub_file_obj:
@@ -1906,7 +2263,22 @@ def get_pub_df_from_pub_0_filepath(pub_file: str = "") -> Optional[pd.DataFrame]
     
     return lat_df
 
-def get_subs_df_from_sub_files(sub_files: [str] = []) -> Optional[pd.DataFrame]:
+def get_subs_df_from_sub_files(sub_files: List[str] = []) -> Optional[pd.DataFrame]:
+    """
+    Produce the subscriber dataframe from the sub files.
+
+    Params:
+        - sub_files (List): List of subscriber file paths.
+
+    Returns:
+        - pd.DataFrame: Subscriber dataframe if valid, None otherwise
+    """
+    if len(sub_files) == 0:
+        logger.error(
+            f"No sub files passed."
+        )
+        return None
+
     test_df = pd.DataFrame()
     
     for file in sub_files:
@@ -1982,9 +2354,30 @@ def get_subs_df_from_sub_files(sub_files: [str] = []) -> Optional[pd.DataFrame]:
     return test_df
 
 def summarise_tests(dirpath: str = "") -> Optional[str]:
+    """
+    Summarise the data from the tests in the given directory to a folder.
+
+    Params:
+        - dirpath (str): Directory path.
+
+    Returns:
+        - str: Summarised data directory path if valid, None otherwise.
+    """
     if dirpath == "":
         logger.error(
             f"No dirpath passed."
+        )
+        return None
+
+    if not os.path.exists(dirpath):
+        logger.error(
+            f"Dirpath does not exist."
+        )
+        return None
+
+    if not os.path.isdir(dirpath):
+        logger.error(
+            f"Dirpath is not a directory."
         )
         return None
 
@@ -2053,12 +2446,35 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
 
     logger.debug(f"Summarised {summarised_test_count}/{len(test_dirpaths)} tests...")
 
-def generate_dataset(dirpath: str = "", truncation_percent: int = 0):
+def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional[None]:
+    # TODO: Write unit tests for this function
     """
     Reduce each csv file in summarised_data folder to a single row in one csv file.
+
+    Params:
+        - dirpath (str): Directory path.
+        - truncation_percent (int): Truncation percent.
+
+    Returns:
+        - None
     """
-    # TODO: Validate parameters
-    # TODO: Write unit tests for this function
+    if dirpath == "":
+        logger.error(
+            f"No dirpath passed."
+        )
+        return None
+
+    if not os.path.exists(dirpath):
+        logger.error(
+            f"Dirpath does not exist."
+        )
+        return None
+
+    if not os.path.isdir(dirpath):
+        logger.error(
+            f"Dirpath is not a directory."
+        )
+        return None
 
     summaries_dirpath = os.path.join(dirpath, "summarised_data")
     if not os.path.join(summaries_dirpath):
