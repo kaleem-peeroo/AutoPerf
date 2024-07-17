@@ -24,8 +24,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
-DEBUG_MODE = True
-SKIP_RESTART = True
+DEBUG_MODE = False
+SKIP_RESTART = False
 
 # Set up logging
 logging.basicConfig(
@@ -1272,7 +1272,7 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
-        stdout, stderr = download_process.communicate(timeout=30)
+        stdout, stderr = download_process.communicate(timeout=120)
         stdout = stdout.decode('utf-8').strip()
         stderr = stderr.decode('utf-8').strip()
 
