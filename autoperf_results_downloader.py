@@ -435,8 +435,22 @@ def download_zipped_dirs_from_machine(machine: Dict = {}, status: Console.status
         i = zipped_dirs.index(zipped_dir)
         i += 1
         counter_string = f"[{i}/{len(zipped_dirs)}]"
-        status.update(f"{counter_string} Downloading {os.path.basename(zipped_dir)} from {machine['name']} ({machine['ip']})...")
         zipped_dir = os.path.basename(zipped_dir)
+
+        get_file_size_command = f"du -sh {data_dir}/{zipped_dir}"
+        get_file_size_output = run_command_via_ssh(
+            machine,
+            get_file_size_command
+        )
+        if get_file_size_output is None:
+            logger.error(
+                f"Couldn't get file size of {zipped_dir} from {machine['name']}: {stderr}"
+            )
+            return None
+
+        file_size = get_file_size_output.split()[0]
+        status.update(f"{counter_string} Downloading {zipped_dir} ({file_size}B) from {machine['name']}...")
+
         download_command = f"scp -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{data_dir}/{zipped_dir} ./data/{machine['name']}"
         download_output = subprocess.Popen(
             download_command,
@@ -454,11 +468,11 @@ def download_zipped_dirs_from_machine(machine: Dict = {}, status: Console.status
             )
             return None
 
-        console.print(f"Downloaded {zipped_dir} from {machine['name']}.", style="bold green")
+        console.print(f"Downloaded {zipped_dir} ({file_size}B) from {machine['name']}.", style="bold green")
         
     return zipped_dirs
 
-def download_datasets_from_machine(machine: Dict = {}, status: Console.status = None) -> Optional[List]:
+def download_datasets_from_machine(machine: Dict = {}, status: Console.status = None):
     if machine == {}:
         logger.error(
             f"No machine config passed."
@@ -487,7 +501,21 @@ def download_datasets_from_machine(machine: Dict = {}, status: Console.status = 
         i = datasets.index(dataset)
         i += 1
         counter_string = f"[{i}/{len(datasets)}]"
-        status.update(f"{counter_string} Downloading {dataset} from {machine['name']} ({machine['ip']})...")
+
+        get_file_size_command = f"du -sh {datasets_dir}/{dataset}"
+        get_file_size_output = run_command_via_ssh(
+            machine,
+            get_file_size_command
+        )
+        if get_file_size_output is None:
+            logger.error(
+                f"Couldn't get file size of {dataset} from {machine['name']}"
+            )
+            return None
+
+        file_size = get_file_size_output.split()[0]
+        status.update(f"{counter_string} Downloading {dataset} ({file_size}B) from {machine['name']}...")
+
         download_command = f"scp -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{datasets_dir}/{dataset} ./datasets/{machine['name']}"
         download_output = subprocess.Popen(
             download_command,
@@ -505,7 +533,7 @@ def download_datasets_from_machine(machine: Dict = {}, status: Console.status = 
             )
             return None
 
-        console.print(f"Downloaded {dataset} from {machine['name']}.", style="bold green")
+        console.print(f"Downloaded {dataset} ({file_size}B) from {machine['name']}.", style="bold green")
     
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
@@ -534,21 +562,9 @@ def main(sys_args: list[str] = []) -> None:
         machine_name = MACHINE_CONFIG['name']
 
         with console.status(f"Downloading data from {machine_name}...") as status:
-
-            zipped_dirs = download_zipped_dirs_from_machine(MACHINE_CONFIG, status)
-            if zipped_dirs is None:
-                logger.error(
-                    f"Couldn't get zipped dirs from {machine_name}."
-                )
-                continue
-
-            datasets = download_datasets_from_machine(MACHINE_CONFIG, status)
-            if datasets is None:
-                logger.error(
-                    f"Couldn't download datasets from {machine_name}."
-                )
-                continue
-
+            download_zipped_dirs_from_machine(MACHINE_CONFIG, status)
+            download_datasets_from_machine(MACHINE_CONFIG, status)
+    
 if __name__ == "__main__":
     if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
         main(sys.argv)
