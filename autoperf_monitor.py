@@ -300,19 +300,6 @@ def get_valid_dirname(dir_name: str = "") -> Optional[str]:
 
     return dir_name
 
-def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[str]:
-    if experiment is None:
-        logger.error(
-            f"No experiment config passed."
-        )
-        return None
-
-    experiment_name = experiment['experiment_name']
-    experiment_dirname = get_valid_dirname(experiment_name)
-    experiment_dirname = os.path.join("data", experiment_dirname)
-
-    return experiment_dirname
-
 def get_qos_dict_from_test_name(test_name: str = "") -> Optional[Dict]:
     """
     Take test name and get qos settings from it.
