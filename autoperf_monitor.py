@@ -79,6 +79,14 @@ PERCENTILES = [
 ]
 
 def ping_machine(ip: str = "") -> Optional[bool]:
+    """
+    Ping a machine to check if it's up.
+
+    Params:
+        ip: str: IP address of machine to ping.
+    Returns:
+        bool: True if machine is up, False if machine is down.
+    """
     if ip == "":
         logger.error(
             f"No IP passed for connection check."
@@ -97,6 +105,15 @@ def ping_machine(ip: str = "") -> Optional[bool]:
         return False
 
 def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
+    """
+    Check if SSH connection can be established to a machine
+
+    Params:
+        machine_config: Dict: Dictionary containing machine configuration.
+
+    Returns:
+        bool: True if SSH connection can be established, False if it can't.
+    """
     if machine_config == {}:
         logger.error(
             f"No machine config passed to check_ssh_connection()."
@@ -119,6 +136,16 @@ def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
         return False
 
 def get_difference_between_lists(list_one: List = [], list_two: List = []):
+    """
+    Get the difference between two lists.
+
+    Params:
+        list_one: List: First list.
+        list_two: List: Second list.
+
+    Returns:
+        List: List containing elements that are in list_one but not in list_two
+    """
     if list_one is None:
         logger.error(
             f"List one is none."
@@ -154,6 +181,16 @@ def get_difference_between_lists(list_one: List = [], list_two: List = []):
     return [item for item in longer_list if item not in shorter_list]
 
 def get_longer_list(list_one: List = [], list_two: List = []):
+    """
+    Get the longer list between two lists.
+
+    Params:
+        list_one: List: First list.
+        list_two: List: Second list.
+
+    Returns:
+        List: The longer list.
+    """
     if list_one is None:
         logger.error(
             f"List one is none."
@@ -172,6 +209,16 @@ def get_longer_list(list_one: List = [], list_two: List = []):
         return list_two
 
 def get_shorter_list(list_one: List = [], list_two: List = []):
+    """
+    Get the shorter list between two lists.
+
+    Params:
+        list_one: List: First list.
+        list_two: List: Second list.
+
+    Returns:
+        List: The shorter list.
+    """
     if list_one is None:
         logger.error(
             f"List one is none."
@@ -190,6 +237,16 @@ def get_shorter_list(list_one: List = [], list_two: List = []):
         return list_one
 
 def validate_dict_using_keys(given_keys: List = [], required_keys: List = []) -> Optional[bool]:
+    """
+    Validate a dictionary using required keys.
+
+    Params:
+        given_keys: List: List of keys given.
+        required_keys: List: List of required keys.
+
+    Returns:
+        bool: True if all required keys are present, False if not.
+    """
     if given_keys == []:
         logger.error(
             f"No given_keys given."
@@ -221,6 +278,17 @@ def validate_dict_using_keys(given_keys: List = [], required_keys: List = []) ->
     return True
 
 def read_config(config_path: str = ""):
+    """
+    Read a JSON config file.
+
+    Params:
+        config_path: str: Path to the JSON config file.
+
+    Returns:
+        List: List of dictionaries containing machine configurations
+
+    """
+
     if config_path == "":
         logger.error(
             f"No config path passed to read_config()"
@@ -276,6 +344,15 @@ def read_config(config_path: str = ""):
     return config
 
 def get_valid_dirname(dir_name: str = "") -> Optional[str]:
+    """
+    Validate a directory name by removing any special characters and spaces.
+
+    Params:
+        dir_name: str: Directory name to validate.
+
+    Returns:
+        str: Valid directory name if valid, None if not.
+    """
     if dir_name == "":
         logger.error(
             f"No dirname passed for validation."
@@ -314,6 +391,12 @@ def get_qos_dict_from_test_name(test_name: str = "") -> Optional[Dict]:
         "use_multicast": true,
         "use_reliable": true
     }
+
+    Params:
+        test_name: str: Test name to get qos settings from.
+
+    Returns:
+        Dict: QoS settings if successful, None if not.
     """
     if test_name == "":
         logger.error(
@@ -418,6 +501,16 @@ def get_qos_dict_from_test_name(test_name: str = "") -> Optional[Dict]:
     return qos_dict
 
 def run_command_via_ssh(machine_config: Dict = {}, command: str = "") -> Optional[str]:
+    """
+    Run a command on a machine via SSH.
+
+    Params:
+        machine_config: Dict: Dictionary containing machine configuration including name, ip, username, ssh_key_path.
+        command: str: Command to run on the machine.
+
+    Returns:
+        str: Output of the command if successful, None if not.
+    """
     if machine_config == {}:
         logger.error(
             f"No machine config passed."
@@ -472,6 +565,15 @@ def run_command_via_ssh(machine_config: Dict = {}, command: str = "") -> Optiona
     return stdout
 
 def get_latest_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
+    """
+    Get the latest config file used on a machine by checking the bash history.
+
+    Params:
+        machine_config: Dict: Dictionary containing machine configuration including name, ip, username, ssh_key_path.
+
+    Returns:
+        Dict: Dictionary containing the latest config file used if successful,
+    """
     if machine_config == {}:
         logger.error(
             f"No machine config passed."
@@ -535,6 +637,15 @@ def get_latest_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
     return config_dict
 
 def generate_combinations_from_qos(qos: Optional[Dict] = None) -> Optional[List]:
+    """
+    Generate combinations from QoS settings.
+
+    Params:
+        qos: Dict: Dictionary containing QoS settings.
+
+    Returns:
+        List: List of dictionaries containing combinations of QoS settings.
+    """
     if qos is None:
         logger.error(
             f"No QoS passed."
@@ -575,9 +686,18 @@ def generate_combinations_from_qos(qos: Optional[Dict] = None) -> Optional[List]
     return combination_dicts
 
 def calculate_pcg_target_test_count(experiment_config: Dict = {}) -> Optional[int]:
+    """
+    Calculate the target test count for PCG experiments by generating combinations from QoS settings.
+
+    Params:
+        experiment_config: Dict: Dictionary containing experiment configuration.
+
+    Returns:
+        int: Target test count if successful, None if not.
+    """
+
     # TODO: Validate parameters
     # TODO: Write unit tests for this function
-    # TODO: Implement this function.
 
     qos = experiment_config['qos_settings']
     combinations = generate_combinations_from_qos(qos)
@@ -591,6 +711,15 @@ def calculate_pcg_target_test_count(experiment_config: Dict = {}) -> Optional[in
     return target_test_count
    
 def calculate_target_test_count_for_experiments(config: Dict = {}) -> Optional[Dict]:
+    """
+    Calculate the target test count for experiments by generating combinations from QoS settings.
+
+    Params:
+        config: Dict: Dictionary containing experiment configuration.
+
+    Returns:
+        Dict: Experiment configuration with target test count if successful, None if not.
+    """
     # TODO: Validate parameters
     # TODO: Write unit tests for this function
 
@@ -605,6 +734,15 @@ def calculate_target_test_count_for_experiments(config: Dict = {}) -> Optional[D
     return config
 
 def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[str]:
+    """
+    Get the name of the folder where the data is stored for the experiment.
+
+    Params:
+        experiment: Dict: Dictionary containing experiment configuration.
+
+    Returns:
+        str: Dirname if successful,
+    """
     if experiment is None:
         logger.error(
             f"No experiment config passed."
@@ -623,6 +761,17 @@ def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[s
     return experiment_dirname
 
 def calculate_completed_tests_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> Optional[Dict]:
+    """
+    Calculate the completed tests for experiments by counting the number of files in the experiment directory.
+
+    Params:
+        config: Dict: Dictionary containing experiment configuration.
+        machine_config: Dict: Dictionary containing machine configuration.
+
+    Returns:
+        Dict: Experiment configuration with completed tests if successful, None
+    """
+
     # TODO: Validate parameters
     # TODO: Write unit tests for this function
 
@@ -661,6 +810,16 @@ def calculate_completed_tests_for_experiments(config: Dict = {}, machine_config:
     return config
 
 def check_for_zip_results(config: Dict = {}, machine_config: Dict = {}) -> Optional[Dict]:
+    """
+    Check if zip results exist for experiments in the /data directory.
+
+    Params:
+        config: Dict: Dictionary containing experiment configuration.
+        machine_config: Dict: Dictionary containing machine configuration.
+
+    Returns:
+        Dict: Experiment configuration with zip results if successful, None
+    """
     # TODO: Validate parameters
     # TODO: Write unit tests for this function
 
@@ -697,6 +856,16 @@ def check_for_zip_results(config: Dict = {}, machine_config: Dict = {}) -> Optio
     return config
 
 def get_ess_df_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> Optional[Dict]:
+    """
+    Get the ESS DataFrame for experiments.
+
+    Params:
+        config: Dict: Dictionary containing experiment configuration.
+        machine_config: Dict: Dictionary containing machine configuration.
+
+    Returns:
+        Dict: Experiment configuration with ESS DataFrame if successful, None
+    """
     # TODO: Validate parameters
     # TODO: Write unit tests for this function
 
@@ -746,6 +915,15 @@ def get_ess_df_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> 
     return config
 
 def read_ap_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
+    """
+    Read the AutoPerf config from a machine.
+
+    Params:
+        machine_config: Dict: Dictionary containing machine configuration.
+
+    Returns:
+        Dict: AutoPerf config if successful, None if not.
+    """
     config_path = machine_config['config_path']
     if config_path == "":
         logger.error(
@@ -784,7 +962,16 @@ def read_ap_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     return config_dict
 
-def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[None]:
+def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
+    """
+    Get ongoing info from a machine.
+
+    Params:
+        machine_config: Dict: Dictionary containing machine configuration.
+
+    Returns:
+        Dict: Updated machine_config if successful, None if not.
+    """
     if machine_config == {}:
         logger.error(
             f"No machine config passed."
@@ -856,7 +1043,18 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[None]:
 
     return ap_config
 
-def get_status_percentage_from_ess_df(ess_df: pd.DataFrame = None, status: str = "") -> Optional[float]:
+def get_status_percentage_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame(), status: str = "") -> Optional[float]:
+    """
+    Get the percentage of a tests of a certain status (succesful or failed) from the ESS DataFrame.
+
+    Params:
+        ess_df: pd.DataFrame: DataFrame containing ESS data.
+        status: str: Status to check for.
+
+    Returns:
+        float: Percentage of tests with the given status if successful, None if not.
+    """
+
     # TODO: Write unit tests
 
     if ess_df is None:
@@ -894,7 +1092,18 @@ def get_status_percentage_from_ess_df(ess_df: pd.DataFrame = None, status: str =
     status_percent = round(status_percent, 1)
     return status_percent
 
-def get_last_n_statuses_from_ess_df(ess_df: pd.DataFrame = None, n: int = 0, line_break_point: int = 20) -> Optional[str]:
+def get_last_n_statuses_as_string_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame(), n: int = 0, line_break_point: int = 20) -> Optional[str]:
+    """
+    Get the last n statuses as a string of red or green circles from the ESS DataFrame.
+
+    Params:
+        ess_df: pd.DataFrame: DataFrame containing ESS data.
+        n: int: Number of statuses to get.
+        line_break_point: int: Number of statuses to display per line.
+
+    Returns:
+        str: String containing the last n statuses if successful, None if not.
+    """
     # TODO: Write unit tests
 
     if ess_df is None:
@@ -943,6 +1152,19 @@ def get_last_n_statuses_from_ess_df(ess_df: pd.DataFrame = None, n: int = 0, lin
     return last_n_statuses_output
 
 def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
+    """
+    Display ongoing info as a table with the following columns:
+    - Experiment Name
+    - Count
+    - Status
+    - Last 100 Statuses
+
+    Params:
+        ongoing_info: Dict: Dictionary containing ongoing info.
+
+    Returns:
+        None
+    """
     # TODO: Validate parameters
 
     console.print(f"Legend: [green]Completed[/green], [red]Failed[/red], [white]Not Completed[/white]")
@@ -951,7 +1173,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     table.add_column("Experiment Name", style="bold")
     table.add_column("Count", style="bold")
     table.add_column("Status", style="bold")
-    table.add_column("Last 500 Statuses", style="bold")
+    table.add_column("Last 100 Statuses", style="bold")
 
     for experiment in ongoing_info:
         experiment_name = experiment['experiment_name']
@@ -962,7 +1184,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         failed_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "fail")
         succes_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "success")
 
-        last_n_statuses = get_last_n_statuses_from_ess_df(experiment['ess_df'], 500, 10)
+        last_n_statuses = get_last_n_statuses_as_string_from_ess_df(experiment['ess_df'], 100, 10)
 
         if zip_results_exist:
             completed_colour = "green"
