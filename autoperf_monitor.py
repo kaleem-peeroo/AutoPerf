@@ -21,6 +21,7 @@ from multiprocessing import Process, Manager
 from rich.progress import track
 from rich.table import Table
 from rich.console import Console
+from rich.markdown import Markdown
 from io import StringIO
 
 console = Console()
@@ -1224,6 +1225,8 @@ def main(sys_args: list[str] = []) -> None:
         return None
 
     for MACHINE_CONFIG in CONFIG:
+        console.print(Markdown(f"# {MACHINE_CONFIG['name']} ({MACHINE_CONFIG['ip']})"))
+
         ongoing_info = get_ongoing_info_from_machine(MACHINE_CONFIG)
         if ongoing_info is None:
             logger.error(
