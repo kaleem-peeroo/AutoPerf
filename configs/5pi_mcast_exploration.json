@@ -1,15 +1,15 @@
 [{
-  "experiment_name": "APDEV 5pi pcg tests",
+  "experiment_name": "1P3S Multicast Exploration",
   "combination_generation_type": "pcg",
   "rcg_target_test_count": 0,
-  "quit_after_n_failed_tests": 10,
+  "quit_after_n_tests": 0,
   "qos_settings": {
-    "duration_secs": [60],
+    "duration_secs": [600],
     "datalen_bytes": [100],
-    "pub_count": [1, 5, 10],
-    "sub_count": [1, 5, 10],
+    "pub_count": [1, 5, 10, 25, 50, 75],
+    "sub_count": [1, 5, 10, 25, 50, 75],
     "use_reliable": [true],
-    "use_multicast": [true],
+    "use_multicast": [true, false],
     "durability_level": [0],
     "latency_count": [100]
   },
