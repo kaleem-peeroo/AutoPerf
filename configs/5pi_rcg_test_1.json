@@ -1,0 +1,50 @@
+[{
+  "experiment_name": "APDEV 5pi rcg tests",
+  "combination_generation_type": "rcg",
+  "rcg_target_test_count": 10,
+  "quit_after_n_failed_tests": 10,
+  "qos_settings": {
+    "duration_secs": [60],
+    "datalen_bytes": [1, 1000000],
+    "pub_count": [1, 25],
+    "sub_count": [1, 25],
+    "use_reliable": [true, false],
+    "use_multicast": [true, false],
+    "durability_level": [0, 3],
+    "latency_count": [100]
+  },
+  "slave_machines": [
+    {
+      "machine_name": "k2",
+      "participant_allocation": "pub",
+      "ip": "169.254.251.21",
+      "ssh_key_path": "~/.ssh/id_rsa",
+      "username": "acwh025",
+      "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+    },
+    {
+      "machine_name": "k3",
+      "participant_allocation": "pub",
+      "ip": "169.254.251.22",
+      "ssh_key_path": "~/.ssh/id_rsa",
+      "username": "acwh025",
+      "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+    },
+    {
+      "machine_name": "k4",
+      "participant_allocation": "pub",
+      "ip": "169.254.251.23",
+      "ssh_key_path": "~/.ssh/id_rsa",
+      "username": "acwh025",
+      "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+    },
+    {
+      "machine_name": "k5",
+      "participant_allocation": "pub",
+      "ip": "169.254.251.24",
+      "ssh_key_path": "~/.ssh/id_rsa",
+      "username": "acwh025",
+      "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+    }
+  ]
+}]
