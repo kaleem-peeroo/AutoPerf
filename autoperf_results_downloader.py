@@ -536,6 +536,69 @@ def download_datasets_from_machine(machine: Dict = {}, status: Console.status = 
 
         console.print(f"{counter_string} Downloaded {dataset} ({file_size}B) from {machine['name']}.", style="bold green")
     
+def download_summarised_data_dirs_from_machine(machine: Dict = {}, status: Console.status = None):
+    if machine == {}:
+        logger.error(
+            f"No machine config passed."
+        )
+        return None
+
+    status.update(f"Getting summarised_data from {machine['name']} ({machine['ip']})...")
+
+    summ_dir = "~/AutoPerf/summarised_data"
+    get_summaries_command = f"ls {summ_dir}"
+    get_summaries_output = run_command_via_ssh(
+        machine,
+        get_summaries_command
+    )
+    if get_summaries_output is None:
+        logger.error(
+            f"Couldn't get summarised data from {machine['name']} ({machine['ip']})."
+        )
+        return None
+
+    os.makedirs(f"summarised_data/{machine['name']}", exist_ok=True)
+
+    summaries = get_summaries_output.split()
+
+    for summary in summaries:
+        i = summaries.index(summary)
+        i += 1
+        counter_string = f"[{i}/{len(summaries)}]"
+
+        get_file_size_command = f"du -sh {summ_dir}/{summary}"
+        get_file_size_output = run_command_via_ssh(
+            machine,
+            get_file_size_command
+        )
+        if get_file_size_output is None:
+            logger.error(
+                f"Couldn't get file size of {summary} from {machine['name']}"
+            )
+            return None
+
+        file_size = get_file_size_output.split()[0]
+        status.update(f"{counter_string} Downloading {summary} ({file_size}B) from {machine['name']}...")
+
+        download_command = f"scp -r -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{summ_dir}/{summary} ./summarised_data/{machine['name']}"
+        download_output = subprocess.Popen(
+            download_command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, stderr = download_output.communicate()
+        stdout = stdout.decode('utf-8').strip()
+        stderr = stderr.decode('utf-8').strip()
+
+        if download_output.returncode != 0:
+            logger.error(
+                f"Error downloading {summary} from {machine['name']}: {stderr}"
+            )
+            return None
+
+        console.print(f"{counter_string} Downloaded {summary} ({file_size}B) from {machine['name']}.", style="bold green")
+
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
         logger.error(
@@ -564,8 +627,14 @@ def main(sys_args: list[str] = []) -> None:
         console.print(Markdown(f"# {machine_name} ({MACHINE_CONFIG['ip']})"))
 
         with console.status(f"Downloading data from {machine_name}...") as status:
+            console.print(Markdown(f"## Raw Data"))
             download_zipped_dirs_from_machine(MACHINE_CONFIG, status)
+
+            console.print(Markdown(f"## Datasets"))
             download_datasets_from_machine(MACHINE_CONFIG, status)
+
+            console.print(Markdown(f"## Summarised Data"))
+            download_summarised_data_dirs_from_machine(MACHINE_CONFIG, status)
     
 if __name__ == "__main__":
     if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
