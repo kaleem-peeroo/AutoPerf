@@ -2381,7 +2381,8 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
         )
         return None
 
-    summaries_dirpath = os.path.join(dirpath, "summarised_data")
+    experiment_name = os.path.basename(dirpath)
+    summaries_dirpath = os.path.join("summarised_data", experiment_name)
     if os.path.exists(summaries_dirpath):
         summaries_dirpath_files = os.listdir(summaries_dirpath)
         if len(summaries_dirpath_files) > 0:
@@ -2428,11 +2429,13 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
             logger.error(f"Couldn't get pub_df for {pub_0_filepath}")
             continue
 
+        pub_df = pub_df.to_frame().reset_index()
+
         sub_csv_files = [_ for _ in csv_files if os.path.basename(_).startswith("sub_")]
         subs_df = get_subs_df_from_sub_files(sub_csv_files)
-        
+
         df_list = [pub_df, subs_df]
-        df = pd.concat(df_list, axis=1, ignore_index=True)
+        df = pd.concat(df_list, axis=1)
         df.to_csv(
             os.path.join(
                 summaries_dirpath,
