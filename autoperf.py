@@ -2479,7 +2479,8 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
         )
         return None
 
-    summaries_dirpath = os.path.join(dirpath, "summarised_data")
+    experiment_name = os.path.basename(dirpath)
+    summaries_dirpath = os.path.join("summarised_data", experiment_name)
     if not os.path.join(summaries_dirpath):
         logger.error(
             f"Summarised dirpath {summaries_dirpath} does NOT exist."
