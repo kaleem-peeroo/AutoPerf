@@ -1,0 +1,1 @@
+python autoperf_logs_downloader.py monitor_config.json
