@@ -2686,6 +2686,11 @@ def main(sys_args: list[str] = []) -> None:
 
             for i in range(remaining_test_count):
                 ess_df = get_ess_df(ESS_FILEPATH)
+                if ess_df is None:
+                    logger.warning(
+                        f"Error getting ESS dataframe."
+                    )
+                    continue
 
                 quit_after_n_failed_test_count = EXPERIMENT['quit_after_n_failed_tests']
                 if quit_after_n_failed_test_count > 0:
@@ -2715,11 +2720,10 @@ def main(sys_args: list[str] = []) -> None:
                 )
 
                 if ess_df is None:
-                    logger.error(f"Error when running test #{test_index + 1}: {test_name}")
+                    logger.error(f"Error when running test #{completed_test_count + 1}: {test_name}")
                     continue
 
                 ess_df.to_csv(ESS_FILEPATH, index = False)
-
             
             logger.debug("RCG experiment complete.")
 

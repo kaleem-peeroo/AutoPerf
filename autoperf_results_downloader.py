@@ -21,6 +21,7 @@ from multiprocessing import Process, Manager
 from rich.progress import track
 from rich.table import Table
 from rich.console import Console
+from rich.markdown import Markdown
 from io import StringIO
 
 console = Console()
@@ -468,7 +469,7 @@ def download_zipped_dirs_from_machine(machine: Dict = {}, status: Console.status
             )
             return None
 
-        console.print(f"Downloaded {zipped_dir} ({file_size}B) from {machine['name']}.", style="bold green")
+        console.print(f"{counter_string} Downloaded {zipped_dir} ({file_size}B) from {machine['name']}.", style="bold green")
         
     return zipped_dirs
 
@@ -533,7 +534,7 @@ def download_datasets_from_machine(machine: Dict = {}, status: Console.status = 
             )
             return None
 
-        console.print(f"Downloaded {dataset} ({file_size}B) from {machine['name']}.", style="bold green")
+        console.print(f"{counter_string} Downloaded {dataset} ({file_size}B) from {machine['name']}.", style="bold green")
     
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
@@ -560,6 +561,7 @@ def main(sys_args: list[str] = []) -> None:
 
     for MACHINE_CONFIG in CONFIG:
         machine_name = MACHINE_CONFIG['name']
+        console.print(Markdown(f"# {machine_name} ({MACHINE_CONFIG['ip']})"))
 
         with console.status(f"Downloading data from {machine_name}...") as status:
             download_zipped_dirs_from_machine(MACHINE_CONFIG, status)
