@@ -5,5 +5,13 @@
     "ssh_key_path": "~/.ssh/id_rsa",
     "username": "acwh025",
     "config_path": "./configs/3pi_mcast_exploration.json"
+  },
+  {
+    "name": "5pi",
+    "ip": "10.210.55.24",
+    "ssh_key_path": "~/.ssh/id_rsa",
+    "username": "acwh025",
+    "config_path": "./configs/5pi_pcg_test_1.json"
   }
+
 ]
