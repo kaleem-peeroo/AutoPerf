@@ -24,7 +24,7 @@
     },
     {
       "machine_name": "k3",
-      "participant_allocation": "pub",
+      "participant_allocation": "sub",
       "ip": "169.254.251.22",
       "ssh_key_path": "~/.ssh/id_rsa",
       "username": "acwh025",
@@ -32,7 +32,7 @@
     },
     {
       "machine_name": "k4",
-      "participant_allocation": "pub",
+      "participant_allocation": "sub",
       "ip": "169.254.251.23",
       "ssh_key_path": "~/.ssh/id_rsa",
       "username": "acwh025",
@@ -40,7 +40,7 @@
     },
     {
       "machine_name": "k5",
-      "participant_allocation": "pub",
+      "participant_allocation": "sub",
       "ip": "169.254.251.24",
       "ssh_key_path": "~/.ssh/id_rsa",
       "username": "acwh025",
