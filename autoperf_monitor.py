@@ -563,6 +563,12 @@ def run_command_via_ssh(machine_config: Dict = {}, command: str = "") -> Optiona
             )
             return None
 
+        if "No such file or directory" in stderr:
+            if "summarised_data" in command:
+               return stdout
+            elif "data" in command:
+                return stdout
+         
     return stdout
 
 def get_latest_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
@@ -963,6 +969,130 @@ def read_ap_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     return config_dict
 
+def get_folder_count_for_experiments(config: Dict = {}, machine_config: Dict = {}, folder_path: str = "") -> Optional[Dict]:
+    """
+    Get the folder count for experiments.
+
+    Params:
+        config: Dict: Dictionary containing experiment configuration.
+        machine_config: Dict: Dictionary containing machine configuration.
+        folder_path: str: Path to the folder to count.
+
+    Returns:
+        Dict: Experiment configuration with folder count if successful, None
+    """
+
+    if folder_path == "":
+        logger.error(
+            f"No folder path passed."
+        )
+        return None
+
+    if config == {}: 
+        logger.error(
+            f"No config passed."
+        )
+        return None
+
+    if machine_config == {}:
+        logger.error(
+            f"No machine config passed."
+        )
+        return None
+
+    for experiment in config:
+        experiment_dirname = get_dirname_from_experiment(experiment)
+        if experiment_dirname is None:
+            logger.error(
+                f"Couldn't get experiment dirname for {experiment['experiment_name']}."
+            )
+            continue
+        exp_name = os.path.basename(experiment_dirname)
+
+        dir_path = os.path.join("~/AutoPerf", folder_path, exp_name)
+
+        count_folder_command = f"ls -l {dir_path} | grep -c ^d"
+        count_folder_output = run_command_via_ssh(
+            machine_config,
+            count_folder_command
+        )
+        if count_folder_output is None:
+            logger.error(
+                f"Couldn't count folders in {dir_path} on {machine_config['name']} ({machine_config['ip']})."
+            )
+            continue
+
+        experiment[folder_path] = count_folder_output
+
+    return config
+
+def get_datasets_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> Optional[Dict]:
+    """
+    Get the number of datasets for experiments.
+
+    Params:
+        config: Dict: Dictionary containing experiment configuration.
+        machine_config: Dict: Dictionary containing machine configuration.
+
+    Returns:
+        Dict: Experiment configuration with dataset count if successful, None
+    """
+    if config == {}:
+        logger.error(
+            f"No config passed."
+        )
+        return None
+
+    if machine_config == {}:
+        logger.error(
+            f"No machine config passed."
+        )
+        return None
+
+    for experiment in config:
+        # If there are no summarised_data then don't other checking for datasets
+        if experiment['summarised_data'] == '0':
+            experiment['datasets'] = []
+            continue
+
+        experiment_dirname = get_dirname_from_experiment(experiment)
+        if experiment_dirname is None:
+            logger.error(
+                f"Couldn't get experiment dirname for {experiment['experiment_name']}."
+            )
+            continue
+        experiment_name = os.path.basename(experiment_dirname)
+
+        datasets_dir = os.path.join("~/AutoPerf", "datasets")
+        list_datasets_command = f"ls -l {datasets_dir} | grep -o '.*{experiment_name}.*'"
+        list_datasets_output = run_command_via_ssh(
+            machine_config,
+            list_datasets_command
+        )
+        if list_datasets_output is None:
+            logger.error(
+                f"Couldn't count datasets in {datasets_dir} on {machine_config['name']} ({machine_config['ip']})."
+            )
+            experiment['datasets'] = []
+            continue
+
+        get_datasets_command = f"ls -l {datasets_dir} | grep -o '.*{experiment_name}.*'"
+        get_datasets_command += " | awk '{print $9}'"
+        get_datasets_output = run_command_via_ssh(
+            machine_config,
+            get_datasets_command
+        )
+        if get_datasets_output is None:
+            logger.error(
+                f"Couldn't get datasets in {datasets_dir} on {machine_config['name']} ({machine_config['ip']})."
+            )
+            experiment['datasets'] = []
+            continue
+
+        experiment['datasets'] = get_datasets_output.split()
+
+    return config
+
 def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
     """
     Get ongoing info from a machine.
@@ -988,10 +1118,18 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     """
     - Get latest config from machine
+
     - Calculate target test count for experiments
-    - Calculate completed tests for experiments
-    - Check for zip results
+
+    - Get number of datasets that exist with exp_name
+    - Get number of files in /summarised_data/exp_name
+    - GEt number of folders in /data/exp_name
+
     - Get ESS for experiments
+    - Get number of rows in ESS for experiments
+    - Get number of successful tests
+    - Get number of failed tests
+    - Get status of last 100 tests
     """
 
     with console.status(f"Getting latest config from {machine_name} ({machine_ip})...") as status:
@@ -1018,19 +1156,34 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
             )
             return
 
-        status.update(f"Counting completed tests for experiments on {machine_name} ({machine_ip})...")
-        ap_config = calculate_completed_tests_for_experiments(ap_config, machine_config)
-        if ap_config is None:
+        exp_name = get_dirname_from_experiment(ap_config[0])
+        if exp_name is None:
             logger.error(
-                f"Couldn't calculate completed tests for experiments."
+                f"Couldn't get dirname for experiment."
             )
             return
 
-        status.update(f"Checking for zip results for experiments on {machine_name} ({machine_ip})...")
-        ap_config = check_for_zip_results(ap_config, machine_config)
+        status.update(f"Counting folders in /data on {machine_name} ({machine_ip})...")
+        ap_config = get_folder_count_for_experiments(ap_config, machine_config, "data")
         if ap_config is None:
             logger.error(
-                f"Couldn't check for zip results for experiments."
+                f"Couldn't get data count for experiments."
+            )
+            return
+
+        status.update(f"Counting folders in /summarised_data on {machine_name} ({machine_ip})...")
+        ap_config = get_folder_count_for_experiments(ap_config, machine_config, "summarised_data")
+        if ap_config is None:
+            logger.error(
+                f"Couldn't get summarised data count for experiments."
+            )
+            return
+
+        status.update(f"Counting datasets on {machine_name} ({machine_ip})...")
+        ap_config = get_datasets_for_experiments(ap_config, machine_config)
+        if ap_config is None:
+            logger.error(
+                f"Couldn't get datasets for experiments."
             )
             return
 
@@ -1156,8 +1309,11 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     """
     Display ongoing info as a table with the following columns:
     - Experiment Name
-    - Count
-    - Status
+    - Target Test Count
+    - /data
+    - /summarised_data
+    - Datasets
+    - ESS Status
     - Last 100 Statuses
 
     Params:
@@ -1172,30 +1328,42 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
 
     table = Table(title="Experiments Overview", show_lines=True)
     table.add_column("Experiment Name", style="bold")
-    table.add_column("Count", style="bold")
-    table.add_column("Status", style="bold")
-    table.add_column("Last 100 Statuses", style="bold")
+    table.add_column("Target\nTest\nCount", style="bold")
+    table.add_column("/data", style="bold")
+    table.add_column("/summarised\ndata", style="bold")
+    table.add_column("/datasets", style="bold")
+    table.add_column("ESS\nStatus", style="bold")
+    table.add_column("Last\n100\nStatuses", style="bold")
 
     for experiment in ongoing_info:
         experiment_name = experiment['experiment_name']
         target_test_count = experiment['target_test_count']
-        completed_test_count = len(experiment['completed_tests'])
-        zip_results_exist = experiment['zip_results_exist']
+        data_count = experiment['data']
+        summarised_data_count = experiment['summarised_data']
+        datasets = experiment['datasets']
+        
+        if len(datasets) > 0:
+            datasets_output = "\n".join(datasets)
+        else:
+            datasets_output = "0"
 
         failed_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "fail")
-        succes_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "success")
+        success_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "success")
 
         last_n_statuses = get_last_n_statuses_as_string_from_ess_df(experiment['ess_df'], 100, 10)
 
-        if zip_results_exist:
+        if len(datasets) > 0:
             completed_colour = "green"
         else:
             completed_colour = "white"
 
         table.add_row(
             f"[{completed_colour}]{experiment_name}[/{completed_colour}]",
-            f"[{completed_colour}]{completed_test_count} / {target_test_count}[/{completed_colour}]",
-            f"[green]{succes_percent}%[/green] [red]{failed_percent}%[/red]",
+            f"[{completed_colour}]{target_test_count}[/{completed_colour}]",
+            f"[{completed_colour}]{data_count}[/{completed_colour}]",
+            f"[{completed_colour}]{summarised_data_count}[/{completed_colour}]",
+            f"[{completed_colour}]{datasets_output}[/{completed_colour}]",
+            f"[green]{success_percent}%[/green] [red]{failed_percent}%[/red]",
             last_n_statuses
         )
 
