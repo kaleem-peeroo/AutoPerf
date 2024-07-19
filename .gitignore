@@ -15,4 +15,5 @@ dataset_creator/test_data_summaries
 .venv/
 data/
 datasets/
+summarised_data/
 logs/
