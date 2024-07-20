@@ -1352,6 +1352,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         data_count = experiment['data']
         summarised_data_count = experiment['summarised_data']
         datasets = experiment['datasets']
+        ess_row_count = len(experiment['ess_df'].index)
         
         if len(datasets) > 0:
             datasets_output = "\n".join(datasets)
@@ -1374,7 +1375,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
             f"[{completed_colour}]{data_count}[/{completed_colour}]",
             f"[{completed_colour}]{summarised_data_count}[/{completed_colour}]",
             f"[{completed_colour}]{datasets_output}[/{completed_colour}]",
-            f"[green]{success_percent}%[/green] [red]{failed_percent}%[/red]",
+            f"[green]{success_percent}%[/green] [red]{failed_percent}%[/red]\n({ess_row_count} rows)",
             last_n_statuses
         )
 
