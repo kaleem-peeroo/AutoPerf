@@ -558,10 +558,13 @@ def run_command_via_ssh(machine_config: Dict = {}, command: str = "") -> Optiona
 
     if command_process.returncode != 0:
         if "No such file or directory" not in stderr:
-            logger.error(
-                f"Error running {command} over SSH on {machine_name}: {stderr}"
-            )
-            return None
+            if stderr.strip() == "":
+                return stdout
+            else:
+                logger.error(
+                    f"\nError running {command} over SSH on {machine_name}:\n\t{stderr}\n"
+                )
+                return None
 
         if "No such file or directory" in stderr:
             if "summarised_data" in command:
@@ -1050,6 +1053,14 @@ def get_datasets_for_experiments(config: Dict = {}, machine_config: Dict = {}) -
         return None
 
     for experiment in config:
+        if 'summarised_data' not in experiment.keys():
+            logger.warning(
+                f"summarised_data not found for {experiment['experiment_name']}."
+            )
+            experiment['summarised_data'] = '0'
+            experiment['datasets'] = []
+            continue
+
         # If there are no summarised_data then don't other checking for datasets
         if experiment['summarised_data'] == '0':
             experiment['datasets'] = []
