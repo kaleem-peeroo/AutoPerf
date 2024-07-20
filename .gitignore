@@ -17,3 +17,4 @@ data/
 datasets/
 summarised_data/
 logs/
+pytests/ess/random_ess.csv
