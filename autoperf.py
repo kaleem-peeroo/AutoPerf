@@ -2523,7 +2523,16 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
             )
             continue
 
+        for key, value in new_dataset_row.items():
+            if value == True:
+                new_dataset_row[key] = 1
+            elif value == False:
+                new_dataset_row[key] = 0
+
         for column in test_df.columns:
+            if "index" in column.lower():
+                continue
+
             column_values = test_df[column]
             value_count = len(column_values)
 
