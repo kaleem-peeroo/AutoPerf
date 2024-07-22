@@ -7,6 +7,7 @@ import pandas as pd
 from icecream import ic
 from typing import Dict, Optional
 from datetime import datetime, timedelta
+from pprint import pprint
 
 def generate_random_timestamp(start: datetime, end: datetime) -> datetime:
     delta = end - start
@@ -195,8 +196,17 @@ class TestAutoPerf(unittest.TestCase):
     def setUp(self):
         generate_random_ess(50)
 
+        # Copy folders from pytest/summarised_data to ./summarised_data
+        os.system("cp -r ./pytests/summarised_data/Multicast* ./summarised_data/")
+
     def tearDown(self):
-        pass
+        # Delete copied folders from ./summarised_data
+        os.system("cp -r ./summarised_data/Multicast* ./pytests/summarised_data/")
+        os.system("rm -rf ./summarised_data/*")
+
+        # Delete generated datasets
+        # TODO: Uncomment
+        # os.system("rm -rf ./datasets/*.csv")
 
     def test_read_config(self):
         config = ap.read_config("./pytests/configs/good_config_1.json")
@@ -933,6 +943,31 @@ class TestAutoPerf(unittest.TestCase):
             sub_machines[0]['machine_name'],
             'p2'
         )
+
+    def test_generate_dataset(self):
+        QOS_COLUMNS = [
+            "datalen_bytes",
+            "durability_level",
+            "duration_secs",
+            "latency_count",
+            "pub_count",
+            "sub_count",
+            "use_multicast",
+            "use_reliable"
+        ]
+        CONFIG = ap.read_config("./pytests/configs/3pi_mcast_exploration.json")
+
+        for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
+            EXPERIMENT_DIRNAME = ap.get_dirname_from_experiment(EXPERIMENT)
+            ds_path = ap.generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=10)
+
+            ds_df = pd.read_csv(ds_path)
+            # QOS columns are in the dataset
+
+            self.assertEqual(
+                list(set(QOS_COLUMNS) - set(list(ds_df.columns)[:8])),
+                []
+            )
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=FutureWarning)
