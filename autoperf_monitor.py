@@ -1352,7 +1352,10 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         data_count = experiment['data']
         summarised_data_count = experiment['summarised_data']
         datasets = experiment['datasets']
-        ess_row_count = len(experiment['ess_df'].index)
+        if experiment['ess_df'] is not None:
+            ess_row_count = len(experiment['ess_df'].index)
+        else:
+            ess_row_count = 0
         
         if len(datasets) > 0:
             datasets_output = "\n".join(datasets)
