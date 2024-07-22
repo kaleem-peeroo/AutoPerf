@@ -2397,7 +2397,7 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
     test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
     test_dirpaths = [_ for _ in test_dirpaths if "summarised_data" not in _.lower()]
     if len(test_dirpaths) == 0:
-        logger.warning("Found no test folders in {dirpath}")
+        logger.warning(f"Found no test folders in {dirpath}")
         return None
 
     logger.debug(
