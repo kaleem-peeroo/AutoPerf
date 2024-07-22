@@ -205,8 +205,7 @@ class TestAutoPerf(unittest.TestCase):
         os.system("rm -rf ./summarised_data/*")
 
         # Delete generated datasets
-        # TODO: Uncomment
-        # os.system("rm -rf ./datasets/*.csv")
+        os.system("rm -rf ./datasets/*.csv")
 
     def test_read_config(self):
         config = ap.read_config("./pytests/configs/good_config_1.json")
