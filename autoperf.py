@@ -2458,7 +2458,7 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
 
     logger.debug(f"Summarised {summarised_test_count}/{len(test_dirpaths)} tests...")
 
-def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional[None]:
+def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional[str]:
     # TODO: Write unit tests for this function
     """
     Reduce each csv file in summarised_data folder to a single row in one csv file.
@@ -2476,27 +2476,16 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
         )
         return None
 
-    if not os.path.exists(dirpath):
-        logger.error(
-            f"Dirpath does not exist."
-        )
-        return None
-
-    if not os.path.isdir(dirpath):
-        logger.error(
-            f"Dirpath is not a directory."
-        )
-        return None
-
     experiment_name = os.path.basename(dirpath)
     summaries_dirpath = os.path.join("summarised_data", experiment_name)
-    if not os.path.join(summaries_dirpath):
+    if not os.path.exists(summaries_dirpath):
         logger.error(
             f"Summarised dirpath {summaries_dirpath} does NOT exist."
         )
         return None
 
     test_csvs = [os.path.join(summaries_dirpath, _) for _ in os.listdir(summaries_dirpath)]
+    test_csvs = [_ for _ in test_csvs if _.endswith(".csv")]
     if len(test_csvs) == 0:
         logger.error(
             f"No csv files found in {summaries_dirpath}."
