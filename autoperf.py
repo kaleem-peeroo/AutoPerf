@@ -1333,6 +1333,15 @@ def run_script_on_machine(
 
         return_code = process.returncode
 
+        if DEBUG_MODE:
+            logger.debug(
+                f"STDOUT:\n\t{stdout}"
+            )
+            logger.debug(
+                f"STDERR:\n\t{stderr}"
+            )
+
+
         if return_code != 0:
             logger.error(
                 f"Error running script on {machine_config['machine_name']}."
