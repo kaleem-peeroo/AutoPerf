@@ -2506,7 +2506,14 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
     for test_csv in track(test_csvs, description="Processing..."):
         new_dataset_row = {}
 
-        test_df = pd.read_csv(test_csv)
+        try:
+            test_df = pd.read_csv(test_csv)
+        except UnicodeDecodeError:
+            logger.error(
+                f"UnicodeDecodeError reading {test_csv}."
+            )
+            continue
+
         test_name = os.path.basename(test_csv)
 
         new_dataset_row = get_qos_dict_from_test_name(test_name)
