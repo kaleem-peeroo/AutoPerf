@@ -2557,9 +2557,7 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
         )
 
     dataset_df.to_csv(filename, index=False)
-    logger.info(
-        f"Dataset written to {filename}"
-    )
+    return filename
 
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
@@ -2763,10 +2761,16 @@ def main(sys_args: list[str] = []) -> None:
             )
             continue
 
-        generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=0)
-        generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=10)
-        generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=25)
-        generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=50)
+        truncation_percentages = [0, 10, 25, 50]
+        for truncation_percent in truncation_percentages:
+            trunc_ds_path = generate_dataset(EXPERIMENT_DIRNAME, truncation_percent)
+            if trunc_ds_path is None:
+                logger.error(
+                    f"Error generating dataset for {EXPERIMENT['experiment_name']} with {truncation_percent}% truncation."
+                )
+                continue
+
+            logger.info(f"Generated dataset with {truncation_percent}% truncation:\n\t{trunc_ds_path}")
 
         # Compress results at end of experiment
         if os.path.exists(f"{EXPERIMENT_DIRNAME}.zip"):
