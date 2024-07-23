@@ -24,7 +24,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 SKIP_RESTART = False
 
 # Set up logging
@@ -135,11 +135,31 @@ def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
         f"Checking SSH connection to {username}@{ip}"
     )
 
-    response = os.system(f"ssh -i {ssh_key_path} {username}@{ip} 'echo \"SSH connection successful.\"' > /dev/null 2>&1")
+    try:
+        command = ["ssh", "-i", ssh_key_path, f"{username}@{ip}", "'echo", "\"SSH", "connection", "successful.\"'", ">", "/dev/null", "2>&1"]
+        ssh_check_process = subprocess.Popen(
+            command,
+            stdout = subprocess.PIPE,
+            stderr = subprocess.PIPE
+        )
 
-    if response == 0:
-        return True
-    else:
+        stdout, stderr = ssh_check_process.communicate(timeout=30)
+
+        response = ssh_check_process.returncode 
+
+        # response = os.system(f"ssh -i {ssh_key_path} {username}@{ip} 'echo \"SSH connection successful.\"' > /dev/null 2>&1")
+
+        if response == 0:
+            return True
+        else:
+            return False
+
+    except subprocess.TimeoutExpired:
+        ssh_check_process.kill()
+        stdout, stderr = ssh_check_process.communicate()
+        logger.error(
+            f"Timed out when checking SSH connection: {stderr}"
+        )
         return False
 
 def get_difference_between_lists(list_one: List = [], list_two: List = []):
