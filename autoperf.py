@@ -24,8 +24,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
-DEBUG_MODE = False
-SKIP_RESTART = False
+DEBUG_MODE = True
+SKIP_RESTART = True
 
 # Set up logging
 logging.basicConfig(
@@ -2596,7 +2596,6 @@ def main(sys_args: list[str] = []) -> None:
         if not os.path.exists(EXPERIMENT_DIRNAME):
             os.makedirs(EXPERIMENT_DIRNAME)
 
-        logger.debug(f"Checking if PCG or not.")
         is_pcg = get_if_pcg(EXPERIMENT)
         if is_pcg is None:
             logger.warning(
@@ -2622,7 +2621,9 @@ def main(sys_args: list[str] = []) -> None:
                 )
                 continue
 
-            ESS_FILEPATH = os.path.join(EXPERIMENT_DIRNAME, 'ess.csv')
+            EXP_DIRNAME = os.path.basename(get_dirname_from_experiment(EXPERIMENT))
+            os.makedirs("ess", exist_ok=True)
+            ESS_FILEPATH = os.path.join("ess", f"{EXP_DIRNAME}.csv")
 
             ess_df = get_ess_df(ESS_FILEPATH)
             if ess_df is None:
@@ -2679,7 +2680,10 @@ def main(sys_args: list[str] = []) -> None:
             logger.debug(f"Is RCG")
             target_test_count = EXPERIMENT['rcg_target_test_count']
 
-            ESS_FILEPATH = os.path.join(EXPERIMENT_DIRNAME, 'ess.csv')
+            EXP_DIRNAME = os.path.basename(get_dirname_from_experiment(EXPERIMENT))
+            os.makedirs("ess", exist_ok=True)
+            ESS_FILEPATH = os.path.join("ess", f"{EXP_DIRNAME}.csv")
+
             logger.debug(f"Getting ESS dataframe.")
             ess_df = get_ess_df(ESS_FILEPATH)
             if ess_df is None:
