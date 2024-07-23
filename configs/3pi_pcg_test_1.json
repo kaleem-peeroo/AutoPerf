@@ -2,7 +2,7 @@
   "experiment_name": "APDEV Quit On N Tests",
   "combination_generation_type": "pcg",
   "rcg_target_test_count": 0,
-  "quit_after_n_failed_tests": 2,
+  "quit_after_n_failed_tests": 10,
   "qos_settings": {
     "duration_secs": [10],
     "datalen_bytes": [100],
