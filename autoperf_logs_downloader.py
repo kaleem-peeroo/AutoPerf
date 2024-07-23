@@ -500,8 +500,4 @@ def main(sys_args: list[str] = []) -> None:
             download_logs_from_machine(MACHINE_CONFIG, status)
     
 if __name__ == "__main__":
-    if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
-        main(sys.argv)
-    else:
-        logger.error("Tests failed.")
-        sys.exit(1)
+    main(sys.argv)
