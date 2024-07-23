@@ -1104,6 +1104,103 @@ def get_datasets_for_experiments(config: Dict = {}, machine_config: Dict = {}) -
 
     return config
 
+def calculate_expected_time_for_experiments(config: Dict = {}) -> Optional[Dict]:
+    """
+    Calculate the expected total time for experiments by reading the config and multiplying target test count by duration.
+
+    Params:
+        config: Dict: Dictionary containing experiment configuration.
+
+    Returns:
+        Dict: Experiment configuration with expected total time if successful, None
+    """
+    if config == {}:
+        logger.error(
+            f"No config passed."
+        )
+        return None
+
+    for experiment in config:
+        if 'target_test_count' not in experiment.keys():
+            logger.error(
+                f"target_test_count not found for {experiment['experiment_name']}."
+            )
+            continue
+
+        if 'qos_settings' not in experiment.keys():
+            logger.error(
+                f"duration_secs not found for {experiment['experiment_name']}."
+            )
+            continue
+
+        target_test_count = experiment['target_test_count']
+        duration_secs = max(experiment['qos_settings']['duration_secs'])
+
+        expected_time_secs = target_test_count * duration_secs
+        total_time_hours = expected_time_secs // 3600
+        total_time_minutes = (expected_time_secs % 3600) // 60
+
+        expected_time_str = f"{total_time_hours} hrs {total_time_minutes} mins"
+
+        experiment['expected_time_sec'] = expected_time_secs
+        experiment['expected_time_str'] = expected_time_str
+
+    return config
+
+def calculate_elapsed_time_for_experiments(config: Dict = {}) -> Optional[Dict]:
+    """
+    Calculate the elapsed time for experiments by reading the ESS DataFrame and subtracting the latest end time from the first start time.
+
+    Params:
+        config: Dict: Dictionary containing experiment configuration.
+
+    Returns:
+        Dict: Experiment configuration with elapsed time if successful, None
+    """
+
+    if config == {}:
+        logger.error(
+            f"No config passed."
+        )
+        return None
+
+    for experiment in config:
+        if 'ess_df' not in experiment.keys():
+            logger.error(
+                f"ess_df not found for {experiment['experiment_name']}."
+            )
+            continue
+
+        ess_df = experiment['ess_df']
+        if ess_df is None:
+            logger.error(
+                f"ess_df is None for {experiment['experiment_name']}."
+            )
+            continue
+
+        if ess_df.empty:
+            logger.error(
+                f"ess_df is empty for {experiment['experiment_name']}."
+            )
+            continue
+
+        ess_df['start_timestamp'] = pd.to_datetime(ess_df['start_timestamp'])
+        ess_df['end_timestamp'] = pd.to_datetime(ess_df['end_timestamp'])
+
+        start_time = ess_df['start_timestamp'].min()
+        end_time = ess_df['end_timestamp'].max()
+
+        time_difference = end_time - start_time
+        days, seconds = time_difference.days, time_difference.seconds
+        hours = days * 24 + seconds // 3600
+        minutes = (seconds % 3600) // 60
+        seconds = seconds % 60
+
+        elapsed_time_str = f"{hours} hrs {minutes} mins"
+        experiment['elapsed_time_str'] = elapsed_time_str
+
+    return config
+
 def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
     """
     Get ongoing info from a machine.
@@ -1134,13 +1231,16 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     - Get number of datasets that exist with exp_name
     - Get number of files in /summarised_data/exp_name
-    - GEt number of folders in /data/exp_name
+    - Get number of folders in /data/exp_name
 
     - Get ESS for experiments
     - Get number of rows in ESS for experiments
     - Get number of successful tests
     - Get number of failed tests
     - Get status of last 100 tests
+
+    - Get expected total time
+    - Get elapsed time
     """
 
     with console.status(f"Getting latest config from {machine_name} ({machine_ip})...") as status:
@@ -1198,11 +1298,27 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
             )
             return
 
+        status.update(f"Calculating expected total time for experiments on {machine_name} ({machine_ip})...")
+        ap_config = calculate_expected_time_for_experiments(ap_config)
+        if ap_config is None:
+            logger.error(
+                f"Couldn't calculate expected total time for experiments."
+            )
+            return
+
         status.update(f"Getting ESS for experiments on {machine_name} ({machine_ip})...")
         ap_config = get_ess_df_for_experiments(ap_config, machine_config)
         if ap_config is None:
             logger.error(
                 f"Couldn't get ESS for experiments."
+            )
+            return
+        
+        status.update(f"Calculating elapsed time for experiments on {machine_name} ({machine_ip})...")
+        ap_config = calculate_elapsed_time_for_experiments(ap_config)
+        if ap_config is None:
+            logger.error(
+                f"Couldn't calculate elapsed time for experiments."
             )
             return
 
@@ -1223,7 +1339,7 @@ def get_status_percentage_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame(), sta
     # TODO: Write unit tests
 
     if ess_df is None:
-        logger.error(
+        logger.warning(
             f"No ESS DataFrame passed."
         )
         return None
@@ -1272,7 +1388,7 @@ def get_last_n_statuses_as_string_from_ess_df(ess_df: pd.DataFrame = pd.DataFram
     # TODO: Write unit tests
 
     if ess_df is None:
-        logger.error(
+        logger.warning(
             f"No ESS DataFrame passed."
         )
         return None
@@ -1339,6 +1455,8 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
 
     table = Table(title="Experiments Overview", show_lines=True)
     table.add_column("Experiment Name", style="bold")
+    table.add_column("Elapsed\nTime", style="bold")
+    table.add_column("Expected\nTotal\nTime", style="bold")
     table.add_column("Target\nTest\nCount", style="bold")
     table.add_column("/data", style="bold")
     table.add_column("/summarised\ndata", style="bold")
@@ -1350,8 +1468,12 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         experiment_name = experiment['experiment_name']
         target_test_count = experiment['target_test_count']
         data_count = experiment['data']
-        summarised_data_count = experiment['summarised_data']
         datasets = experiment['datasets']
+        summarised_data_count = experiment['summarised_data']
+
+        if summarised_data_count == "0":
+            summarised_data_count = "-"
+
         if experiment['ess_df'] is not None:
             ess_row_count = len(experiment['ess_df'].index)
         else:
@@ -1360,20 +1482,35 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         if len(datasets) > 0:
             datasets_output = "\n".join(datasets)
         else:
-            datasets_output = "0"
+            datasets_output = "-"
 
         failed_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "fail")
         success_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "success")
 
         last_n_statuses = get_last_n_statuses_as_string_from_ess_df(experiment['ess_df'], 100, 10)
 
+        if "expected_time_str" not in experiment.keys():
+            expected_time_str = "-"
+        else:
+            expected_time_str = experiment['expected_time_str']
+
+        if "elapsed_time_str" not in experiment.keys():
+            elapsed_time_str = "-"
+        else:
+            elapsed_time_str = experiment['elapsed_time_str']
+
         if len(datasets) > 0:
             completed_colour = "green"
         else:
             completed_colour = "white"
 
+        if data_count == "0":
+            data_count = "-"
+
         table.add_row(
             f"[{completed_colour}]{experiment_name}[/{completed_colour}]",
+            f"[{completed_colour}]{elapsed_time_str}[/{completed_colour}]",
+            f"[{completed_colour}]{expected_time_str}[/{completed_colour}]",
             f"[{completed_colour}]{target_test_count}[/{completed_colour}]",
             f"[{completed_colour}]{data_count}[/{completed_colour}]",
             f"[{completed_colour}]{summarised_data_count}[/{completed_colour}]",
