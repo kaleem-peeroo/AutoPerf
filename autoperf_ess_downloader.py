@@ -416,8 +416,8 @@ def download_ess_from_machine(machine: Dict = {}, status: Console.status = None)
 
     status.update(f"Getting ESS from {machine['name']} ({machine['ip']})...")
 
-    esses_dir = "~/AutoPerf/ess"
-    get_esses_command = f"ls {esses_dir}/*.log"
+    esses_dir = "~/AutoPerf/ess/"
+    get_esses_command = f"ls {esses_dir}/*.csv"
     get_esses_output = run_command_via_ssh(
         machine,
         get_esses_command
