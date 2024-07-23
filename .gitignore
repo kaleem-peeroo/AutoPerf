@@ -17,4 +17,3 @@ data/
 datasets/
 summarised_data/
 logs/
-pytests/ess/*.csv
