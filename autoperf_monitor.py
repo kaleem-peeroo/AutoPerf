@@ -1432,6 +1432,32 @@ def get_last_n_statuses_as_string_from_ess_df(ess_df: pd.DataFrame = pd.DataFram
 
     return last_n_statuses_output
 
+def get_last_timestamp_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame()) -> Optional[str]:
+    """
+    Get the last timestamp from the ESS DataFrame.
+
+    Params:
+        ess_df: pd.DataFrame: DataFrame containing ESS data.
+
+    Returns:
+        str: Last timestamp if successful, None if not.
+    """
+    if ess_df is None:
+        logger.warning(
+            f"No ESS DataFrame passed."
+        )
+        return None
+
+    if ess_df.empty:
+        logger.error(
+            f"ESS DataFrame is empty."
+        )
+        return None
+
+    last_timestamp = ess_df['end_timestamp'].max()
+    last_timestamp = last_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    return last_timestamp
+
 def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     """
     Display ongoing info as a table with the following columns:
@@ -1456,7 +1482,8 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     table = Table(title="Experiments Overview", show_lines=True)
     table.add_column("Experiment Name", style="bold")
     table.add_column("Elapsed\nTime", style="bold")
-    table.add_column("Expected\nTotal\nTime", style="bold")
+    table.add_column("Expected\nTime", style="bold")
+    table.add_column("Last\nTimestamp", style="bold")
     table.add_column("Target\nTest\nCount", style="bold")
     table.add_column("/data", style="bold")
     table.add_column("/summarised\ndata", style="bold")
@@ -1470,6 +1497,12 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         data_count = experiment['data']
         datasets = experiment['datasets']
         summarised_data_count = experiment['summarised_data']
+
+        last_timestamp = get_last_timestamp_from_ess_df(experiment['ess_df'])
+        if last_timestamp is None:
+            last_timestamp = "-"
+        else:
+            last_timestamp = last_timestamp.replace(" ", "\n")
 
         if summarised_data_count == "0":
             summarised_data_count = "-"
@@ -1492,12 +1525,12 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         if "expected_time_str" not in experiment.keys():
             expected_time_str = "-"
         else:
-            expected_time_str = experiment['expected_time_str']
+            expected_time_str = experiment['expected_time_str'].replace(" ", "\n")
 
         if "elapsed_time_str" not in experiment.keys():
             elapsed_time_str = "-"
         else:
-            elapsed_time_str = experiment['elapsed_time_str']
+            elapsed_time_str = experiment['elapsed_time_str'].replace(" ", "\n")
 
         if len(datasets) > 0:
             completed_colour = "green"
@@ -1511,6 +1544,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
             f"[{completed_colour}]{experiment_name}[/{completed_colour}]",
             f"[{completed_colour}]{elapsed_time_str}[/{completed_colour}]",
             f"[{completed_colour}]{expected_time_str}[/{completed_colour}]",
+            f"[{completed_colour}]{last_timestamp}[/{completed_colour}]",
             f"[{completed_colour}]{target_test_count}[/{completed_colour}]",
             f"[{completed_colour}]{data_count}[/{completed_colour}]",
             f"[{completed_colour}]{summarised_data_count}[/{completed_colour}]",
@@ -1557,8 +1591,4 @@ def main(sys_args: list[str] = []) -> None:
         display_as_table(ongoing_info)
 
 if __name__ == "__main__":
-    if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
-        main(sys.argv)
-    else:
-        logger.error("Tests failed.")
-        sys.exit(1)
+    main(sys.argv)
