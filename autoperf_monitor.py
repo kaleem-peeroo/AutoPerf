@@ -1,18 +1,11 @@
 import subprocess
 import sys
-import time
-import ast
 import itertools
 import re
-import pytest
 import os
 import logging
 import json
-import datetime
 import warnings
-import random
-import shutil
-import rich
 
 from icecream import ic
 from typing import Dict, List, Optional
@@ -35,7 +28,7 @@ DEBUG_MODE = False
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG, 
-    filename="autoperf.log", 
+    filename="autoperf_monitor.log", 
     filemode="w",
     format='%(asctime)s \t%(levelname)s \t%(message)s'
 )
@@ -45,7 +38,7 @@ console_handler = logging.StreamHandler()
 if DEBUG_MODE:
     console_handler.setLevel(logging.DEBUG)
 else:
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(logging.ERROR)
 formatter = logging.Formatter(
     '%(asctime)s \t%(levelname)s \t%(message)s'
 )
@@ -1174,13 +1167,13 @@ def calculate_elapsed_time_for_experiments(config: Dict = {}) -> Optional[Dict]:
 
         ess_df = experiment['ess_df']
         if ess_df is None:
-            logger.error(
+            logger.warning(
                 f"ess_df is None for {experiment['experiment_name']}."
             )
             continue
 
         if ess_df.empty:
-            logger.error(
+            logger.warning(
                 f"ess_df is empty for {experiment['experiment_name']}."
             )
             continue
