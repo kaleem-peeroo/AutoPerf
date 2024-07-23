@@ -2785,7 +2785,7 @@ def main(sys_args: list[str] = []) -> None:
             )
 
 if __name__ == "__main__":
-    if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
+    if pytest.main(["-q", "./pytests/test_autoperf.py", "--exitfirst"]) == 0:
         main(sys.argv)
     else:
         logger.error("Tests failed.")

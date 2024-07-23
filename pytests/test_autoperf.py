@@ -202,7 +202,7 @@ class TestAutoPerf(unittest.TestCase):
     def tearDown(self):
         # Delete copied folders from ./summarised_data
         os.system("cp -r ./summarised_data/Multicast* ./pytests/summarised_data/")
-        os.system("rm -rf ./summarised_data/*")
+        os.system("rm -rf ./summarised_data/Multicast*")
 
         # Delete generated datasets
         os.system("rm -rf ./datasets/*.csv")
