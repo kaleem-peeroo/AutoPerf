@@ -11,7 +11,7 @@
     "ip": "10.210.55.24",
     "ssh_key_path": "~/.ssh/id_rsa",
     "username": "acwh025",
-    "config_path": "./configs/5pi_mcast_exploration.json"
+    "config_path": "./configs/5pi_increasing_load.json"
   }
 
 ]
