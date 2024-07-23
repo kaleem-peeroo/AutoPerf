@@ -1411,18 +1411,24 @@ def get_last_n_statuses_as_string_from_ess_df(ess_df: pd.DataFrame = pd.DataFram
         )
         return None
 
-    last_n_statuses = ess_df['end_status'].tail(n)
+    last_n_statuses = ess_df['end_status'].tail(n).tolist()
+    pprint(last_n_statuses)
+
     last_n_statuses_output = ""
     for status in last_n_statuses:
-        if "success" in status:
+        if "success" in status.lower():
             last_n_statuses_output += "🟢"
         else:
             last_n_statuses_output += "🔴"
 
+    pprint(last_n_statuses_output)
+
     # Add a line break after every line_break_point
     last_n_statuses_output = "\n".join(
-        last_n_statuses_output[i:i+line_break_point] for i in range(0, len(last_n_statuses_output), 20)
+        [last_n_statuses_output[i:i+line_break_point] for i in range(0, len(last_n_statuses_output), line_break_point)]
     )
+
+    pprint(last_n_statuses_output)
 
     return last_n_statuses_output
 
