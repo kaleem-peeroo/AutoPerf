@@ -887,7 +887,7 @@ def get_ess_df_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> 
             )
             continue
 
-        ess_filepath = os.path.join("~/AutoPerf", experiment_dirname, "ess.csv")
+        ess_filepath = os.path.join("~/AutoPerf/ess", f"{experiment_dirname}.csv")
         check_ess_exists_command = f"ls {ess_filepath}"
         check_ess_exists_output = run_command_via_ssh(
             machine_config,
