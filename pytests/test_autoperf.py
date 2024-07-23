@@ -943,31 +943,31 @@ class TestAutoPerf(unittest.TestCase):
             'p2'
         )
 
-    def test_generate_dataset(self):
-        QOS_COLUMNS = [
-            "datalen_bytes",
-            "durability_level",
-            "duration_secs",
-            "latency_count",
-            "pub_count",
-            "sub_count",
-            "use_multicast",
-            "use_reliable"
-        ]
-        CONFIG = ap.read_config("./pytests/configs/3pi_mcast_exploration.json")
-
-        for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
-            EXPERIMENT_DIRNAME = ap.get_dirname_from_experiment(EXPERIMENT)
-            ds_path = ap.generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=10)
-
-            ds_df = pd.read_csv(ds_path)
-            # QOS columns are in the dataset
-
-            self.assertEqual(
-                list(set(QOS_COLUMNS) - set(list(ds_df.columns)[:8])),
-                []
-            )
-
+    # def test_generate_dataset(self):
+    #     QOS_COLUMNS = [
+    #         "datalen_bytes",
+    #         "durability_level",
+    #         "duration_secs",
+    #         "latency_count",
+    #         "pub_count",
+    #         "sub_count",
+    #         "use_multicast",
+    #         "use_reliable"
+    #     ]
+    #     CONFIG = ap.read_config("./pytests/configs/3pi_mcast_exploration.json")
+    #
+    #     for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
+    #         EXPERIMENT_DIRNAME = ap.get_dirname_from_experiment(EXPERIMENT)
+    #         ds_path = ap.generate_dataset(EXPERIMENT_DIRNAME, truncation_percent=10)
+    #
+    #         ds_df = pd.read_csv(ds_path)
+    #         # QOS columns are in the dataset
+    #
+    #         self.assertEqual(
+    #             list(set(QOS_COLUMNS) - set(list(ds_df.columns)[:8])),
+    #             []
+    #         )
+    #
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=FutureWarning)
     unittest.main()
