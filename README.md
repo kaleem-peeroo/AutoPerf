@@ -245,9 +245,3 @@ These are the general steps that take place when using AP:
             2. Ping every other machine.
             3. SSH check every other machine.
             4. tbc...
-
-# New things to add
-
-- [ ] Set buffer duration straight from config file. Only thing being passed to the application is the config file.
-- [ ] Add functionality to store and manipulate test statuses from the [ESS](#experiment-status-spreadsheet-ess).
-
