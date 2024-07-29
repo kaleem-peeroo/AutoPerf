@@ -359,6 +359,23 @@ def read_config(config_path: str = ""):
                 )
                 return None
 
+        noise_gen_settings = experiment['noise_generation']
+        if noise_gen_settings != {}:
+            is_noise_gen_config_valid = validate_dict_using_keys(
+                list(noise_gen_settings.keys()),
+                REQUIRED_NOISE_GENERATION_KEYS
+            )
+            if is_noise_gen_config_valid is None:
+                logger.error(
+                    f"Error validating noise generation for {experiment['experiment_name']}."
+                )
+                return None
+            if not is_noise_gen_config_valid:
+                logger.error(
+                    f"Config invalid for noise generation for {experiment['experiment_name']}."
+                )
+                return None
+
     return config
 
 def get_if_pcg(experiment: Optional[Dict] = None) -> Optional[bool]:
@@ -2569,8 +2586,6 @@ def main(sys_args: list[str] = []) -> None:
             f"Couldn't read config of {CONFIG_PATH}."
         )
         return None
-
-    asdf
 
     for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
 
