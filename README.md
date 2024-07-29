@@ -13,14 +13,9 @@
 11. [How does the current system work?](#how-does-the-current-system-work?)
 
 # TODO
-- [x] Code get_test_name_from_combination_dict()
-- [x] Code get_next_test_from_ess()
-- [x] Code have_last_n_tests_failed()
-- [x] Create function to generate ESS based off config
-- [ ] Implement debug mode
-    - [ ] Option to skip restarting machines
-    - [ ] Outputs command outputs to files for debugging
-- [ ] Code run_test()
+- [ ] Find out how to use netem to simulate network conditions.
+- [ ] Add noise configurations to config.
+- [ ] Implement noise generation from noise configuration.
 
 # Introduction
 
