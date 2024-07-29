@@ -20,13 +20,13 @@
     }
   },
   "qos_settings": {
-    "duration_secs": [30],
+    "duration_secs": [10],
     "datalen_bytes": [100],
-    "pub_count": [1, 50, 100],
-    "sub_count": [1, 50, 100],
-    "use_reliable": [true, false],
-    "use_multicast": [true, false],
-    "durability_level": [0, 1, 2, 3],
+    "pub_count": [1],
+    "sub_count": [1],
+    "use_reliable": [true],
+    "use_multicast": [true],
+    "durability_level": [0],
     "latency_count": [100]
   },
   "slave_machines": [
