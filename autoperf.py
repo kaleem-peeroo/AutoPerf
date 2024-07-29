@@ -1668,13 +1668,13 @@ def get_noise_gen_scripts(config: Dict = {}) -> Tuple[List[str], str]:
     bw_burst = config['bandwidth_limit']['max_burst']
     bw_latency_cut_off = config['bandwidth_limit']['latency_cut_off']
 
-    qdisc_str = "sudo tc qdisc add dev eth0 root netem"
+    qdisc_str = "sudo tc qdisc add dev eth0 root"
 
-    packet_loss_script = f"{qdisc_str} loss {packet_loss}"
-    packet_duplication_script = f"{qdisc_str} duplicate {packet_loss}"
-    packet_corruption_script = f"{qdisc_str} corrupt {packet_loss}"
+    packet_loss_script = f"{qdisc_str} netem loss {packet_loss}"
+    packet_duplication_script = f"{qdisc_str} netem duplicate {packet_loss}"
+    packet_corruption_script = f"{qdisc_str} netem corrupt {packet_loss}"
 
-    delay_script = f"{qdisc_str} delay {delay_value} {delay_variation} {delay_correlation} distribution {delay_distribution}"
+    delay_script = f"{qdisc_str} netem delay {delay_value} {delay_variation} {delay_correlation} distribution {delay_distribution}"
 
     bw_script = f"{qdisc_str} tbf rate {bw_rate} burst {bw_burst} latency {bw_latency_cut_off}"
 
