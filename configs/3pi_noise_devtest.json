@@ -2,6 +2,22 @@
   "experiment_name": "Noise Gen Dev Test",
   "combination_generation_type": "pcg",
   "quit_after_n_failed_tests": 10,
+  "noise_gen": {
+    "delay": {
+      "value": "10ms",
+      "variation": "1ms",
+      "correlation": "25%",
+      "distribution": "normal"
+    },
+    "packet_loss": "10%",
+    "packet_corruption": "5%",
+    "packet_duplication": "12%",
+    "bandwidth_limit": {
+      "rate": "1mbit",
+      "max_burst": "32kbit",
+      "latency_cut_off": "400ms"
+    }
+  },
   "qos_settings": {
     "duration_secs": [30],
     "datalen_bytes": [100],
