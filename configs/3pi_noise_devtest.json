@@ -2,7 +2,8 @@
   "experiment_name": "Noise Gen Dev Test",
   "combination_generation_type": "pcg",
   "quit_after_n_failed_tests": 10,
-  "noise_gen": {
+  "rcg_target_test_count": 0,
+  "noise_generation": {
     "delay": {
       "value": "10ms",
       "variation": "1ms",
