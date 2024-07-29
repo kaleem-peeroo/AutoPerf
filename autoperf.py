@@ -24,8 +24,10 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
+from constants import *
+
 DEBUG_MODE = True
-SKIP_RESTART = False
+SKIP_RESTART = True
 
 # Set up logging
 logging.basicConfig(
@@ -47,42 +49,6 @@ formatter = logging.Formatter(
 console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
-
-REQUIRED_EXPERIMENT_KEYS = [
-    'experiment_name',
-    'combination_generation_type',
-    'qos_settings',
-    'slave_machines',
-    'rcg_target_test_count',
-    'quit_after_n_failed_tests'
-]
-
-REQUIRED_QOS_KEYS = [
-    "datalen_bytes",
-    'durability_level',
-    'duration_secs',
-    'latency_count',
-    'pub_count',
-    'sub_count',
-    'use_multicast',
-    'use_reliable'
-]
-
-REQUIRED_SLAVE_MACHINE_KEYS = [
-    'ip',
-    'machine_name',
-    'participant_allocation',
-    'perftest_exec_path',
-    'ssh_key_path',
-    'username'
-]
-
-PERCENTILES = [
-    0, 1, 2, 3, 4, 5, 10,
-    20, 30, 40, 60, 70, 80, 90,
-    95, 96, 97, 98, 99, 100,
-    25, 50, 75
-]
 
 def ping_machine(ip: str = "") -> Optional[bool]:
     """
@@ -297,8 +263,10 @@ def validate_dict_using_keys(given_keys: List = [], required_keys: List = []) ->
         return None
 
     if len(list_difference) > 0:
+        given_keys_string = "\n\t - ".join(given_keys)
+        list_difference_string = "\n\t - ".join(list_difference)
         logger.error(
-            f"Mismatch in keys for \n\t{given_keys}: \n\t\t{list_difference}"
+            f"Mismatch in keys for \n\t{given_keys_string}: \n\n{list_difference_string}\n"
         )
         return False
     
@@ -354,7 +322,7 @@ def read_config(config_path: str = ""):
             return None
         if not is_experiment_config_valid:
             logger.error(
-                f"Config invalid for {experiment}."
+                f"Config invalid for {experiment['experiment_name']} in {config_path}."
             )
             return None
 
@@ -2601,6 +2569,8 @@ def main(sys_args: list[str] = []) -> None:
             f"Couldn't read config of {CONFIG_PATH}."
         )
         return None
+
+    asdf
 
     for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
 
