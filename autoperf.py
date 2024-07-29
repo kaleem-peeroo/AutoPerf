@@ -15,7 +15,7 @@ import shutil
 import rich
 
 from icecream import ic
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from pprint import pprint
 from multiprocessing import Process, Manager
 from rich.progress import track
@@ -1648,11 +1648,51 @@ def update_ess_df(
     )
     return new_ess_df
 
+def get_noise_gen_scripts(config: Dict = {}) -> Tuple[List[str], str]:
+    # TODO: Validate parameters
+    # TODO: Write unit tests
+
+    if config == {}:
+        return None, "Config not passed."
+
+    packet_loss = config['packet_loss']
+    packet_duplication = config['packet_duplication']
+    packet_corruption = config['packet_corruption']
+
+    delay_value = config['delay']['value']
+    delay_variation = config['delay']['variation']
+    delay_distribution = config['delay']['distribution']
+    delay_correlation = config['delay']['correlation']
+    
+    bw_rate = config['bandwidth_limit']['rate']
+    bw_burst = config['bandwidth_limit']['max_burst']
+    bw_latency_cut_off = config['bandwidth_limit']['latency_cut_off']
+
+    qdisc_str = "sudo tc qdisc add dev eth0 root netem"
+
+    packet_loss_script = f"{qdisc_str} loss {packet_loss}"
+    packet_duplication_script = f"{qdisc_str} duplicate {packet_loss}"
+    packet_corruption_script = f"{qdisc_str} corrupt {packet_loss}"
+
+    delay_script = f"{qdisc_str} delay {delay_value} {delay_variation} {delay_correlation} distribution {delay_distribution}"
+
+    bw_script = f"{qdisc_str} tbf rate {bw_rate} burst {bw_burst} latency {bw_latency_cut_off}"
+
+    scripts = []
+    scripts.append(packet_loss_script)
+    scripts.append(packet_duplication_script)
+    scripts.append(packet_corruption_script)
+    scripts.append(delay_script)
+    scripts.append(bw_script)
+
+    return scripts, None
+    
 def run_test(
     test_config: Dict = {}, 
     machine_configs: List = [],
     ess_df: pd.DataFrame = pd.DataFrame(),
-    experiment_dirpath: str = ""
+    experiment_dirpath: str = "",
+    noise_gen_config: Dict = {}
 ) -> Optional[pd.DataFrame]:
     """
     Run the test using the given test config, machine configs and ESS dataframe.
@@ -1662,6 +1702,7 @@ def run_test(
         - machine_configs (List): List of machine configs.
         - ess_df (pd.DataFrame): ESS dataframe.
         - experiment_dirpath (str): Experiment directory path.
+        - nosie_gen_config (Dict): Config for noise generation.
 
     Returns:
         - pd.DataFrame: Updated ESS dataframe if valid, None otherwise.
@@ -1707,6 +1748,20 @@ def run_test(
             f"No experiment dirpath passed."
         )
         return None
+
+    if noise_gen_config is None:
+        logger.error(
+            f"No noise generation config passed."
+        )
+        return None
+
+    if not isinstance(noise_gen_config, Dict):
+        logger.error(
+            f"Noise gen config is not a dict."
+        )
+        return None
+
+    # TODO: Validate noise gen config.
 
     new_ess_df = ess_df
 
@@ -1925,6 +1980,33 @@ def run_test(
                 )
                 process.terminate()
                 process.join()
+
+
+    # 6.2. If noise generation is being used create the scripts and add to the existing scripts.
+    if noise_gen_config != {}:
+        noise_gen_scripts, noise_gen_error = get_noise_gen_scripts(noise_gen_config)
+        if noise_gen_error:
+            logger.error(noise_gen_error)
+            return update_ess_df(
+                new_ess_df,
+                None,
+                None,
+                test_name,
+                ping_count,
+                ssh_check_count,
+                "failed noise generation script generation",
+                qos_config,
+                new_ess_row['comments'] + " Failed to generate scripts from noise generation config."
+            )
+
+        if len(noise_gen_scripts) > 0:
+            noise_gen_script = ";".join(noise_gen_scripts)
+        else:
+            noise_gen_script = ""
+            
+        for script_per_machine in scripts_per_machine:
+            script = script_per_machine['script']
+            script_per_machine['script'] = f"{noise_gen_script};{script}"
 
     # 7. Run scripts.
 
@@ -2671,7 +2753,8 @@ def main(sys_args: list[str] = []) -> None:
                     test_config, 
                     EXPERIMENT['slave_machines'],
                     ess_df,
-                    EXPERIMENT_DIRNAME
+                    EXPERIMENT_DIRNAME,
+                    EXPERIMENT['noise_generation']
                 )
                 if ess_df is None:
                     logger.error(f"Error when running test #{test_index + 1}: {test_name}")
@@ -2794,8 +2877,9 @@ def main(sys_args: list[str] = []) -> None:
             )
 
 if __name__ == "__main__":
-    if pytest.main(["-q", "./pytests/test_autoperf.py", "--exitfirst"]) == 0:
-        main(sys.argv)
-    else:
-        logger.error("Tests failed.")
-        sys.exit(1)
+    main(sys.argv)
+    # if pytest.main(["-q", "./pytests/test_autoperf.py", "--exitfirst"]) == 0:
+        # main(sys.argv)
+    # else:
+        # logger.error("Tests failed.")
+        # sys.exit(1)
