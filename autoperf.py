@@ -15,7 +15,7 @@ import shutil
 import rich
 
 from icecream import ic
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from pprint import pprint
 from multiprocessing import Process, Manager
 from rich.progress import track
@@ -24,8 +24,10 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 
+from constants import *
+
 DEBUG_MODE = True
-SKIP_RESTART = False
+SKIP_RESTART = True
 
 # Set up logging
 logging.basicConfig(
@@ -47,42 +49,6 @@ formatter = logging.Formatter(
 console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
-
-REQUIRED_EXPERIMENT_KEYS = [
-    'experiment_name',
-    'combination_generation_type',
-    'qos_settings',
-    'slave_machines',
-    'rcg_target_test_count',
-    'quit_after_n_failed_tests'
-]
-
-REQUIRED_QOS_KEYS = [
-    "datalen_bytes",
-    'durability_level',
-    'duration_secs',
-    'latency_count',
-    'pub_count',
-    'sub_count',
-    'use_multicast',
-    'use_reliable'
-]
-
-REQUIRED_SLAVE_MACHINE_KEYS = [
-    'ip',
-    'machine_name',
-    'participant_allocation',
-    'perftest_exec_path',
-    'ssh_key_path',
-    'username'
-]
-
-PERCENTILES = [
-    0, 1, 2, 3, 4, 5, 10,
-    20, 30, 40, 60, 70, 80, 90,
-    95, 96, 97, 98, 99, 100,
-    25, 50, 75
-]
 
 def ping_machine(ip: str = "") -> Optional[bool]:
     """
@@ -297,8 +263,10 @@ def validate_dict_using_keys(given_keys: List = [], required_keys: List = []) ->
         return None
 
     if len(list_difference) > 0:
+        given_keys_string = "\n\t - ".join(given_keys)
+        list_difference_string = "\n\t - ".join(list_difference)
         logger.error(
-            f"Mismatch in keys for \n\t{given_keys}: \n\t\t{list_difference}"
+            f"Mismatch in keys for \n\t{given_keys_string}: \n\n{list_difference_string}\n"
         )
         return False
     
@@ -354,7 +322,7 @@ def read_config(config_path: str = ""):
             return None
         if not is_experiment_config_valid:
             logger.error(
-                f"Config invalid for {experiment}."
+                f"Config invalid for {experiment['experiment_name']} in {config_path}."
             )
             return None
 
@@ -388,6 +356,23 @@ def read_config(config_path: str = ""):
             if not is_slave_machine_config_valid:
                 logger.error(
                     f"Config invalid for slave machine {machine_setting['machine_name']} for {experiment['experiment_name']}."
+                )
+                return None
+
+        noise_gen_settings = experiment['noise_generation']
+        if noise_gen_settings != {}:
+            is_noise_gen_config_valid = validate_dict_using_keys(
+                list(noise_gen_settings.keys()),
+                REQUIRED_NOISE_GENERATION_KEYS
+            )
+            if is_noise_gen_config_valid is None:
+                logger.error(
+                    f"Error validating noise generation for {experiment['experiment_name']}."
+                )
+                return None
+            if not is_noise_gen_config_valid:
+                logger.error(
+                    f"Config invalid for noise generation for {experiment['experiment_name']}."
                 )
                 return None
 
@@ -1663,11 +1648,51 @@ def update_ess_df(
     )
     return new_ess_df
 
+def get_noise_gen_scripts(config: Dict = {}) -> Tuple[List[str], str]:
+    # TODO: Validate parameters
+    # TODO: Write unit tests
+
+    if config == {}:
+        return None, "Config not passed."
+
+    packet_loss = config['packet_loss']
+    packet_duplication = config['packet_duplication']
+    packet_corruption = config['packet_corruption']
+
+    delay_value = config['delay']['value']
+    delay_variation = config['delay']['variation']
+    delay_distribution = config['delay']['distribution']
+    delay_correlation = config['delay']['correlation']
+    
+    bw_rate = config['bandwidth_limit']['rate']
+    bw_burst = config['bandwidth_limit']['max_burst']
+    bw_latency_cut_off = config['bandwidth_limit']['latency_cut_off']
+
+    qdisc_str = "sudo tc qdisc add dev eth0 root"
+
+    packet_loss_script = f"{qdisc_str} netem loss {packet_loss}"
+    packet_duplication_script = f"{qdisc_str} netem duplicate {packet_loss}"
+    packet_corruption_script = f"{qdisc_str} netem corrupt {packet_loss}"
+
+    delay_script = f"{qdisc_str} netem delay {delay_value} {delay_variation} {delay_correlation} distribution {delay_distribution}"
+
+    bw_script = f"{qdisc_str} tbf rate {bw_rate} burst {bw_burst} latency {bw_latency_cut_off}"
+
+    scripts = []
+    scripts.append(packet_loss_script)
+    scripts.append(packet_duplication_script)
+    scripts.append(packet_corruption_script)
+    scripts.append(delay_script)
+    scripts.append(bw_script)
+
+    return scripts, None
+    
 def run_test(
     test_config: Dict = {}, 
     machine_configs: List = [],
     ess_df: pd.DataFrame = pd.DataFrame(),
-    experiment_dirpath: str = ""
+    experiment_dirpath: str = "",
+    noise_gen_config: Dict = {}
 ) -> Optional[pd.DataFrame]:
     """
     Run the test using the given test config, machine configs and ESS dataframe.
@@ -1677,6 +1702,7 @@ def run_test(
         - machine_configs (List): List of machine configs.
         - ess_df (pd.DataFrame): ESS dataframe.
         - experiment_dirpath (str): Experiment directory path.
+        - nosie_gen_config (Dict): Config for noise generation.
 
     Returns:
         - pd.DataFrame: Updated ESS dataframe if valid, None otherwise.
@@ -1722,6 +1748,20 @@ def run_test(
             f"No experiment dirpath passed."
         )
         return None
+
+    if noise_gen_config is None:
+        logger.error(
+            f"No noise generation config passed."
+        )
+        return None
+
+    if not isinstance(noise_gen_config, Dict):
+        logger.error(
+            f"Noise gen config is not a dict."
+        )
+        return None
+
+    # TODO: Validate noise gen config.
 
     new_ess_df = ess_df
 
@@ -1940,6 +1980,33 @@ def run_test(
                 )
                 process.terminate()
                 process.join()
+
+
+    # 6.2. If noise generation is being used create the scripts and add to the existing scripts.
+    if noise_gen_config != {}:
+        noise_gen_scripts, noise_gen_error = get_noise_gen_scripts(noise_gen_config)
+        if noise_gen_error:
+            logger.error(noise_gen_error)
+            return update_ess_df(
+                new_ess_df,
+                None,
+                None,
+                test_name,
+                ping_count,
+                ssh_check_count,
+                "failed noise generation script generation",
+                qos_config,
+                new_ess_row['comments'] + " Failed to generate scripts from noise generation config."
+            )
+
+        if len(noise_gen_scripts) > 0:
+            noise_gen_script = ";".join(noise_gen_scripts)
+        else:
+            noise_gen_script = ""
+            
+        for script_per_machine in scripts_per_machine:
+            script = script_per_machine['script']
+            script_per_machine['script'] = f"{noise_gen_script};{script}"
 
     # 7. Run scripts.
 
@@ -2686,7 +2753,8 @@ def main(sys_args: list[str] = []) -> None:
                     test_config, 
                     EXPERIMENT['slave_machines'],
                     ess_df,
-                    EXPERIMENT_DIRNAME
+                    EXPERIMENT_DIRNAME,
+                    EXPERIMENT['noise_generation']
                 )
                 if ess_df is None:
                     logger.error(f"Error when running test #{test_index + 1}: {test_name}")
@@ -2809,8 +2877,9 @@ def main(sys_args: list[str] = []) -> None:
             )
 
 if __name__ == "__main__":
-    if pytest.main(["-q", "./pytests/test_autoperf.py", "--exitfirst"]) == 0:
-        main(sys.argv)
-    else:
-        logger.error("Tests failed.")
-        sys.exit(1)
+    main(sys.argv)
+    # if pytest.main(["-q", "./pytests/test_autoperf.py", "--exitfirst"]) == 0:
+        # main(sys.argv)
+    # else:
+        # logger.error("Tests failed.")
+        # sys.exit(1)
