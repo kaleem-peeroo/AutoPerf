@@ -23,6 +23,7 @@ from rich.table import Table
 from rich.console import Console
 from rich.markdown import Markdown
 from io import StringIO
+from constants import *
 
 console = Console()
 
@@ -35,7 +36,7 @@ DEBUG_MODE = False
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG, 
-    filename="autoperf.log", 
+    filename="logs/autoperf_results_downloader.log", 
     filemode="w",
     format='%(asctime)s \t%(levelname)s \t%(message)s'
 )
@@ -52,32 +53,6 @@ formatter = logging.Formatter(
 console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
-
-REQUIRED_MACHINE_KEYS = [
-    'name',
-    'ip',
-    'username',
-    'ssh_key_path',
-    'config_path'
-]
-
-REQUIRED_QOS_KEYS = [
-    "datalen_bytes",
-    'durability_level',
-    'duration_secs',
-    'latency_count',
-    'pub_count',
-    'sub_count',
-    'use_multicast',
-    'use_reliable'
-]
-
-PERCENTILES = [
-    0, 1, 2, 3, 4, 5, 10,
-    20, 30, 40, 60, 70, 80, 90,
-    95, 96, 97, 98, 99, 100,
-    25, 50, 75
-]
 
 def ping_machine(ip: str = "") -> Optional[bool]:
     """
@@ -326,7 +301,7 @@ def read_config(config_path: str = ""):
             return
         if not validate_dict_using_keys(
             keys, 
-            REQUIRED_MACHINE_KEYS
+            REQUIRED_MONITOR_MACHINE_KEYS
         ):
             logger.error(
                 f"Invalid keys in machine config: {machine_config}"
@@ -416,7 +391,7 @@ def download_zipped_dirs_from_machine(machine: Dict = {}, status: Console.status
         return None
 
     status.update(f"Getting zipped dirs from {machine['name']} ({machine['ip']})...")
-    data_dir = "~/AutoPerf/data"
+    data_dir = f"~/AutoPerf/{DATA_DIR}"
     get_zips_command = f"ls {data_dir}/*.zip"
     get_zips_output = run_command_via_ssh(
         machine,
@@ -428,9 +403,12 @@ def download_zipped_dirs_from_machine(machine: Dict = {}, status: Console.status
         )
         return None
 
-    os.makedirs(f"data/{machine['name']}", exist_ok=True)
+    os.makedirs(f"{DATA_DIR}{machine['name']}", exist_ok=True)
 
     zipped_dirs = get_zips_output.split()
+    if len(zipped_dirs) == 0:
+        console.print(f"No zipped dirs found on {machine['name']}.", style="bold yellow")
+        return None
 
     for zipped_dir in zipped_dirs:
         i = zipped_dirs.index(zipped_dir)
@@ -452,7 +430,7 @@ def download_zipped_dirs_from_machine(machine: Dict = {}, status: Console.status
         file_size = get_file_size_output.split()[0]
         status.update(f"{counter_string} Downloading {zipped_dir} ({file_size}B) from {machine['name']}...")
 
-        download_command = f"scp -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{data_dir}/{zipped_dir} ./data/{machine['name']}"
+        download_command = f"scp -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{data_dir}/{zipped_dir} {DATA_DIR}{machine['name']}"
         download_output = subprocess.Popen(
             download_command,
             shell=True,
@@ -482,7 +460,7 @@ def download_datasets_from_machine(machine: Dict = {}, status: Console.status = 
 
     status.update(f"Getting datasets from {machine['name']} ({machine['ip']})...")
 
-    datasets_dir = "~/AutoPerf/datasets"
+    datasets_dir = f"~/AutoPerf/{DATASET_DIR}"
     get_datasets_command = f"ls {datasets_dir}"
     get_datasets_output = run_command_via_ssh(
         machine,
@@ -494,9 +472,12 @@ def download_datasets_from_machine(machine: Dict = {}, status: Console.status = 
         )
         return None
 
-    os.makedirs(f"datasets/{machine['name']}", exist_ok=True)
+    os.makedirs(f"{DATASET_DIR}{machine['name']}", exist_ok=True)
 
     datasets = get_datasets_output.split()
+    if len(datasets) == 0:
+        console.print(f"No datasets found on {machine['name']}.", style="bold yellow")
+        return None
 
     for dataset in datasets:
         i = datasets.index(dataset)
@@ -517,7 +498,7 @@ def download_datasets_from_machine(machine: Dict = {}, status: Console.status = 
         file_size = get_file_size_output.split()[0]
         status.update(f"{counter_string} Downloading {dataset} ({file_size}B) from {machine['name']}...")
 
-        download_command = f"scp -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{datasets_dir}/{dataset} ./datasets/{machine['name']}"
+        download_command = f"scp -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{datasets_dir}/{dataset} {DATASET_DIR}{machine['name']}"
         download_output = subprocess.Popen(
             download_command,
             shell=True,
@@ -545,7 +526,7 @@ def download_summarised_data_dirs_from_machine(machine: Dict = {}, status: Conso
 
     status.update(f"Getting summarised_data from {machine['name']} ({machine['ip']})...")
 
-    summ_dir = "~/AutoPerf/summarised_data"
+    summ_dir = f"~/AutoPerf/{SUMMARISED_DIR}"
     get_summaries_command = f"ls {summ_dir}"
     get_summaries_output = run_command_via_ssh(
         machine,
@@ -557,9 +538,12 @@ def download_summarised_data_dirs_from_machine(machine: Dict = {}, status: Conso
         )
         return None
 
-    os.makedirs(f"summarised_data/{machine['name']}", exist_ok=True)
+    os.makedirs(f"{SUMMARISED_DIR}{machine['name']}", exist_ok=True)
 
     summaries = get_summaries_output.split()
+    if len(summaries) == 0:
+        console.print(f"No summarised data found on {machine['name']}.", style="bold yellow")
+        return None
 
     for summary in summaries:
         i = summaries.index(summary)
@@ -580,7 +564,7 @@ def download_summarised_data_dirs_from_machine(machine: Dict = {}, status: Conso
         file_size = get_file_size_output.split()[0]
         status.update(f"{counter_string} Downloading {summary} ({file_size}B) from {machine['name']}...")
 
-        download_command = f"scp -r -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{summ_dir}/{summary} ./summarised_data/{machine['name']}"
+        download_command = f"scp -r -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{summ_dir}/{summary} {SUMMARISED_DIR}{machine['name']}"
         download_output = subprocess.Popen(
             download_command,
             shell=True,
