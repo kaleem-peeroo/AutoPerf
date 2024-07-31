@@ -11,6 +11,6 @@
     "ip": "10.210.44.247",
     "ssh_key_path": "~/.ssh/id_rsa",
     "username": "acwh025",
-    "config_path": "./configs/3pi_mcast_exploration.json"
+    "config_path": "./configs/3pi_devtest.json"
   }
 ]
