@@ -28,7 +28,7 @@ DEBUG_MODE = False
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG, 
-    filename="autoperf_monitor.log", 
+    filename="logs/autoperf_monitor.log", 
     filemode="w",
     format='%(asctime)s \t%(levelname)s \t%(message)s'
 )

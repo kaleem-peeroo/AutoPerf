@@ -32,7 +32,7 @@ SKIP_RESTART = True
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG, 
-    filename="autoperf.log", 
+    filename="logs/autoperf.log", 
     filemode="w",
     format='%(asctime)s \t%(levelname)s \t%(message)s'
 )
