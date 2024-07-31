@@ -197,15 +197,15 @@ class TestAutoPerf(unittest.TestCase):
         generate_random_ess(50)
 
         # Copy folders from pytest/summarised_data to ./summarised_data
-        os.system("cp -r ./pytests/summarised_data/Multicast* ./summarised_data/")
+        os.system("cp -r ./pytests/summarised_data/Multicast* ./output/summarised_data/")
 
     def tearDown(self):
         # Delete copied folders from ./summarised_data
-        os.system("cp -r ./summarised_data/Multicast* ./pytests/summarised_data/")
-        os.system("rm -rf ./summarised_data/Multicast*")
+        os.system("cp -r ./output/summarised_data/Multicast* ./pytests/summarised_data/")
+        os.system("rm -rf ./output/summarised_data/Multicast*")
 
         # Delete generated datasets
-        os.system("rm -rf ./datasets/*.csv")
+        os.system("rm -rf ./output/datasets/*.csv")
 
     def test_read_config(self):
         config = ap.read_config("./pytests/configs/good_config_1.json")
@@ -496,7 +496,7 @@ class TestAutoPerf(unittest.TestCase):
         CONFIG = ap.read_config('./pytests/configs/good_config_1.json') 
         for EXPERIMENT in CONFIG:
             experiment_name = ap.get_dirname_from_experiment(EXPERIMENT)
-            self.assertEqual(experiment_name, "data/PCG_#1")
+            self.assertEqual(experiment_name, "output/data/PCG_#1")
 
     def test_get_if_pcg(self):
         self.assertEqual(
