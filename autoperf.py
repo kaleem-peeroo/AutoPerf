@@ -1648,7 +1648,7 @@ def update_ess_df(
     )
     return new_ess_df
 
-def get_noise_gen_scripts(config: Dict = {}) -> Tuple[List[str], str]:
+def get_noise_gen_scripts(config: Dict = {}) -> Tuple[Optional[List[str]], Optional[str]]:
     # TODO: Validate parameters
     # TODO: Write unit tests
 
@@ -1671,8 +1671,8 @@ def get_noise_gen_scripts(config: Dict = {}) -> Tuple[List[str], str]:
     qdisc_str = "sudo tc qdisc add dev eth0 root"
 
     packet_loss_script = f"{qdisc_str} netem loss {packet_loss}"
-    packet_duplication_script = f"{qdisc_str} netem duplicate {packet_loss}"
-    packet_corruption_script = f"{qdisc_str} netem corrupt {packet_loss}"
+    packet_duplication_script = f"{qdisc_str} netem duplicate {packet_duplication}"
+    packet_corruption_script = f"{qdisc_str} netem corrupt {packet_corruption}"
 
     delay_script = f"{qdisc_str} netem delay {delay_value} {delay_variation} {delay_correlation} distribution {delay_distribution}"
 
