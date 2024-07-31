@@ -1,3 +1,8 @@
+DATA_DIR = 'output/data/'
+LOG_DIR = 'output/logs/'
+SUMMARISED_DIR = 'outputs/summarised_data/'
+DATASET_DIR = 'outputs/datasets/'
+
 REQUIRED_EXPERIMENT_KEYS = [
     'experiment_name',
     'combination_generation_type',
@@ -17,6 +22,14 @@ REQUIRED_QOS_KEYS = [
     'sub_count',
     'use_multicast',
     'use_reliable'
+]
+
+REQUIRED_MONITOR_MACHINE_KEYS = [
+    'name',
+    'ip',
+    'username',
+    'ssh_key_path',
+    'config_path'
 ]
 
 REQUIRED_SLAVE_MACHINE_KEYS = [
