@@ -15,7 +15,7 @@ import shutil
 import rich
 
 from icecream import ic
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from pprint import pprint
 from multiprocessing import Process, Manager
 from rich.progress import track
@@ -382,55 +382,105 @@ def run_command_via_ssh(machine_config: Dict = {}, command: str = "") -> Optiona
             return None
 
     return stdout
-   
-def download_zipped_dirs_from_machine(machine: Dict = {}, status: Console.status = None) -> Optional[List]:
+
+def download_items_from_machine(
+    machine: Dict = {},
+    item_type: str = "",
+    status: Console.status = None
+) -> Tuple[Optional[List], Optional[str]]:
+
     if machine == {}:
-        logger.error(
-            f"No machine config passed."
-        )
-        return None
+        return None, "No machine config passed."
 
-    status.update(f"Getting zipped dirs from {machine['name']} ({machine['ip']})...")
-    data_dir = f"~/AutoPerf/{DATA_DIR}"
-    get_zips_command = f"ls {data_dir}/*.zip"
-    get_zips_output = run_command_via_ssh(
+    if item_type not in ["zipped_dirs", "datasets", "summarised_data"]:
+        return None, f"Invalid item type: {item_type}. Must be one of ['zipped_dirs', 'datasets', 'summarised_data']."
+
+    if item_type == "zipped_dirs":
+        remote_item_dir = f"~/AutoPerf/{DATA_DIR}"
+        backup_remote_dir = "~/AutoPerf/data"
+        local_item_dir = f"{DATA_DIR}{machine['name']}"
+
+    elif item_type == "datasets":
+        remote_item_dir = f"~/AutoPerf/{DATASET_DIR}"
+        backup_remote_dir = "~/AutoPerf/datasets"
+        local_item_dir = f"{DATASET_DIR}{machine['name']}"
+
+    elif item_type == "summarised_data":
+        remote_item_dir = f"~/AutoPerf/{SUMMARISED_DIR}"
+        backup_remote_dir = "~/AutoPerf/summarised_data"
+        local_item_dir = f"{SUMMARISED_DIR}{machine['name']}"
+
+    else:
+        return None, f"Invalid item type: {item_type}. Must be one of ['zipped_dirs', 'datasets', 'summarised_data']."
+
+
+    status.update(f"Getting {item_type} from {machine['name']} ({machine['ip']})...")
+
+    get_items_command = f"ls {remote_item_dir}"
+    get_items_output = run_command_via_ssh(
         machine,
-        get_zips_command
+        get_items_command
     )
-    if get_zips_output is None:
-        logger.error(
-            f"Couldn't get zipped dirs from {machine['name']} ({machine['ip']})."
+    if get_items_output is None:
+        return None, f"Couldn't get {item_type} from {machine['name']} ({machine['ip']})."
+
+    os.makedirs(local_item_dir, exist_ok=True)
+
+    item_dirs = get_items_output.split()
+    if len(item_dirs) == 0:
+        console.print(f"No {item_type} found on {machine['name']}.", style="bold yellow")
+        status.update(f"Checking {backup_remote_dir} as backup.")
+        if item_type == "zipped_dirs":
+            get_items_command = f"ls {backup_remote_dir}.zip"
+        else:
+            get_items_command = f"ls {backup_remote_dir}"
+
+        get_items_output = run_command_via_ssh(
+            machine,
+            get_items_command
         )
-        return None
+        if get_items_output is None:
+            return None, f"Couldn't get {item_type} from {machine['name']} ({machine['ip']})."
 
-    os.makedirs(f"{DATA_DIR}{machine['name']}", exist_ok=True)
+        item_dirs = get_items_output.split()
+        if len(item_dirs) == 0:
+            return None, f"No {item_type} found on {machine['name']} (including old location - {backup_remote_dir})."
 
-    zipped_dirs = get_zips_output.split()
-    if len(zipped_dirs) == 0:
-        console.print(f"No zipped dirs found on {machine['name']}.", style="bold yellow")
-        return None
+        console.print(f"Found {len(item_dirs)} {item_type} in old location ({backup_remote_dir}).", style="bold yellow")
+        remote_item_dir = backup_remote_dir
 
-    for zipped_dir in zipped_dirs:
-        i = zipped_dirs.index(zipped_dir)
+    if item_type == "summarised_data":
+        console.print(Markdown(f"## Summarised Data"))
+    elif item_type == "datasets":
+        console.print(Markdown(f"## Datasets"))
+    else:
+        console.print(Markdown(f"## Raw Data"))
+
+    for item_dir in item_dirs:
+        i = item_dirs.index(item_dir)
         i += 1
-        counter_string = f"[{i}/{len(zipped_dirs)}]"
-        zipped_dir = os.path.basename(zipped_dir)
+        counter_string = f"[{i}/{len(item_dirs)}]"
+        item_dir = os.path.basename(item_dir)
 
-        get_file_size_command = f"du -sh {data_dir}/{zipped_dir}"
+        get_file_size_command = f"du -sh {remote_item_dir}/{item_dir}".replace("//", "/")
         get_file_size_output = run_command_via_ssh(
             machine,
             get_file_size_command
         )
         if get_file_size_output is None:
-            logger.error(
-                f"Couldn't get file size of {zipped_dir} from {machine['name']}: {stderr}"
-            )
-            return None
+           console.print(f"Couldn't get file size of {item_dir} from {machine['name']}", style="bold red")
+           continue
 
         file_size = get_file_size_output.split()[0]
-        status.update(f"{counter_string} Downloading {zipped_dir} ({file_size}B) from {machine['name']}...")
+        status.update(f"{counter_string} Downloading {item_dir} ({file_size}B) from {machine['name']}...")
 
-        download_command = f"scp -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{data_dir}/{zipped_dir} {DATA_DIR}{machine['name']}"
+        if item_type == "summarised_data":
+            download_command = f"scp -r"
+        else:
+            download_command = f"scp -i"
+
+        download_command = f"{download_command} {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{remote_item_dir}/{item_dir} {local_item_dir}".replace("//", "/")
+
         download_output = subprocess.Popen(
             download_command,
             shell=True,
@@ -442,147 +492,13 @@ def download_zipped_dirs_from_machine(machine: Dict = {}, status: Console.status
         stderr = stderr.decode('utf-8').strip()
 
         if download_output.returncode != 0:
-            logger.error(
-                f"Error downloading {zipped_dir} from {machine['name']}: {stderr}"
-            )
-            return None
+            console.print(f"{counter_string} ❌ {item_dir} ({file_size}B)\n\t{stderr}", style="bold red")
+            continue
 
-        console.print(f"{counter_string} Downloaded {zipped_dir} ({file_size}B) from {machine['name']}.", style="bold green")
+        console.print(f"{counter_string} ✅ {item_dir} ({file_size}B)", style="bold green")
         
-    return zipped_dirs
-
-def download_datasets_from_machine(machine: Dict = {}, status: Console.status = None):
-    if machine == {}:
-        logger.error(
-            f"No machine config passed."
-        )
-        return None
-
-    status.update(f"Getting datasets from {machine['name']} ({machine['ip']})...")
-
-    datasets_dir = f"~/AutoPerf/{DATASET_DIR}"
-    get_datasets_command = f"ls {datasets_dir}"
-    get_datasets_output = run_command_via_ssh(
-        machine,
-        get_datasets_command
-    )
-    if get_datasets_output is None:
-        logger.error(
-            f"Couldn't get datasets from {machine['name']} ({machine['ip']})."
-        )
-        return None
-
-    os.makedirs(f"{DATASET_DIR}{machine['name']}", exist_ok=True)
-
-    datasets = get_datasets_output.split()
-    if len(datasets) == 0:
-        console.print(f"No datasets found on {machine['name']}.", style="bold yellow")
-        return None
-
-    for dataset in datasets:
-        i = datasets.index(dataset)
-        i += 1
-        counter_string = f"[{i}/{len(datasets)}]"
-
-        get_file_size_command = f"du -sh {datasets_dir}/{dataset}"
-        get_file_size_output = run_command_via_ssh(
-            machine,
-            get_file_size_command
-        )
-        if get_file_size_output is None:
-            logger.error(
-                f"Couldn't get file size of {dataset} from {machine['name']}"
-            )
-            return None
-
-        file_size = get_file_size_output.split()[0]
-        status.update(f"{counter_string} Downloading {dataset} ({file_size}B) from {machine['name']}...")
-
-        download_command = f"scp -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{datasets_dir}/{dataset} {DATASET_DIR}{machine['name']}"
-        download_output = subprocess.Popen(
-            download_command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        stdout, stderr = download_output.communicate()
-        stdout = stdout.decode('utf-8').strip()
-        stderr = stderr.decode('utf-8').strip()
-
-        if download_output.returncode != 0:
-            logger.error(
-                f"Error downloading {dataset} from {machine['name']}: {stderr}"
-            )
-            return None
-
-        console.print(f"{counter_string} Downloaded {dataset} ({file_size}B) from {machine['name']}.", style="bold green")
-    
-def download_summarised_data_dirs_from_machine(machine: Dict = {}, status: Console.status = None):
-    if machine == {}:
-        logger.error(
-            f"No machine config passed."
-        )
-        return None
-
-    status.update(f"Getting summarised_data from {machine['name']} ({machine['ip']})...")
-
-    summ_dir = f"~/AutoPerf/{SUMMARISED_DIR}"
-    get_summaries_command = f"ls {summ_dir}"
-    get_summaries_output = run_command_via_ssh(
-        machine,
-        get_summaries_command
-    )
-    if get_summaries_output is None:
-        logger.error(
-            f"Couldn't get summarised data from {machine['name']} ({machine['ip']})."
-        )
-        return None
-
-    os.makedirs(f"{SUMMARISED_DIR}{machine['name']}", exist_ok=True)
-
-    summaries = get_summaries_output.split()
-    if len(summaries) == 0:
-        console.print(f"No summarised data found on {machine['name']}.", style="bold yellow")
-        return None
-
-    for summary in summaries:
-        i = summaries.index(summary)
-        i += 1
-        counter_string = f"[{i}/{len(summaries)}]"
-
-        get_file_size_command = f"du -sh {summ_dir}/{summary}"
-        get_file_size_output = run_command_via_ssh(
-            machine,
-            get_file_size_command
-        )
-        if get_file_size_output is None:
-            logger.error(
-                f"Couldn't get file size of {summary} from {machine['name']}"
-            )
-            return None
-
-        file_size = get_file_size_output.split()[0]
-        status.update(f"{counter_string} Downloading {summary} ({file_size}B) from {machine['name']}...")
-
-        download_command = f"scp -r -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{summ_dir}/{summary} {SUMMARISED_DIR}{machine['name']}"
-        download_output = subprocess.Popen(
-            download_command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        stdout, stderr = download_output.communicate()
-        stdout = stdout.decode('utf-8').strip()
-        stderr = stderr.decode('utf-8').strip()
-
-        if download_output.returncode != 0:
-            logger.error(
-                f"Error downloading {summary} from {machine['name']}: {stderr}"
-            )
-            return None
-
-        console.print(f"{counter_string} Downloaded {summary} ({file_size}B) from {machine['name']}.", style="bold green")
-
+    return item_dirs, None
+   
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
         logger.error(
@@ -598,7 +514,6 @@ def main(sys_args: list[str] = []) -> None:
         return None
 
     logger.debug(f"Reading {CONFIG_PATH}.")
-
     CONFIG = read_config(CONFIG_PATH)
     if CONFIG is None:
         logger.error(
@@ -611,18 +526,11 @@ def main(sys_args: list[str] = []) -> None:
         console.print(Markdown(f"# {machine_name} ({MACHINE_CONFIG['ip']})"))
 
         with console.status(f"Downloading data from {machine_name}...") as status:
-            console.print(Markdown(f"## Raw Data"))
-            download_zipped_dirs_from_machine(MACHINE_CONFIG, status)
+            for item_type in ["zipped_dirs", "datasets", "summarised_data"]:
+                _, item_error = download_items_from_machine(MACHINE_CONFIG, item_type, status)
+                if item_error:
+                    console.print(item_error, style="bold red")
 
-            console.print(Markdown(f"## Datasets"))
-            download_datasets_from_machine(MACHINE_CONFIG, status)
-
-            console.print(Markdown(f"## Summarised Data"))
-            download_summarised_data_dirs_from_machine(MACHINE_CONFIG, status)
-    
 if __name__ == "__main__":
-    if pytest.main(["-q", "./pytests", "--exitfirst"]) == 0:
-        main(sys.argv)
-    else:
-        logger.error("Tests failed.")
-        sys.exit(1)
+    main(sys.argv)
+
