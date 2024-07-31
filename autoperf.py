@@ -472,7 +472,7 @@ def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[s
             f"Couldn't get a valid dirname for {experiment_name}"
         )
         return None
-    experiment_dirname = os.path.join("data", experiment_dirname)
+    experiment_dirname = os.path.join("output/data", experiment_dirname)
 
     return experiment_dirname
 
@@ -2478,7 +2478,7 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
         return None
 
     experiment_name = os.path.basename(dirpath)
-    summaries_dirpath = os.path.join("summarised_data", experiment_name)
+    summaries_dirpath = os.path.join("output/summarised_data", experiment_name)
     if os.path.exists(summaries_dirpath):
         summaries_dirpath_files = os.listdir(summaries_dirpath)
         if len(summaries_dirpath_files) > 0:
@@ -2564,7 +2564,7 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
         return None
 
     experiment_name = os.path.basename(dirpath)
-    summaries_dirpath = os.path.join("summarised_data", experiment_name)
+    summaries_dirpath = os.path.join("output/summarised_data", experiment_name)
     if not os.path.exists(summaries_dirpath):
         logger.error(
             f"Summarised dirpath {summaries_dirpath} does NOT exist."
@@ -2585,9 +2585,9 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
     experiment_name = os.path.basename(dirpath)
     current_timestamp = datetime.datetime.today().strftime('%Y-%m-%d_%H-%M-%S')
     filename = f"{current_timestamp}_{experiment_name}_dataset_{truncation_percent}_percent_truncation.csv"
-    filename = os.path.join("datasets", filename)
+    filename = os.path.join("output/datasets", filename)
 
-    os.makedirs("datasets", exist_ok = True)
+    os.makedirs("output/datasets", exist_ok = True)
 
     dataset_df = pd.DataFrame()
     for test_csv in track(test_csvs, description="Processing..."):
@@ -2653,6 +2653,8 @@ def main(sys_args: list[str] = []) -> None:
         )
         return None
 
+    os.makedirs("output", exist_ok=True)
+
     CONFIG_PATH = sys_args[1]
     if not os.path.exists(CONFIG_PATH):
         logger.error(
@@ -2709,8 +2711,8 @@ def main(sys_args: list[str] = []) -> None:
                 continue
 
             EXP_DIRNAME = os.path.basename(get_dirname_from_experiment(EXPERIMENT))
-            os.makedirs("ess", exist_ok=True)
-            ESS_FILEPATH = os.path.join("ess", f"{EXP_DIRNAME}.csv")
+            os.makedirs("output/ess", exist_ok=True)
+            ESS_FILEPATH = os.path.join("output/ess", f"{EXP_DIRNAME}.csv")
 
             ess_df = get_ess_df(ESS_FILEPATH)
             if ess_df is None:
@@ -2769,8 +2771,8 @@ def main(sys_args: list[str] = []) -> None:
             target_test_count = EXPERIMENT['rcg_target_test_count']
 
             EXP_DIRNAME = os.path.basename(get_dirname_from_experiment(EXPERIMENT))
-            os.makedirs("ess", exist_ok=True)
-            ESS_FILEPATH = os.path.join("ess", f"{EXP_DIRNAME}.csv")
+            os.makedirs("output/ess", exist_ok=True)
+            ESS_FILEPATH = os.path.join("output/ess", f"{EXP_DIRNAME}.csv")
 
             logger.debug(f"Getting ESS dataframe.")
             ess_df = get_ess_df(ESS_FILEPATH)
