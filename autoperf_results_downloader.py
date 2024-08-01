@@ -413,10 +413,12 @@ def download_items_from_machine(
     else:
         return None, f"Invalid item type: {item_type}. Must be one of ['zipped_dirs', 'datasets', 'summarised_data']."
 
-
     status.update(f"Getting {item_type} from {machine['name']} ({machine['ip']})...")
 
     get_items_command = f"ls {remote_item_dir}"
+    if item_type == "zipped_dirs":
+        get_items_command = f"ls {remote_item_dir}*.zip"
+
     get_items_output = run_command_via_ssh(
         machine,
         get_items_command
@@ -430,8 +432,9 @@ def download_items_from_machine(
     if len(item_dirs) == 0:
         console.print(f"No {item_type} found on {machine['name']}.", style="bold yellow")
         status.update(f"Checking {backup_remote_dir} as backup.")
+
         if item_type == "zipped_dirs":
-            get_items_command = f"ls {backup_remote_dir}.zip"
+            get_items_command = f"ls {backup_remote_dir}/*.zip"
         else:
             get_items_command = f"ls {backup_remote_dir}"
 
@@ -530,7 +533,7 @@ def main(sys_args: list[str] = []) -> None:
                 _, item_error = download_items_from_machine(MACHINE_CONFIG, item_type, status)
                 if item_error:
                     console.print(item_error, style="bold red")
-
+            
 if __name__ == "__main__":
     main(sys.argv)
 
