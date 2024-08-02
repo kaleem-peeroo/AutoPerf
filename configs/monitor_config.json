@@ -4,13 +4,13 @@
     "ip": "10.210.55.24",
     "ssh_key_path": "~/.ssh/id_rsa",
     "username": "acwh025",
-    "config_path": "./configs/5pi_increasing_load.json"
+    "config_path": "configs/5pi_mcast_exploration_with_noise.json"
   },
   {
     "name": "3pi",
     "ip": "10.210.44.247",
     "ssh_key_path": "~/.ssh/id_rsa",
     "username": "acwh025",
-    "config_path": "./configs/3pi_devtest.json"
+    "config_path": "configs/3pi_devtest.json"
   }
 ]

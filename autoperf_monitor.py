@@ -759,7 +759,7 @@ def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[s
             f"Couldn't get valid dirname for {experiment_name}."
         )
         return None
-    experiment_dirname = os.path.join("data", experiment_dirname)
+    experiment_dirname = os.path.join("output/data", experiment_dirname)
 
     return experiment_dirname
 
@@ -806,6 +806,7 @@ def calculate_completed_tests_for_experiments(config: Dict = {}, machine_config:
             continue
 
         dir_contents = check_dir_exists_output.split()        
+        pprint(dir_contents)
         dir_contents = [_ for _ in dir_contents if not _.endswith(".csv") and not _.startswith("summarised_data")]
         
         experiment['completed_tests'] = dir_contents
@@ -826,7 +827,7 @@ def check_for_zip_results(config: Dict = {}, machine_config: Dict = {}) -> Optio
     # TODO: Validate parameters
     # TODO: Write unit tests for this function
 
-    get_zips_command = "ls ~/AutoPerf/data/*.zip"
+    get_zips_command = "ls ~/AutoPerf/output/data/*.zip"
     get_zips_output = run_command_via_ssh(
         machine_config,
         get_zips_command
@@ -881,7 +882,7 @@ def get_ess_df_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> 
             continue
 
         experiment_name = os.path.basename(experiment_dirname)
-        ess_filepath = os.path.join("~/AutoPerf/ess", f"{experiment_name}.csv")
+        ess_filepath = os.path.join("~/AutoPerf/output/ess", f"{experiment_name}.csv")
         check_ess_exists_command = f"ls {ess_filepath}"
         check_ess_exists_output = run_command_via_ssh(
             machine_config,
@@ -1019,7 +1020,7 @@ def get_folder_count_for_experiments(config: Dict = {}, machine_config: Dict = {
             )
             continue
 
-        experiment[folder_path] = count_folder_output
+        experiment[os.path.basename(folder_path)] = count_folder_output
 
     return config
 
@@ -1268,8 +1269,8 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
             )
             return
 
-        status.update(f"Counting folders in /data on {machine_name} ({machine_ip})...")
-        ap_config = get_folder_count_for_experiments(ap_config, machine_config, "data")
+        status.update(f"Counting folders in output/data on {machine_name} ({machine_ip})...")
+        ap_config = get_folder_count_for_experiments(ap_config, machine_config, "output/data")
         if ap_config is None:
             logger.error(
                 f"Couldn't get data count for experiments."
@@ -1277,7 +1278,7 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
             return
 
         status.update(f"Counting folders in /summarised_data on {machine_name} ({machine_ip})...")
-        ap_config = get_folder_count_for_experiments(ap_config, machine_config, "summarised_data")
+        ap_config = get_folder_count_for_experiments(ap_config, machine_config, "output/summarised_data")
         if ap_config is None:
             logger.error(
                 f"Couldn't get summarised data count for experiments."
