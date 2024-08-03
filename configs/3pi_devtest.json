@@ -1,14 +1,14 @@
 [
   {
-    "experiment_name": "devtset",
+    "experiment_name": "devtest",
     "combination_generation_type": "pcg",
     "rcg_target_test_count": 0,
     "quit_after_n_failed_tests": 10,
     "noise_generation": {},
     "qos_settings": {
-      "duration_secs": [30],
+      "duration_secs": [10],
       "datalen_bytes": [512],
-      "pub_count": [1, 5],
+      "pub_count": [1],
       "sub_count": [1, 5],
       "use_reliable": [true],
       "use_multicast": [true],
