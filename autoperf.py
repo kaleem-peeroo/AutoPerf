@@ -19,6 +19,8 @@ from typing import Dict, List, Optional, Tuple
 from pprint import pprint
 from multiprocessing import Process, Manager
 from rich.progress import track
+from rich.console import Console
+console = Console()
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -2425,7 +2427,7 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
         return None
 
     experiment_name = os.path.basename(dirpath)
-    summaries_dirpath = os.path.join("output/summarised_data", experiment_name)
+    summaries_dirpath = os.path.join(SUMMARISED_DIR, experiment_name)
     if os.path.exists(summaries_dirpath):
         summaries_dirpath_files = os.listdir(summaries_dirpath)
         if len(summaries_dirpath_files) > 0:
@@ -2434,8 +2436,7 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
             )
             return None
 
-    os.makedirs(summaries_dirpath, exist_ok=True)
-
+    os.makedirs(summaries_dirpath)
     test_dirpaths = [os.path.join(dirpath, _) for _ in os.listdir(dirpath)]
     test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
     test_dirpaths = [_ for _ in test_dirpaths if "summarised_data" not in _.lower()]
@@ -2511,7 +2512,7 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
         return None
 
     experiment_name = os.path.basename(dirpath)
-    summaries_dirpath = os.path.join("output/summarised_data", experiment_name)
+    summaries_dirpath = os.path.join(SUMMARISED_DIR, experiment_name)
     if not os.path.exists(summaries_dirpath):
         logger.error(
             f"Summarised dirpath {summaries_dirpath} does NOT exist."
@@ -2534,7 +2535,6 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
     filename = f"{current_timestamp}_{experiment_name}_dataset_{truncation_percent}_percent_truncation.csv"
     filename = os.path.join("output/datasets", filename)
 
-    os.makedirs("output/datasets", exist_ok = True)
 
     dataset_df = pd.DataFrame()
     for test_csv in track(test_csvs, description="Processing..."):
@@ -2600,7 +2600,17 @@ def main(sys_args: list[str] = []) -> Optional[None]:
         )
         return 
 
+    # Make all the output folders:
+    # - /ess
+    # - /data
+    # - /summarised_data
+    # - /datasets
+
     os.makedirs("output", exist_ok=True)
+    os.makedirs(ESS_DIR, exist_ok=True)
+    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(SUMMARISED_DIR, exist_ok=True)
+    os.makedirs(DATASET_DIR, exist_ok=True)
 
     CONFIG_PATH = sys_args[1]
     CONFIG, config_error = read_config(CONFIG_PATH)
@@ -2609,14 +2619,17 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
     for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
 
-        logger.info(f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}...")
+        logger.debug(f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}...")
+        console.print(
+            f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}...",
+            style="bold blue"
+        )
 
         EXPERIMENT_DIRNAME, dirname_error = get_dirname_from_experiment(EXPERIMENT)
         if dirname_error:
             continue
 
-        if not os.path.exists(EXPERIMENT_DIRNAME):
-            os.makedirs(EXPERIMENT_DIRNAME)
+        os.makedirs(EXPERIMENT_DIRNAME, exist_ok=True)
 
         is_pcg = get_if_pcg(EXPERIMENT)
         if is_pcg is None:
@@ -2648,7 +2661,6 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 continue
 
             EXP_DIRNAME = os.path.basename(EXP_DIRPATH)
-            os.makedirs(ESS_DIR, exist_ok=True)
             ESS_FILEPATH = os.path.join(ESS_DIR, f"{EXP_DIRNAME}.csv")
 
             ess_df = get_ess_df(ESS_FILEPATH)
@@ -2708,7 +2720,6 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             target_test_count = EXPERIMENT['rcg_target_test_count']
 
             EXP_DIRNAME = os.path.basename(get_dirname_from_experiment(EXPERIMENT))
-            os.makedirs("output/ess", exist_ok=True)
             ESS_FILEPATH = os.path.join("output/ess", f"{EXP_DIRNAME}.csv")
 
             logger.debug(f"Getting ESS dataframe.")
