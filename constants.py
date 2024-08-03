@@ -2,6 +2,7 @@ DATA_DIR = 'output/data/'
 LOG_DIR = 'output/logs/'
 SUMMARISED_DIR = 'output/summarised_data/'
 DATASET_DIR = 'output/datasets/'
+ESS_DIR = 'output/ess/'
 
 REQUIRED_EXPERIMENT_KEYS = [
     'experiment_name',

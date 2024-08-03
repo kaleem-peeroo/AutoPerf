@@ -375,7 +375,7 @@ def get_if_pcg(experiment: Optional[Dict] = None) -> Optional[bool]:
     
     return experiment['combination_generation_type'] == 'pcg'
 
-def get_valid_dirname(dir_name: str = "") -> Optional[str]:
+def get_valid_dirname(dir_name: str = "") -> Tuple[ Optional[str], Optional[str]]:
     """
     Validate a directory name by replacing invalid characters with underscores.
 
@@ -384,32 +384,24 @@ def get_valid_dirname(dir_name: str = "") -> Optional[str]:
 
     Returns:
         - str: Valid directory name if valid, None otherwise
+        - error
     """
     if dir_name == "":
-        logger.error(
-            f"No dirname passed for validation."
-        )
-        return None
+        return None, f"No dirname passed for validation."
 
     dir_name = re.sub(r'[<>:"/\\|?*]', '_', dir_name)
     dir_name = dir_name.strip()
     dir_name = re.sub(r'\s+', '_', dir_name)
 
     if not dir_name:
-        logger.error(
-            f"Dirname can't be empty after validation."
-        )
-        return None
+        return None, f"Dirname can't be empty after validation."
 
     if len(dir_name) > 255:
-        logger.error(
-            f"Dirname can't be more than 255 characters:\n\t{dir_name}"
-        )
-        return None
+        return None, f"Dirname can't be more than 255 characters:\n\t{dir_name}"
 
-    return dir_name
+    return dir_name, None
 
-def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[str]:
+def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Tuple[ Optional[str], Optional[str] ]:
     """
     Get a valid dirname from the experiment config by appending the experiment name to the data directory.
 
@@ -418,23 +410,18 @@ def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[s
 
     Returns:
         - str: Valid dirname if valid, None otherwise.
+        - error
     """
     if experiment is None:
-        logger.error(
-            f"No experiment config passed."
-        )
-        return None
+        return None, f"No experiment config passed."
 
-    experiment_name = experiment['experiment_name']
-    experiment_dirname = get_valid_dirname(experiment_name)
-    if experiment_dirname is None:
-        logger.error(
-            f"Couldn't get a valid dirname for {experiment_name}"
-        )
-        return None
-    experiment_dirname = os.path.join("output/data", experiment_dirname)
+    experiment_dirname, dirname_error = get_valid_dirname(experiment['experiment_name'])
+    if dirname_error:
+        return None, f"Couldn't get a valid dirname for {experiment_name}"
 
-    return experiment_dirname
+    experiment_dirname = os.path.join(DATA_DIR, experiment_dirname)
+
+    return experiment_dirname, None
 
 def generate_combinations_from_qos(qos: Optional[Dict] = None) -> Optional[List]:
     """
@@ -2624,11 +2611,8 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
         logger.info(f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}...")
 
-        EXPERIMENT_DIRNAME = get_dirname_from_experiment(EXPERIMENT)
-        if EXPERIMENT_DIRNAME is None:
-            logger.error(
-                f"Error getting experiment dirname for {EXPERIMENT['experiment_name']}"
-                )
+        EXPERIMENT_DIRNAME, dirname_error = get_dirname_from_experiment(EXPERIMENT)
+        if dirname_error:
             continue
 
         if not os.path.exists(EXPERIMENT_DIRNAME):
@@ -2659,9 +2643,13 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 )
                 continue
 
-            EXP_DIRNAME = os.path.basename(get_dirname_from_experiment(EXPERIMENT))
-            os.makedirs("output/ess", exist_ok=True)
-            ESS_FILEPATH = os.path.join("output/ess", f"{EXP_DIRNAME}.csv")
+            EXP_DIRPATH, dirname_error = get_dirname_from_experiment(EXPERIMENT)
+            if dirname_error:
+                continue
+
+            EXP_DIRNAME = os.path.basename(EXP_DIRPATH)
+            os.makedirs(ESS_DIR, exist_ok=True)
+            ESS_FILEPATH = os.path.join(ESS_DIR, f"{EXP_DIRNAME}.csv")
 
             ess_df = get_ess_df(ESS_FILEPATH)
             if ess_df is None:
