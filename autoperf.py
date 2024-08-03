@@ -229,7 +229,10 @@ def get_shorter_list(list_one: List = [], list_two: List = []):
     else:
         return list_one
 
-def validate_dict_using_keys(given_keys: List = [], required_keys: List = []) -> Optional[bool]:
+def validate_dict_using_keys(
+        given_keys: List = [], 
+        required_keys: List = []
+) -> Tuple[ Optional[bool], Optional[str] ]:
     """
     Validate a dictionary using a list of required keys.
 
@@ -239,40 +242,29 @@ def validate_dict_using_keys(given_keys: List = [], required_keys: List = []) ->
 
     Returns:
         - bool: True if all required keys are present in the given keys, False otherwise.
+        - error: if there is an error
     """
     if given_keys == []:
-        logger.error(
-            f"No given_keys given."
-        )
-        return None
+        return False, f"No given_keys given."
 
     if required_keys == []:
-        logger.error(
-            f"No required_keys given."
-        )
-        return None
+        return False, f"No required_keys given."
 
     list_difference = get_difference_between_lists(
         list(given_keys), 
         required_keys
     )
     if list_difference is None:
-        logger.error(
-            f"Error comparing keys for {given_keys}"
-        )
-        return None
+        return False, f"Error comparing keys for {given_keys}"
 
     if len(list_difference) > 0:
         given_keys_string = "\n\t - ".join(given_keys)
         list_difference_string = "\n\t - ".join(list_difference)
-        logger.error(
-            f"Mismatch in keys for \n\t{given_keys_string}: \n\n{list_difference_string}\n"
-        )
-        return False
+        return False, f"Mismatch in keys for \n\t{given_keys_string}: \n\n{list_difference_string}\n"
     
-    return True
+    return True, None
 
-def read_config(config_path: str = ""):
+def read_config(config_path: str = "") -> Tuple[ Optional[Dict], Optional[str] ]:
     """
     Read a JSON config file.
 
@@ -281,102 +273,70 @@ def read_config(config_path: str = ""):
 
     Returns:
         - List: List of dictionaries if the config file is valid, None otherwise.
+        - error: any errors
 
     """
     if config_path == "":
-        logger.error(
-            f"No config path passed to read_config()"
-        )
-        return None
+        return None, f"No config path passed to read_config()"
+
+    if not os.path.exists(config_path):
+        return None, f"{config_path} doesn't exist as a path."
 
     with open(config_path, 'r') as f:
         try:
             config = json.load(f)
         except ValueError:
-            logger.error(
-                f"Error parsing JSON for config file: {config_path}"
-            )
-            return None
+            return None, f"Error parsing JSON for config file: {config_path}"
 
     if not isinstance(config, list):
-        logger.error(
-            f"Config file does not contain a list: {config_path}"
-        )
-        return None
+        return None, f"Config file does not contain a list: {config_path}"
 
     for experiment in config:
         if not isinstance(experiment, dict):
-            logger.error(
-                f"{experiment} is NOT a dictionary."
-            )
-            return None
+            return None, f"{experiment} is NOT a dictionary."
     
-        is_experiment_config_valid = validate_dict_using_keys(
+        is_experiment_config_valid, validate_dict_error = validate_dict_using_keys(
             list(experiment.keys()),
             REQUIRED_EXPERIMENT_KEYS
         )
-        if is_experiment_config_valid is None:
-            logger.error(
-                f"Error validating {experiment}."
-            )
-            return None
+        if validate_dict_error:
+            return None, f"Error validating {experiment}."
         if not is_experiment_config_valid:
-            logger.error(
-                f"Config invalid for {experiment['experiment_name']} in {config_path}."
-            )
-            return None
+            return None, f"Config invalid for {experiment['experiment_name']} in {config_path}."
 
         qos_settings = experiment['qos_settings']
-        is_qos_config_valid = validate_dict_using_keys(
+        is_qos_config_valid, validate_dict_error = validate_dict_using_keys(
             list(qos_settings.keys()),
             REQUIRED_QOS_KEYS
         )
-        if is_qos_config_valid is None:
-            logger.error(
-                f"Error validating {experiment}."
-            )
-            return None
+        if validate_dict_error:
+            return None, f"Error validating {experiment}."
         if not is_qos_config_valid:
-            logger.error(
-                f"Config invalid for {experiment}."
-            )
-            return None
+            return None, f"Config invalid for {experiment}."
 
         slave_machine_settings = experiment['slave_machines']
         for machine_setting in slave_machine_settings:
-            is_slave_machine_config_valid = validate_dict_using_keys(
+            is_slave_machine_config_valid, validate_dict_error = validate_dict_using_keys(
                 list(machine_setting.keys()),
                 REQUIRED_SLAVE_MACHINE_KEYS
             )
-            if is_slave_machine_config_valid is None:
-                logger.error(
-                    f"Error validating slave machine {machine_setting['machine_name']} for {experiment['experiment_name']}."
-                )
-                return None
+            if validate_dict_error:
+                return None, f"Error validating slave machine {machine_setting['machine_name']} for {experiment['experiment_name']}."
             if not is_slave_machine_config_valid:
-                logger.error(
-                    f"Config invalid for slave machine {machine_setting['machine_name']} for {experiment['experiment_name']}."
-                )
-                return None
+                return None, f"Config invalid for slave machine {machine_setting['machine_name']} for {experiment['experiment_name']}."
 
         noise_gen_settings = experiment['noise_generation']
         if noise_gen_settings != {}:
-            is_noise_gen_config_valid = validate_dict_using_keys(
+            is_noise_gen_config_valid, validate_dict_error = validate_dict_using_keys(
                 list(noise_gen_settings.keys()),
                 REQUIRED_NOISE_GENERATION_KEYS
             )
-            if is_noise_gen_config_valid is None:
-                logger.error(
-                    f"Error validating noise generation for {experiment['experiment_name']}."
-                )
-                return None
+            if validate_dict_error:
+                return None, f"Error validating noise generation for {experiment['experiment_name']}."
             if not is_noise_gen_config_valid:
-                logger.error(
-                    f"Config invalid for noise generation for {experiment['experiment_name']}."
-                )
-                return None
+                return None, f"Config invalid for noise generation for {experiment['experiment_name']}."
 
-    return config
+    return config, None
 
 def get_if_pcg(experiment: Optional[Dict] = None) -> Optional[bool]:
     """
@@ -2646,30 +2606,19 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
     dataset_df.to_csv(filename, index=False)
     return filename
 
-def main(sys_args: list[str] = []) -> None:
+def main(sys_args: list[str] = []) -> Optional[None]:
     if len(sys_args) < 2:
         logger.error(
             f"Config filepath not specified."
         )
-        return None
+        return 
 
     os.makedirs("output", exist_ok=True)
 
     CONFIG_PATH = sys_args[1]
-    if not os.path.exists(CONFIG_PATH):
-        logger.error(
-            f"Config path {CONFIG_PATH} does NOT exist."
-        )
-        return None
-
-    logger.debug(f"Reading {CONFIG_PATH}.")
-
-    CONFIG = read_config(CONFIG_PATH)
-    if CONFIG is None:
-        logger.error(
-            f"Couldn't read config of {CONFIG_PATH}."
-        )
-        return None
+    CONFIG, config_error = read_config(CONFIG_PATH)
+    if config_error:
+        return
 
     for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
 
