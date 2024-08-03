@@ -52,7 +52,7 @@ console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
 
-def ping_machine(ip: str = "") -> Optional[bool]:
+def ping_machine(ip: str = "") -> Tuple[Optional[bool], Optional[str]]:
     """
     Ping a machine to check if it's online.
 
@@ -61,12 +61,10 @@ def ping_machine(ip: str = "") -> Optional[bool]:
 
     Returns:
         - bool: True if machine is online, False if machine is offline.
+        - error
     """
     if ip == "":
-        logger.error(
-            f"No IP passed for connection check."
-        )
-        return None
+        return False, f"No IP passed for connection check."
 
     logger.debug(
         f"Pinging {ip}"
@@ -75,11 +73,11 @@ def ping_machine(ip: str = "") -> Optional[bool]:
     response = os.system(f"ping -c 1 {ip} > /dev/null 2>&1")
 
     if response == 0:
-       return True
+       return True, None
     else:
-        return False
+        return False, f"Failed to ping {ip}"
 
-def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
+def check_ssh_connection(machine_config: Dict = {}) -> Tuple[Optional[bool], Optional[str]]:
     """
     Check if an SSH connection can be established to a machine.
 
@@ -88,12 +86,10 @@ def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
 
     Returns:
         - bool: True if SSH connection is successful, False
+        - error
     """
     if machine_config == {}:
-        logger.error(
-            f"No machine config passed to check_ssh_connection()."
-        )
-        return None
+        return False, f"No machine config passed to check_ssh_connection()."
     
     ssh_key_path = machine_config['ssh_key_path']
     username = machine_config['username']
@@ -115,22 +111,20 @@ def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
 
         response = ssh_check_process.returncode 
 
-        # response = os.system(f"ssh -i {ssh_key_path} {username}@{ip} 'echo \"SSH connection successful.\"' > /dev/null 2>&1")
-
         if response == 0:
-            return True
+            return True, None
         else:
-            return False
+            return False, f"Error when checking ssh connection to {ip}: {stderr}"
 
     except subprocess.TimeoutExpired:
         ssh_check_process.kill()
         stdout, stderr = ssh_check_process.communicate()
-        logger.error(
-            f"Timed out when checking SSH connection: {stderr}"
-        )
-        return False
+        return False, f"Timed out when checking SSH connection: {stderr}"
 
-def get_difference_between_lists(list_one: List = [], list_two: List = []):
+def get_difference_between_lists(
+    list_one: List = [], 
+    list_two: List = []
+) -> Tuple[Optional[List], Optional[str]]:
     """
     Get the difference between two lists.
 
@@ -140,40 +134,29 @@ def get_difference_between_lists(list_one: List = [], list_two: List = []):
 
     Returns:
         - List: List of items that are in list_one but not in list_two.
+        - error 
     """
     if list_one is None:
-        logger.error(
-            f"List one is none."
-        )
-        return None
+        return None, f"List one is none."
 
     if list_two is None:
-        logger.error(
-            f"List two is none."
-        )
-        return None
+        return None, f"List two is none."
 
     longer_list = get_longer_list(
         list_one, 
         list_two
     )
     if longer_list is None:
-        logger.error(
-            f"Couldn't get longer list"
-        )
-        return None
+        return None, f"Couldn't get longer list"
 
     shorter_list = get_shorter_list(
         list_one, 
         list_two
     )
     if shorter_list is None:
-        logger.error(
-            f"Couldn't get shorter list"
-        )
-        return None
+        return None, f"Couldn't get shorter list"
 
-    return [item for item in longer_list if item not in shorter_list]
+    return [item for item in longer_list if item not in shorter_list], None
 
 def get_longer_list(list_one: List = [], list_two: List = []):
     """
@@ -252,11 +235,11 @@ def validate_dict_using_keys(
     if required_keys == []:
         return False, f"No required_keys given."
 
-    list_difference = get_difference_between_lists(
+    list_difference, difference_error = get_difference_between_lists(
         list(given_keys), 
         required_keys
     )
-    if list_difference is None:
+    if difference_error:
         return False, f"Error comparing keys for {given_keys}"
 
     if len(list_difference) > 0:
@@ -340,7 +323,7 @@ def read_config(config_path: str = "") -> Tuple[ Optional[Dict], Optional[str] ]
 
     return config, None
 
-def get_if_pcg(experiment: Optional[Dict] = None) -> Optional[bool]:
+def get_if_pcg(experiment: Optional[Dict] = None) -> Tuple[ Optional[bool], Optional[str] ]:
     """
     Check if the experiment is PCG or RCG by checking the combination_generation_type.
 
@@ -349,33 +332,22 @@ def get_if_pcg(experiment: Optional[Dict] = None) -> Optional[bool]:
 
     Returns:
         - bool: True if PCG, False if RCG, None otherwise.
+        - error
     """
     if experiment is None:
-        logger.error(
-            f"No experiment given."
-        )
-        return None
+        return False, f"No experiment given."
 
     if 'combination_generation_type' not in experiment.keys():
-        logger.error(
-            f"combination_generation_type option not found in experiment config."
-        )
-        return None
+        return False, f"combination_generation_type option not found in experiment config."
 
     if experiment['combination_generation_type'] == "":
-        logger.error(
-            "combination_generation_type is empty."
-        )
-        return None
+        return False, "combination_generation_type is empty."
 
     combination_generation_type = experiment['combination_generation_type']
     if combination_generation_type not in ['pcg', 'rcg']:
-        logger.error(
-            f"Invalid value for combination generation type: {combination_generation_type}.\n\tExpected either PCG or RCG."
-        )
-        return None
+        return False, f"Invalid value for combination generation type: {combination_generation_type}.\n\tExpected either PCG or RCG."
     
-    return experiment['combination_generation_type'] == 'pcg'
+    return experiment['combination_generation_type'] == 'pcg', None
 
 def get_valid_dirname(dir_name: str = "") -> Tuple[ Optional[str], Optional[str]]:
     """
@@ -425,7 +397,7 @@ def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Tuple[ Opt
 
     return experiment_dirname, None
 
-def generate_combinations_from_qos(qos: Optional[Dict] = None) -> Optional[List]:
+def generate_combinations_from_qos(qos: Dict = {}) -> Tuple[Optional[List], Optional[str]]:
     """
     Generate combinations of QoS settings from the given QoS settings.
 
@@ -434,47 +406,39 @@ def generate_combinations_from_qos(qos: Optional[Dict] = None) -> Optional[List]
 
     Returns:
         - List: List of dictionaries containing all possible combinations of QoS settings.
+        - error
     """
     if qos is None:
-        logger.error(
-            f"No QoS passed."
-        )
-        return None
+        return None, f"No QoS passed."
 
+    if qos == {}:
+        return None, f"No QoS passed."
 
     keys = qos.keys()
     if len(keys) == 0:
-        logger.error(
-            f"No options found for qos"
-        )
-        return None
+        return None, f"No options found for qos"
 
     for key in keys:
         if key not in REQUIRED_QOS_KEYS:
-            logger.error(
-                f"Found an unexpected QoS setting: {key}"
-            )
-            return None
+            return None, f"Found an unexpected QoS setting: {key}"
 
     values = qos.values()
     if len(values) == 0:
-        logger.error(
-            f"No values found for qos"
-        )
-        return None
+        return None, f"No values found for qos"
+
     for value in values:
         if len(value) == 0:
-            logger.error(
-                f"One of the settings has no values."
-            )
-            return None
+            return None, f"One of the settings has no values."
 
     combinations = list(itertools.product(*values))
     combination_dicts = [dict(zip(keys, combination)) for combination in combinations]
 
-    return combination_dicts
+    if len(combination_dicts) == 0:
+        return None, f"No combinations were generated fro mthe QoS values:\n\t {qos}"
 
-def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
+    return combination_dicts, None
+
+def get_ess_df(ess_filepath: str = "") -> Tuple[Optional[pd.DataFrame], Optional[str]]:
     """
     Get the ESS dataframe from the given filepath.
 
@@ -483,16 +447,17 @@ def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
 
     Returns:
         - pd.DataFrame: ESS dataframe if valid, None otherwise.
+        - error
     """
     if ess_filepath == "":
-        logger.error(
-            f"No filepath passes for ESS."
-        )
-        return None
+        return None, f"No filepath passes for ESS."
 
     ess_exists = os.path.exists(ess_filepath)
     if ess_exists:
-        ess_df = pd.read_csv(ess_filepath)
+        try:
+            ess_df = pd.read_csv(ess_filepath)
+        except Exception as e:
+            return None, f"Couldn't ready {ess_filepath}: \n\t{e}"
     else:
         ess_df = pd.DataFrame(columns=[
             "start_timestamp",
@@ -505,9 +470,9 @@ def get_ess_df(ess_filepath: str = "") -> Optional[pd.DataFrame]:
             "comments"
        ])
 
-    return ess_df
+    return ess_df, None
 
-def get_test_name_from_combination_dict(combination_dict: Dict = {}) -> Optional[str]:
+def get_test_name_from_combination_dict(combination_dict: Dict = {}) -> Tuple[Optional[str], Optional[str]]:
     """
     Get the test name from the combination dict by concatenating the values of the dict together.
 
@@ -516,39 +481,26 @@ def get_test_name_from_combination_dict(combination_dict: Dict = {}) -> Optional
 
     Returns:
         - str: Test name if valid, None otherwise.
+        - error
     """
     if combination_dict == {}:
-        logger.error(
-            f"No combination dict passed."
-        )
-        return None
+        return None, f"No combination dict passed."
 
     if combination_dict is None:
-        logger.error(
-            f"Combination dict is None."
-        )
-        return None
+        return None, f"Combination dict is None."
 
     if combination_dict.keys() == []:
-        logger.error(
-            f"No keys found in combination dict."
-        )
-        return None
+        return None, f"No keys found in combination dict."
 
-    diff_between_keys = get_difference_between_lists(
+    diff_between_keys, diff_error = get_difference_between_lists(
         list(combination_dict.keys()),
         REQUIRED_QOS_KEYS
     )
-    if diff_between_keys is None:
-        logger.error(
-            f"Error comparing keys for {combination_dict}"
-        )
-        return None
+    if diff_error:
+        return None, f"Error comparing keys for {combination_dict}"
+
     if len(diff_between_keys) > 0:
-        logger.error(
-            f"Invalid configuration options in combination dict."
-        )
-        return None
+        return None, f"Invalid configuration options in combination dict."
 
     duration_string = None
     datalen_string = None
@@ -558,12 +510,10 @@ def get_test_name_from_combination_dict(combination_dict: Dict = {}) -> Optional
     mc_string = None
     dur_string = None
     lc_string = None
+
     for key, value in combination_dict.items():
         if value == "":
-            logger.error(
-                f"Value for {key} is empty."
-            )
-            return None
+            return None, f"Value for {key} is empty."
 
         if key.lower() == "duration_secs":
             duration_string = f"{value}SEC"
@@ -622,7 +572,7 @@ def get_test_name_from_combination_dict(combination_dict: Dict = {}) -> Optional
     test_name = f"{test_name}{dur_string}_"
     test_name = f"{test_name}{lc_string}"
 
-    return test_name
+    return test_name, None
 
 def get_qos_dict_from_test_name(test_name: str = "") -> Optional[Dict]:
     """
@@ -779,7 +729,7 @@ def get_next_test_from_ess(ess_df: pd.DataFrame) -> Optional[Dict]:
 
     return last_test_qos
 
-def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool]:
+def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Tuple[Optional[bool], Optional[str]]:
     """
     Check if the last n tests have failed from the ESS.
 
@@ -789,30 +739,19 @@ def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool
 
     Returns:
         - bool: True if the last n tests have failed, False otherwise
+        - error
     """
     if ess_df is None:
-        logger.error(
-            f"No ESS dataframe passed."
-        )
-        return None
+        return False, f"No ESS dataframe passed."
 
     if n == 0:
-        logger.warning(
-            f"Can't check last 0 tests."
-        )
-        return False
+        return False, f"Can't check last 0 tests."
 
     if n < 0:
-        logger.error(
-            f"Can't check negative number of tests: {n}."
-        )
-        return None
+        return False, f"Can't check negative number of tests: {n}."
 
     if len(ess_df.index) == 0:
-        logger.warning(
-            f"ESS dataframe is empty."
-        )
-        return False
+        return False, None
 
     if len(ess_df.index) < n:
         logger.warning(
@@ -822,16 +761,13 @@ def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Optional[bool
 
     last_n_tests = ess_df.tail(n)
     if last_n_tests is None:
-        logger.error(
-           f"Couldn't get the last {n} tests."
-        )
-        return None
+        return False, f"Couldn't get the last {n} tests."
 
     failed_tests = last_n_tests[last_n_tests['end_status'] != 'success']
     if len(failed_tests.index) == n:
-        return True
+        return True, None
 
-    return False
+    return False, None
 
 def generate_scripts_from_qos_config(qos_config: Dict = {}) -> Optional[List]:
     """
@@ -1642,7 +1578,7 @@ def run_test(
     ess_df: pd.DataFrame = pd.DataFrame(),
     experiment_dirpath: str = "",
     noise_gen_config: Dict = {}
-) -> Optional[pd.DataFrame]:
+) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
     """
     Run the test using the given test config, machine configs and ESS dataframe.
 
@@ -1655,71 +1591,42 @@ def run_test(
 
     Returns:
         - pd.DataFrame: Updated ESS dataframe if valid, None otherwise.
+        - error
     """
     if test_config == {}:
-        logger.error(
-            f"No test config passed."
-        )
-        return None
+        return None, f"No test config passed."
 
     if machine_configs == []:
-        logger.error(
-            f"No machine config passed."
-        )
-        return None
+        return None, f"No machine config passed."
 
     if ess_df is None:
-        logger.error(
-            f"No ESS dataframe passed."
-        )
-        return None
+        return None, f"No ESS dataframe passed."
 
     if not isinstance(ess_df, pd.DataFrame):
-        logger.error(
-            f"ESS dataframe is not a dataframe."
-        )
-        return None
+        return None, f"ESS dataframe is not a dataframe."
 
     if not isinstance(test_config, dict):
-        logger.error(
-            f"Next test config is not a dictionary."
-        )
-        return None
+        return None, f"Next test config is not a dictionary."
 
     if not isinstance(machine_configs, List):
-        logger.error(
-            f"Machine config is not a list."
-        )
-        return None
+        return None, f"Machine config is not a list."
 
     if experiment_dirpath == "":
-        logger.error(
-            f"No experiment dirpath passed."
-        )
-        return None
+        return None, f"No experiment dirpath passed."
 
     if noise_gen_config is None:
-        logger.error(
-            f"No noise generation config passed."
-        )
-        return None
+        return None, f"No noise generation config passed."
 
     if not isinstance(noise_gen_config, Dict):
-        logger.error(
-            f"Noise gen config is not a dict."
-        )
-        return None
+        return None, f"Noise gen config is not a dict."
 
     # TODO: Validate noise gen config.
 
     new_ess_df = ess_df
 
-    test_name = get_test_name_from_combination_dict(test_config)
-    if test_name is None:
-        logger.error(
-            f"Couldn't get the name of the next test to run."
-        )
-        return None
+    test_name, test_error = get_test_name_from_combination_dict(test_config)
+    if test_error:
+        return None, f"Couldn't get the name of the next test to run."
 
     """
     1. Check connections to machines.
@@ -1741,10 +1648,8 @@ def run_test(
         # 1. Check connections to machines.
         for machine_config in machine_configs:
             machine_ip = machine_config['ip']
-            if not ping_machine(machine_ip):
-                logger.error(
-                    f"Couldn't ping {machine_ip}."
-                )
+            ping_response, ping_error = ping_machine(machine_ip)
+            if ping_error:
                 return update_ess_df(
                     new_ess_df,
                     None,
@@ -1755,15 +1660,11 @@ def run_test(
                     "failed initial ping check",
                     test_config,
                     new_ess_row['comments'] + f"Failed to even ping {machine_ip} the first time."
-                )
+                ), "failed initial ping check"
 
 
-            if not check_ssh_connection(
-                machine_config
-            ):
-                logger.error(
-                    f"Couldn't SSH into {machine_ip}."
-                )
+            passed_ssh_check, ssh_check_error = check_ssh_connection(machine_config)
+            if ssh_check_error:
                 return update_ess_df(
                     new_ess_df,
                     None,
@@ -1774,9 +1675,8 @@ def run_test(
                     "failed initial ssh check",
                     test_config,
                     new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
-                )
+                ), "failed initial ssh check"
 
-        
         logger.debug(f"Restarting all machines")
         
         # 2. Restart machines.
@@ -2615,6 +2515,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
     CONFIG_PATH = sys_args[1]
     CONFIG, config_error = read_config(CONFIG_PATH)
     if config_error:
+        logger.error(f"Error reading config: {config_error}")
         return
 
     for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
@@ -2627,79 +2528,70 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
         EXPERIMENT_DIRNAME, dirname_error = get_dirname_from_experiment(EXPERIMENT)
         if dirname_error:
+            logger.error(f"Error getting experiment dirname: {dirname_error}")
             continue
 
         os.makedirs(EXPERIMENT_DIRNAME, exist_ok=True)
 
-        is_pcg = get_if_pcg(EXPERIMENT)
-        if is_pcg is None:
-            logger.warning(
-                f"Error checking if {EXPERIMENT['experiment_name']} is PCG or not."
-            )
+        is_pcg, if_pcg_error = get_if_pcg(EXPERIMENT)
+        if if_pcg_error:
+            logger.error(f"Error check if PCG: {if_pcg_error}")
             continue 
 
         if is_pcg:
-            logger.debug(f"Is PCG")
-            logger.debug(f"Generating combinations from QoS settings.")
-
-            COMBINATIONS = generate_combinations_from_qos(EXPERIMENT['qos_settings'])
-
-            if COMBINATIONS is None:
-                logger.warning(
-                    f"Error generating combinations for {EXPERIMENT['experiment_name']}"
-                )
-                continue
-
-            if len(COMBINATIONS) == 0:
-                logger.error(
-                    f"No combinations generated for {EXPERIMENT['experiment_name']}"
-                )
+            COMBINATIONS, combinations_error = generate_combinations_from_qos(EXPERIMENT['qos_settings'])
+            if combinations_error:
+                logger.error(f"Error generating combinations: {combinations_error}")
                 continue
 
             EXP_DIRPATH, dirname_error = get_dirname_from_experiment(EXPERIMENT)
             if dirname_error:
+                logger.error(f"Error getting experiment dirname: {dirname_error}")
                 continue
 
             EXP_DIRNAME = os.path.basename(EXP_DIRPATH)
-            ESS_FILEPATH = os.path.join(ESS_DIR, f"{EXP_DIRNAME}.csv")
+            ESS_PATH = os.path.join(ESS_DIR, f"{EXP_DIRNAME}.csv")
 
-            ess_df = get_ess_df(ESS_FILEPATH)
-            if ess_df is None:
-                logger.warning(
-                    f"Error getting ESS dataframe."
-                )
+            ess_df, ess_error = get_ess_df(ESS_PATH)
+            if ess_error:
+                logger.error(f"Error getting ess: {ess_error}")
                 continue
 
             ess_df_row_count = len(ess_df.index)
             starting_test_index = ess_df_row_count
 
             for test_config in COMBINATIONS[starting_test_index:]:
-                ess_df = get_ess_df(ESS_FILEPATH)
-                if ess_df is None:
-                    logger.warning(
-                        f"Error getting ESS dataframe."
-                    )
+                ess_df, ess_error = get_ess_df(ESS_PATH)
+                if ess_error:
+                    logger.error(f"Error getting ess: {ess_error}")
                     continue
 
                 test_index = COMBINATIONS.index(test_config)
 
-                test_name = get_test_name_from_combination_dict(test_config)
-                if test_name is None:
-                    logger.warning(
-                        f"Couldn't get the name of the next test to run for {EXPERIMENT['experiment_name']}."
-                    )
+                test_name, test_name_error = get_test_name_from_combination_dict(test_config)
+                if test_name_error:
+                    logger.error(f"Error getting test name: {test_name_error}")
                     continue
 
                 quit_after_n_failed_test_count = EXPERIMENT['quit_after_n_failed_tests']
                 if quit_after_n_failed_test_count > 0:
-                    if len(ess_df.index) > quit_after_n_failed_test_count:
-                        if have_last_n_tests_failed(ess_df, quit_after_n_failed_test_count):
-                            logger.error(
-                                f"Last {quit_after_n_failed_test_count} tests have failed. Quitting..."
-                            )
-                            break
+                    have_last_n_tests_failed_bool, have_last_n_tests_failed_error = have_last_n_tests_failed(
+                        ess_df, 
+                        quit_after_n_failed_test_count
+                    )
+                    if have_last_n_tests_failed_error:
+                        logger.error(f"Error checking for last n failed tests: {have_last_n_tests_failed_error}")
+                        break
+
+                    if have_last_n_tests_failed_bool:
+                        console.print(
+                            f"Last {quit_after_n_failed_test_count} tests have failed. Quitting...",
+                            style="bold red"
+                        )
+                        break
 
                 logger.info(f"[{test_index + 1}/{len(COMBINATIONS)}] Running test {test_name}...")
+
                 ess_df = run_test(
                     test_config, 
                     EXPERIMENT['slave_machines'],
@@ -2711,7 +2603,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     logger.error(f"Error when running test #{test_index + 1}: {test_name}")
                     continue
 
-                ess_df.to_csv(ESS_FILEPATH, index = False)
+                ess_df.to_csv(ESS_PATH, index = False)
 
             logger.debug("PCG experiment complete.")
 
@@ -2739,19 +2631,22 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             completed_test_count = ess_df_row_count
 
             for i in range(remaining_test_count):
-                ess_df = get_ess_df(ESS_FILEPATH)
-                if ess_df is None:
-                    logger.warning(
-                        f"Error getting ESS dataframe."
-                    )
+                ess_df, ess_error = get_ess_df(ESS_FILEPATH)
+                if ess_error:
                     continue
 
                 quit_after_n_failed_test_count = EXPERIMENT['quit_after_n_failed_tests']
                 if quit_after_n_failed_test_count > 0:
-                    if len(ess_df.index) > quit_after_n_failed_test_count:
-                        if have_last_n_tests_failed(ess_df, quit_after_n_failed_test_count):
-                            logger.error(f"Last {quit_after_n_failed_test_count} tests have failed. Quitting....")
-                            break
+                    have_last_n_tests_failed_bool, error = have_last_n_tests_failed(
+                        ess_df, 
+                        quit_after_n_failed_test_count
+                    )
+                    if error:
+                        continue
+
+                    if have_last_n_tests_failed_bool:
+                        logger.error(f"Last {quit_after_n_failed_test_count} tests have failed. Quitting....")
+                        break
 
                 # Generate new combination configuration
                 test_config = generate_test_config_from_qos(EXPERIMENT['qos_settings'])
