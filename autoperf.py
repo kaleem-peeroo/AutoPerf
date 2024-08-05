@@ -1739,7 +1739,7 @@ def run_test(
                 "failed connection checks",
                 test_config,
                 new_ess_row['comments'] + f"Failed connection check after 5 pings and ssh checks."
-            )
+            ), "failed connection checks"
             
         else:
             logger.debug(
@@ -1772,7 +1772,7 @@ def run_test(
             "failed script generation",
             qos_config,
             new_ess_row['comments'] + " Failed to generate scripts from qos config."
-        )
+        ), "failed script generation"
 
     # 6. Allocate scripts to machines.
     scripts_per_machine = distribute_scripts_to_machines(
@@ -1791,7 +1791,7 @@ def run_test(
             "failed script distribution",
             qos_config,
             new_ess_row['comments'] + " Failed to distribute scripts across machines."
-        )
+        ), "failed script distribution"
 
     if len(scripts_per_machine) == 0:
         logger.error(f"No scripts allocated to machines.")
@@ -1805,7 +1805,7 @@ def run_test(
             "failed script distribution",
             qos_config,
             new_ess_row['comments'] + " No scripts allocated to machines."
-        )
+        ), "failed script distribution"
 
     # 6.1. Delete any old .csv files from previous tests.
     logger.debug(f"Deleting csv files before test...")
@@ -1846,7 +1846,7 @@ def run_test(
                 "failed noise generation script generation",
                 qos_config,
                 new_ess_row['comments'] + " Failed to generate scripts from noise generation config."
-            )
+            ), "failed noise generation script generation"
 
         if len(noise_gen_scripts) > 0:
             noise_gen_script = ";".join(noise_gen_scripts)
@@ -1919,7 +1919,7 @@ def run_test(
                 "failed script execution",
                 qos_config,
                 new_ess_row['comments'] + " Errors running scripts on machines."
-            )
+            ), "failed script execution"
 
 
     # End timestamp
@@ -1973,7 +1973,7 @@ def run_test(
     )
 
     # 10. Return ESS.
-    return new_ess_df
+    return new_ess_df, None
 
 def generate_test_config_from_qos(qos: Optional[Dict] = None) -> Optional[Dict]:
     """
@@ -2513,12 +2513,15 @@ def main(sys_args: list[str] = []) -> Optional[None]:
     os.makedirs(DATASET_DIR, exist_ok=True)
 
     CONFIG_PATH = sys_args[1]
+    console.print(f"Reading config: {CONFIG_PATH}", style="bold blue")
     CONFIG, config_error = read_config(CONFIG_PATH)
     if config_error:
         logger.error(f"Error reading config: {config_error}")
         return
+    console.print(f"Config read: {CONFIG_PATH}", style="bold green")
 
     for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
+        EXPERIMENT_NAME = EXPERIMENT['experiment_name']
 
         logger.debug(f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}...")
         console.print(
@@ -2526,12 +2529,13 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             style="bold blue"
         )
 
-        EXPERIMENT_DIRNAME, dirname_error = get_dirname_from_experiment(EXPERIMENT)
+        EXPERIMENT_DIRPATH, dirname_error = get_dirname_from_experiment(EXPERIMENT)
         if dirname_error:
             logger.error(f"Error getting experiment dirname: {dirname_error}")
             continue
+        os.makedirs(EXPERIMENT_DIRPATH, exist_ok=True)
+        console.print(f"Created {EXPERIMENT_DIRPATH}", style="bold green")
 
-        os.makedirs(EXPERIMENT_DIRNAME, exist_ok=True)
 
         is_pcg, if_pcg_error = get_if_pcg(EXPERIMENT)
         if if_pcg_error:
@@ -2539,23 +2543,27 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             continue 
 
         if is_pcg:
+            console.print(f"Experiment Campaign Type: PCG", style="bold green")
             COMBINATIONS, combinations_error = generate_combinations_from_qos(EXPERIMENT['qos_settings'])
             if combinations_error:
                 logger.error(f"Error generating combinations: {combinations_error}")
                 continue
+            console.print(
+                f"\[{EXPERIMENT_NAME}] Generated {len(COMBINATIONS)} combinations from config.", 
+                style="bold green"
+            )
 
-            EXP_DIRPATH, dirname_error = get_dirname_from_experiment(EXPERIMENT)
-            if dirname_error:
-                logger.error(f"Error getting experiment dirname: {dirname_error}")
-                continue
-
-            EXP_DIRNAME = os.path.basename(EXP_DIRPATH)
-            ESS_PATH = os.path.join(ESS_DIR, f"{EXP_DIRNAME}.csv")
+            EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
+            ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.csv")
 
             ess_df, ess_error = get_ess_df(ESS_PATH)
             if ess_error:
                 logger.error(f"Error getting ess: {ess_error}")
                 continue
+            console.print(
+                f"\[{EXPERIMENT_NAME}] Got ESS.", 
+                style="bold green"
+            )
 
             ess_df_row_count = len(ess_df.index)
             starting_test_index = ess_df_row_count
@@ -2585,30 +2593,43 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
                     if have_last_n_tests_failed_bool:
                         console.print(
-                            f"Last {quit_after_n_failed_test_count} tests have failed. Quitting...",
+                            f"\[{EXPERIMENT_NAME}] Last {quit_after_n_failed_test_count} tests have failed. Quitting...",
                             style="bold red"
                         )
                         break
 
-                logger.info(f"[{test_index + 1}/{len(COMBINATIONS)}] Running test {test_name}...")
+                console.print(
+                    f"\[{EXPERIMENT_NAME}] \[{test_index + 1}/{len(COMBINATIONS)}] Running {test_name}...",
+                    style="bold blue"
+                )
 
-                ess_df = run_test(
+                ess_df, run_test_error = run_test(
                     test_config, 
                     EXPERIMENT['slave_machines'],
                     ess_df,
                     EXPERIMENT_DIRNAME,
                     EXPERIMENT['noise_generation']
                 )
-                if ess_df is None:
-                    logger.error(f"Error when running test #{test_index + 1}: {test_name}")
+                if run_test_error:
+                    logger.error(f"Error running test {test_name}: {run_test_error}")
+                    console.print(
+                        f"\[{EXPERIMENT_NAME}] \[{test_index + 1}/{len(COMBINATIONS)}] {test_name} failed.",
+                        style="bold red"
+                    )
                     continue
 
                 ess_df.to_csv(ESS_PATH, index = False)
 
+                console.print(
+                    f"\[{EXPERIMENT_NAME}] \[{test_index + 1}/{len(COMBINATIONS)}] {test_name} finished running.",
+                    style="bold green"
+                )
+
             logger.debug("PCG experiment complete.")
 
         else:
-            logger.debug(f"Is RCG")
+            console.print(f"Experiment Campaign Type: PCG", style="bold green")
+
             target_test_count = EXPERIMENT['rcg_target_test_count']
 
             EXP_DIRNAME = os.path.basename(get_dirname_from_experiment(EXPERIMENT))
