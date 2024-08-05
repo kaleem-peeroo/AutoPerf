@@ -1398,7 +1398,7 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         remote_csv_filepath = os.path.join(results_dir, csv_filepath)
         local_csv_filepath = os.path.join(local_results_dirpath, csv_file)
         console.print(
-            # f"{machine_name}: Downloading...\n\t{remote_csv_filepath} \n\tto \n\t{local_csv_filepath}",
+            # f"\t\t\t{machine_name}: Downloading...\n\t{remote_csv_filepath} \n\tto \n\t{local_csv_filepath}",
             f"\t\t\t{machine_name}: Downloading {csv_file}...",
             style="bold blue"
         )
@@ -2579,7 +2579,6 @@ def main(sys_args: list[str] = []) -> Optional[None]:
         os.makedirs(EXPERIMENT_DIRPATH, exist_ok=True)
         console.print(f"Created {EXPERIMENT_DIRPATH}", style="bold green")
 
-
         is_pcg, if_pcg_error = get_if_pcg(EXPERIMENT)
         if if_pcg_error:
             logger.error(f"Error check if PCG: {if_pcg_error}")
@@ -2671,32 +2670,32 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             # logger.debug("PCG experiment complete.")
 
         else:
-            console.print(f"Experiment Campaign Type: PCG", style="bold green")
+            console.print(f"Experiment Campaign Type: RCG", style="bold green")
 
             target_test_count = EXPERIMENT['rcg_target_test_count']
 
-            EXP_DIRNAME = os.path.basename(get_dirname_from_experiment(EXPERIMENT))
-            ESS_FILEPATH = os.path.join("output/ess", f"{EXP_DIRNAME}.csv")
+            EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
+            ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.csv")
 
-            logger.debug(f"Getting ESS dataframe.")
-            ess_df = get_ess_df(ESS_FILEPATH)
-            if ess_df is None:
-                logger.warning(
-                    f"Error getting ESS dataframe."
-                )
+            ess_df, ess_error = get_ess_df(ESS_PATH)
+            if ess_error:
+                logger.error(f"Error getting ESS: {ess_error}")
                 continue
+
+            console.print(
+                f"\[{EXPERIMENT_NAME}] Got ESS.",
+                style="bold green"
+            )
 
             ess_df_row_count = len(ess_df.index)
-            if ess_df_row_count == target_test_count:
-                logger.info(f"Finished running all {ess_df_row_count} tests for {EXPERIMENT['experiment_name']}")
-                continue
 
             remaining_test_count = target_test_count - ess_df_row_count
             completed_test_count = ess_df_row_count
 
             for i in range(remaining_test_count):
-                ess_df, ess_error = get_ess_df(ESS_FILEPATH)
+                ess_df, ess_error = get_ess_df(ESS_PATH)
                 if ess_error:
+                    logger.error(f"Error getting ESS: {ess_error}")
                     continue
 
                 quit_after_n_failed_test_count = EXPERIMENT['quit_after_n_failed_tests']
@@ -2718,28 +2717,38 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     logger.error("Error generating RCG config")
                     continue
 
-                test_name = get_test_name_from_combination_dict(test_config)
-                if test_name is None:
-                    logger.error("Couldn't get test name for config")
+                test_name, test_name_error = get_test_name_from_combination_dict(test_config)
+                if test_name_error:
+                    logger.error(f"Error gettign test name: {test_name_error}")
                     continue
 
+                counter_string = f"\[{completed_test_count + i + 1}/{target_test_count}]"
+                exp_name_string = f"\[{EXPERIMENT_NAME}]"
+                test_name_string = f"\[{test_name}]"
+
                 # Run test
-                logger.info(f"[{completed_test_count + i + 1}/{target_test_count}] Running test {test_name}...")
-                ess_df = run_test(
+                console.print(
+                    f"{exp_name_string} {test_name_string} {counter_string} Running test {test_name}...",
+                    style="bold blue"
+                )
+                ess_df, run_test_error = run_test(
                     test_config,
                     EXPERIMENT['slave_machines'],
                     ess_df,
-                    EXPERIMENT_DIRNAME
+                    EXPERIMENT_DIRPATH,
+                    EXPERIMENT['noise_generation']
                 )
-
-                if ess_df is None:
-                    logger.error(f"Error when running test #{completed_test_count + 1}: {test_name}")
+                if run_test_error:
+                    logger.error(f"Error running test {test_name}: {run_test_error}")
+                    console.print(
+                        f"\[{EXPERIMENT_NAME}] \[{completed_test_count + i + 1}/{targt_test_count}] {test_name} failed.",
+                        style="bold red"
+                    )
                     continue
 
-                ess_df.to_csv(ESS_FILEPATH, index = False)
+                ess_df.to_csv(ESS_PATH, index = False)
             
             logger.debug("RCG experiment complete.")
-
         # Do a check on all tests to make sure expected number of pub and sub files are the same
         test_dirpaths = [os.path.join(EXPERIMENT_DIRPATH, _) for _ in os.listdir(EXPERIMENT_DIRPATH)]
         test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
