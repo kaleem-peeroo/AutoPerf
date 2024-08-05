@@ -2451,15 +2451,15 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
             f"No csv files found in {summaries_dirpath}."
         )
     
-    logger.info(
-        f"Generating dataset from {len(test_csvs)} tests with {truncation_percent}% truncation..."
+    console.print(
+        f"\[{experiment_name}] Generating dataset from {len(test_csvs)} tests with {truncation_percent}% truncation...",
+        style="bold blue"
     )
 
     experiment_name = os.path.basename(dirpath)
     current_timestamp = datetime.datetime.today().strftime('%Y-%m-%d_%H-%M-%S')
     filename = f"{current_timestamp}_{experiment_name}_dataset_{truncation_percent}_percent_truncation.csv"
     filename = os.path.join("output/datasets", filename)
-
 
     dataset_df = pd.DataFrame()
     for test_csv in track(test_csvs, description="Processing..."):
@@ -2505,6 +2505,19 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
             for PERCENTILE in PERCENTILES:
                 new_dataset_row[f"{column}_{PERCENTILE}%"] = column_df.quantile(PERCENTILE / 100).values[0]
 
+            for STAT in DISTRIBUTION_STATS:
+                if STAT == "mean":
+                    new_dataset_row[f"{column}_mean"] = column_df.mean().values[0]
+
+                elif STAT == "std":
+                    new_dataset_row[f"{column}_std"] = column_df.std().values[0]
+
+                elif STAT == "min":
+                    new_dataset_row[f"{column}_min"] = column_df.min().values[0]
+
+                elif STAT == "max":
+                    new_dataset_row[f"{column}_max"] = column_df.max().values[0]
+
         new_dataset_row_df = pd.DataFrame(
             [new_dataset_row]
         )
@@ -2516,6 +2529,11 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
         )
 
     dataset_df.to_csv(filename, index=False)
+
+    console.print(
+        f"\[{experiment_name}] Generated dataset: {filename}",
+        style="bold green"
+    )
     return filename
 
 def main(sys_args: list[str] = []) -> Optional[None]:
@@ -2723,7 +2741,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             logger.debug("RCG experiment complete.")
 
         # Do a check on all tests to make sure expected number of pub and sub files are the same
-        test_dirpaths = [os.path.join(EXPERIMENT_DIRNAME, _) for _ in os.listdir(EXPERIMENT_DIRNAME)]
+        test_dirpaths = [os.path.join(EXPERIMENT_DIRPATH, _) for _ in os.listdir(EXPERIMENT_DIRPATH)]
         test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
         test_dirpaths = [_ for _ in test_dirpaths if "data" not in _.lower()]
         for test_dirpath in test_dirpaths:
@@ -2737,7 +2755,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 )
 
         # Summarise tests
-        summarise_tests(EXPERIMENT_DIRNAME) 
+        summarise_tests(EXPERIMENT_DIRPATH) 
         if summarise_tests is None:
             logger.error(
                 f"Error summarising tests for {EXPERIMENT['experiment_name']}"
@@ -2746,14 +2764,14 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
         truncation_percentages = [0, 10, 25, 50]
         for truncation_percent in truncation_percentages:
-            trunc_ds_path = generate_dataset(EXPERIMENT_DIRNAME, truncation_percent)
+            trunc_ds_path = generate_dataset(EXPERIMENT_DIRPATH, truncation_percent)
             if trunc_ds_path is None:
                 logger.error(
                     f"Error generating dataset for {EXPERIMENT['experiment_name']} with {truncation_percent}% truncation."
                 )
                 continue
 
-            logger.info(f"Generated dataset with {truncation_percent}% truncation:\n\t{trunc_ds_path}")
+            # logger.info(f"Generated dataset with {truncation_percent}% truncation:\n\t{trunc_ds_path}")
 
         # Compress results at end of experiment
         if os.path.exists(f"{EXPERIMENT_DIRNAME}.zip"):

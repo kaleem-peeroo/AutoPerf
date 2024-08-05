@@ -69,3 +69,10 @@ PERCENTILES = [
     95, 96, 97, 98, 99, 100,
     25, 50, 75
 ]
+
+DISTRIBUTION_STATS = [
+    'mean',
+    'std',
+    'min',
+    'max'
+]
