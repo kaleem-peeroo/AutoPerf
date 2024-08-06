@@ -27,7 +27,7 @@ import pandas as pd
 
 from constants import *
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 SKIP_RESTART = True
 
 # Set up logging
@@ -66,7 +66,7 @@ def ping_machine(ip: str = "") -> Tuple[Optional[bool], Optional[str]]:
         return False, f"No IP passed for connection check."
 
     logger.info(
-        f"Pinging {ip}"
+        f"\tPinging {ip}"
     )
 
     response = os.system(f"ping -c 1 {ip} > /dev/null 2>&1")
@@ -94,9 +94,7 @@ def check_ssh_connection(machine_config: Dict = {}) -> Tuple[Optional[bool], Opt
     username = machine_config['username']
     ip = machine_config['ip']
 
-    logger.info(
-        f"SSHing into {username}@{ip}"
-    )
+    logger.info(f"SSHing into {username}@{ip}")
 
     try:
         command = ["ssh", "-i", ssh_key_path, f"{username}@{ip}", "'echo", "\"SSH", "connection", "successful.\"'", ">", "/dev/null", "2>&1"]
@@ -107,18 +105,24 @@ def check_ssh_connection(machine_config: Dict = {}) -> Tuple[Optional[bool], Opt
         )
 
         stdout, stderr = ssh_check_process.communicate(timeout=30)
-
         response = ssh_check_process.returncode 
 
         if response == 0:
             return True, None
         else:
-            return False, f"Error when checking ssh connection to {ip}: {stderr}"
+            error_string = f"""
+            Error when checking ssh connection to {ip}:
+            stdout: [{stdout}]
+            stderr: [{stderr}]
+            command: [{' '.join(command)}]
+            response: [{response}]
+            """
+            return False, error_string
 
     except subprocess.TimeoutExpired:
         ssh_check_process.kill()
         stdout, stderr = ssh_check_process.communicate()
-        return False, f"Timed out when checking SSH connection: {stderr}"
+        return False, f"Timed out when checking SSH connection: [{stderr}]"
 
 def get_difference_between_lists(
     list_one: List = [], 
@@ -1658,7 +1662,7 @@ def run_test(
                     "failed initial ping check",
                     test_config,
                     new_ess_row['comments'] + f"Failed to even ping {machine_ip} the first time."
-                ), "failed initial ping check"
+                ), f"failed initial ping check: {ping_error}"
 
             passed_ssh_check, ssh_check_error = check_ssh_connection(machine_config)
             if ssh_check_error:
@@ -1672,10 +1676,10 @@ def run_test(
                     "failed initial ssh check",
                     test_config,
                     new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
-                ), "failed initial ssh check"
+                ), f"failed initial ssh check: {ssh_check_error}"
 
         logger.info(
-            f">{EXPERIMENT_NAME}< [{test_name}] Restarting all machines..."
+            f"[{EXPERIMENT_NAME}] [{test_name}] Restarting all machines..."
         )
         
         # 2. Restart machines.
@@ -1695,7 +1699,7 @@ def run_test(
                     )
             
             logger.info(
-                f">{EXPERIMENT_NAME}< [{test_name}] All machines have restarted. Waiting 15 seconds..."
+                f"[{EXPERIMENT_NAME}] [{test_name}] All machines have restarted. Waiting 15 seconds..."
             )
             
             time.sleep(15)
@@ -1742,7 +1746,7 @@ def run_test(
             
         else:
             logger.info(
-                f">{EXPERIMENT_NAME}< [{test_name}] All machines are available."
+                f"[{EXPERIMENT_NAME}] [{test_name}] All machines are available."
             )
 
     if DEBUG_MODE:
@@ -1808,7 +1812,7 @@ def run_test(
 
     # 6.1. Delete any old .csv files from previous tests.
     logger.info(
-        f">{EXPERIMENT_NAME}< [{test_name}] Deleting .csv files before test..."
+        f"[{EXPERIMENT_NAME}] [{test_name}] Deleting .csv files before test..."
     )
 
     with Manager() as manager:
@@ -1833,14 +1837,13 @@ def run_test(
                 process.join()
 
     logger.info(
-        f">{EXPERIMENT_NAME}< [{test_name}] .csv files deleted"
+        f"[{EXPERIMENT_NAME}] [{test_name}] .csv files deleted"
     )
 
     # 6.2. If noise generation is being used create the scripts and add to the existing scripts.
     if noise_gen_config != {}:
         noise_gen_scripts, noise_gen_error = get_noise_gen_scripts(noise_gen_config)
         if noise_gen_error:
-            logger.error(noise_gen_error)
             return update_ess_df(
                 new_ess_df,
                 None,
@@ -1851,7 +1854,7 @@ def run_test(
                 "failed noise generation script generation",
                 qos_config,
                 new_ess_row['comments'] + " Failed to generate scripts from noise generation config."
-            ), "failed noise generation script generation"
+            ), f"failed noise generation script generation: {noise_gen_error}"
 
         if len(noise_gen_scripts) > 0:
             noise_gen_script = ";".join(noise_gen_scripts)
@@ -1961,7 +1964,6 @@ def run_test(
                 )
                 process.terminate()
                 process.join()
-
 
     # 9. Update ESS.
     new_ess_df = update_ess_df(
@@ -2595,7 +2597,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 logger.error(f"Error generating combinations: {combinations_error}")
                 continue
             logger.info(
-                f">{EXPERIMENT_NAME}< Generated {len(COMBINATIONS)} combinations from config.",
+                f"[{EXPERIMENT_NAME}] Generated {len(COMBINATIONS)} combinations from config.",
             )
 
             EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
@@ -2606,7 +2608,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 logger.error(f"Error getting ess: {ess_error}")
                 continue
             logger.info(
-                f">{EXPERIMENT_NAME}< Got ESS.",
+                f"[{EXPERIMENT_NAME}] Got ESS.",
             )
 
             ess_df_row_count = len(ess_df.index)
@@ -2637,12 +2639,12 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
                     if have_last_n_tests_failed_bool:
                         logger.info(
-                            f">{EXPERIMENT_NAME}< Last {quit_after_n_failed_test_count} tests have failed. Quitting..."
+                            f"[{EXPERIMENT_NAME}] Last {quit_after_n_failed_test_count} tests have failed. Quitting..."
                         )
                         break
 
                 logger.info(
-                    f">{EXPERIMENT_NAME}< [{test_index + 1}/{len(COMBINATIONS)}] Running {test_name}..."
+                    f"[{EXPERIMENT_NAME}] [{test_index + 1}/{len(COMBINATIONS)}] Running {test_name}..."
                 )
 
                 ess_df, run_test_error = run_test(
@@ -2655,14 +2657,14 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 if run_test_error:
                     logger.error(f"Error running test {test_name}: {run_test_error}")
                     logger.info(
-                        f">{EXPERIMENT_NAME}< [{test_index + 1}/{len(COMBINATIONS)}] {test_name} failed."
+                        f"[{EXPERIMENT_NAME}] [{test_index + 1}/{len(COMBINATIONS)}] {test_name} failed."
                     )
                     continue
 
                 ess_df.to_csv(ESS_PATH, index = False)
 
                 logger.info(
-                    f">{EXPERIMENT_NAME}< [{test_index + 1}/{len(COMBINATIONS)}] {test_name} finished running."
+                    f"[{EXPERIMENT_NAME}] [{test_index + 1}/{len(COMBINATIONS)}] {test_name} finished running."
                 )
 
             # logger.debug("PCG experiment complete.")
@@ -2681,7 +2683,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 continue
 
             logger.info(
-                f">{EXPERIMENT_NAME}< Got ESS."
+                f"[{EXPERIMENT_NAME}] Got ESS."
             )
 
             ess_df_row_count = len(ess_df.index)
@@ -2720,7 +2722,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     continue
 
                 counter_string = f"[{completed_test_count + i + 1}/{target_test_count}]"
-                exp_name_string = f">{EXPERIMENT_NAME}<"
+                exp_name_string = f"[{EXPERIMENT_NAME}]"
                 test_name_string = f"[{test_name}]"
 
                 # Run test
@@ -2737,14 +2739,12 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 if run_test_error:
                     logger.error(f"Error running test {test_name}: {run_test_error}")
                     logger.info(
-                        f">{EXPERIMENT_NAME}< [{completed_test_count + i + 1}/{targt_test_count}] {test_name} failed."
+                        f"[{EXPERIMENT_NAME}] [{completed_test_count + i + 1}/{target_test_count}] {test_name} failed."
                     )
                     continue
 
                 ess_df.to_csv(ESS_PATH, index = False)
             
-            logger.debug("RCG experiment complete.")
-
         # Do a check on all tests to make sure expected number of pub and sub files are the same
         test_dirpaths = [os.path.join(EXPERIMENT_DIRPATH, _) for _ in os.listdir(EXPERIMENT_DIRPATH)]
         test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
