@@ -12,7 +12,6 @@ import datetime
 import warnings
 import random
 import shutil
-import rich
 
 from icecream import ic
 from typing import Dict, List, Optional, Tuple
@@ -1683,7 +1682,7 @@ def run_test(
                 ), "failed initial ssh check"
 
         console.print(
-            f"\[{EXPERIMENT_NAME}] \[{test_name}] Restarting all machines...",
+            f">{EXPERIMENT_NAME}< [{test_name}] Restarting all machines...",
             style="bold blue"
         )
         
@@ -1705,7 +1704,7 @@ def run_test(
                     )
             
             console.print(
-                f"\[{EXPERIMENT_NAME}] \[{test_name}] All machines have restarted. Waiting 15 seconds...",
+                f">{EXPERIMENT_NAME}< [{test_name}] All machines have restarted. Waiting 15 seconds...",
                 style="bold green"
             )
             
@@ -1753,7 +1752,7 @@ def run_test(
             
         else:
             console.print(
-                f"\[{EXPERIMENT_NAME}] \[{test_name}] All machines are available.",
+                f">{EXPERIMENT_NAME}< [{test_name}] All machines are available.",
                 style="bold green"
             )
 
@@ -1820,7 +1819,7 @@ def run_test(
 
     # 6.1. Delete any old .csv files from previous tests.
     console.print(
-        f"\[{EXPERIMENT_NAME}] \[{test_name}] Deleting .csv files before test...",
+        f">{EXPERIMENT_NAME}< [{test_name}] Deleting .csv files before test...",
         style="bold blue"
     )
 
@@ -1846,7 +1845,7 @@ def run_test(
                 process.join()
 
     console.print(
-        f"\[{EXPERIMENT_NAME}] \[{test_name}] .csv files deleted",
+        f">{EXPERIMENT_NAME}< [{test_name}] .csv files deleted",
         style="bold green"
     )
 
@@ -2332,20 +2331,46 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
         )
         return None
 
+    output_dir_type = "normal"
     if not os.path.exists(dirpath):
-        logger.error(
-            f"Dirpath does not exist."
-        )
-        return None
+        exp_dirname = os.path.basename(dirpath)
+        dirpath_first_part = os.path.dirname(dirpath)
+        dirpath_5pi = os.path.join(dirpath_first_part, "5pi", exp_dirname)
+        dirpath_3pi = os.path.join(dirpath_first_part, "3pi", exp_dirname)
 
-    if not os.path.isdir(dirpath):
-        logger.error(
-            f"Dirpath is not a directory."
-        )
-        return None
+        if os.path.exists(dirpath_5pi):
+            dirpath = dirpath_5pi
+            output_dir_type = "5pi"
+            console.print(
+                f"Using 5pi directory: {dirpath}",
+                style="bold blue"
+            )
 
+        elif os.path.exists(dirpath_3pi):
+            dirpath = dirpath_3pi
+            output_dir_type = "3pi"
+            console.print(
+                f"Using 3pi directory: {dirpath}",
+                style="bold blue"
+            )
+
+        else:
+            logger.error(
+                f"\nDirectory path does not exist: {dirpath}\n" +
+                f"5pi directory does not exist: {dirpath_5pi}\n" +
+                f"3pi directory does not exist: {dirpath_3pi}\n"
+            )
+            return None
+                                                                                                    
     experiment_name = os.path.basename(dirpath)
-    summaries_dirpath = os.path.join(SUMMARISED_DIR, experiment_name)
+
+    if output_dir_type == "5pi":
+        summaries_dirpath = os.path.join(SUMMARISED_DIR, "5pi", experiment_name)
+    elif output_dir_type == "3pi":
+        summaries_dirpath = os.path.join(SUMMARISED_DIR, "3pi", experiment_name)
+    else:
+        summaries_dirpath = os.path.join(SUMMARISED_DIR, experiment_name)
+
     if os.path.exists(summaries_dirpath):
         summaries_dirpath_files = os.listdir(summaries_dirpath)
         if len(summaries_dirpath_files) > 0:
@@ -2376,8 +2401,9 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
         actual_csv_file_count = get_csv_file_count_from_dir(test_dirpath)
 
         if expected_csv_file_count != actual_csv_file_count:
-            logger.warning(
-                f"Skipping {test_name} because its missing {expected_csv_file_count - actual_csv_file_count} files"
+            console.print(
+                f"Skipping {test_name} because its missing {expected_csv_file_count - actual_csv_file_count} files",
+                style="bold red"
             )
             continue
 
@@ -2452,7 +2478,7 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
         )
     
     console.print(
-        f"\[{experiment_name}] Generating dataset from {len(test_csvs)} tests with {truncation_percent}% truncation...",
+        f"[{experiment_name}] Generating dataset from {len(test_csvs)} tests with {truncation_percent}% truncation...",
         style="bold blue"
     )
 
@@ -2531,7 +2557,7 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
     dataset_df.to_csv(filename, index=False)
 
     console.print(
-        f"\[{experiment_name}] Generated dataset: {filename}",
+        f"[{experiment_name}] Generated dataset: {filename}",
         style="bold green"
     )
     return filename
@@ -2591,7 +2617,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 logger.error(f"Error generating combinations: {combinations_error}")
                 continue
             console.print(
-                f"\[{EXPERIMENT_NAME}] Generated {len(COMBINATIONS)} combinations from config.", 
+                f">{EXPERIMENT_NAME}< Generated {len(COMBINATIONS)} combinations from config.", 
                 style="bold green"
             )
 
@@ -2603,7 +2629,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 logger.error(f"Error getting ess: {ess_error}")
                 continue
             console.print(
-                f"\[{EXPERIMENT_NAME}] Got ESS.", 
+                f">{EXPERIMENT_NAME}< Got ESS.", 
                 style="bold green"
             )
 
@@ -2635,13 +2661,13 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
                     if have_last_n_tests_failed_bool:
                         console.print(
-                            f"\[{EXPERIMENT_NAME}] Last {quit_after_n_failed_test_count} tests have failed. Quitting...",
+                            f">{EXPERIMENT_NAME}< Last {quit_after_n_failed_test_count} tests have failed. Quitting...",
                             style="bold red"
                         )
                         break
 
                 console.print(
-                    f"\[{EXPERIMENT_NAME}] \[{test_index + 1}/{len(COMBINATIONS)}] Running {test_name}...",
+                    f">{EXPERIMENT_NAME}< [{test_index + 1}/{len(COMBINATIONS)}] Running {test_name}...",
                     style="bold blue"
                 )
 
@@ -2655,7 +2681,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 if run_test_error:
                     logger.error(f"Error running test {test_name}: {run_test_error}")
                     console.print(
-                        f"\[{EXPERIMENT_NAME}] \[{test_index + 1}/{len(COMBINATIONS)}] {test_name} failed.",
+                        f">{EXPERIMENT_NAME}< [{test_index + 1}/{len(COMBINATIONS)}] {test_name} failed.",
                         style="bold red"
                     )
                     continue
@@ -2663,7 +2689,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 ess_df.to_csv(ESS_PATH, index = False)
 
                 console.print(
-                    f"\[{EXPERIMENT_NAME}] \[{test_index + 1}/{len(COMBINATIONS)}] {test_name} finished running.",
+                    f">{EXPERIMENT_NAME}< [{test_index + 1}/{len(COMBINATIONS)}] {test_name} finished running.",
                     style="bold green"
                 )
 
@@ -2683,7 +2709,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 continue
 
             console.print(
-                f"\[{EXPERIMENT_NAME}] Got ESS.",
+                f">{EXPERIMENT_NAME}< Got ESS.",
                 style="bold green"
             )
 
@@ -2722,9 +2748,9 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     logger.error(f"Error gettign test name: {test_name_error}")
                     continue
 
-                counter_string = f"\[{completed_test_count + i + 1}/{target_test_count}]"
-                exp_name_string = f"\[{EXPERIMENT_NAME}]"
-                test_name_string = f"\[{test_name}]"
+                counter_string = f"[{completed_test_count + i + 1}/{target_test_count}]"
+                exp_name_string = f">{EXPERIMENT_NAME}<"
+                test_name_string = f"[{test_name}]"
 
                 # Run test
                 console.print(
@@ -2741,7 +2767,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 if run_test_error:
                     logger.error(f"Error running test {test_name}: {run_test_error}")
                     console.print(
-                        f"\[{EXPERIMENT_NAME}] \[{completed_test_count + i + 1}/{targt_test_count}] {test_name} failed.",
+                        f">{EXPERIMENT_NAME}< [{completed_test_count + i + 1}/{targt_test_count}] {test_name} failed.",
                         style="bold red"
                     )
                     continue
@@ -2749,6 +2775,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 ess_df.to_csv(ESS_PATH, index = False)
             
             logger.debug("RCG experiment complete.")
+
         # Do a check on all tests to make sure expected number of pub and sub files are the same
         test_dirpaths = [os.path.join(EXPERIMENT_DIRPATH, _) for _ in os.listdir(EXPERIMENT_DIRPATH)]
         test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
