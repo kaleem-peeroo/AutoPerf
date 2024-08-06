@@ -416,7 +416,7 @@ def download_logs_from_machine(machine: Dict = {}, status: Console.status = None
 
     status.update(f"Getting logs from {machine['name']} ({machine['ip']})...")
 
-    logs_dir = "~/AutoPerf"
+    logs_dir = "~/AutoPerf/logs"
     get_logs_command = f"ls {logs_dir}/*.log"
     get_logs_output = run_command_via_ssh(
         machine,
@@ -428,7 +428,7 @@ def download_logs_from_machine(machine: Dict = {}, status: Console.status = None
         )
         return None
 
-    os.makedirs(f"logs/{machine['name']}", exist_ok=True)
+    os.makedirs(f"output/logs/{machine['name']}", exist_ok=True)
 
     logs = get_logs_output.split()
 
@@ -451,7 +451,7 @@ def download_logs_from_machine(machine: Dict = {}, status: Console.status = None
         file_size = get_file_size_output.split()[0]
         status.update(f"{counter_string} Downloading {log} ({file_size}B) from {machine['name']}...")
 
-        download_command = f"scp -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{log} ./logs/{machine['name']}/"
+        download_command = f"scp -i {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{log} ./output/logs/{machine['name']}/"
         download_output = subprocess.Popen(
             download_command,
             shell=True,
