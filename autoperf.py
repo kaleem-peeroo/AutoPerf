@@ -65,9 +65,8 @@ def ping_machine(ip: str = "") -> Tuple[Optional[bool], Optional[str]]:
     if ip == "":
         return False, f"No IP passed for connection check."
 
-    console.print(
-        f"Pinging {ip}",
-        style="bold blue"
+    logger.info(
+        f"Pinging {ip}"
     )
 
     response = os.system(f"ping -c 1 {ip} > /dev/null 2>&1")
@@ -95,9 +94,8 @@ def check_ssh_connection(machine_config: Dict = {}) -> Tuple[Optional[bool], Opt
     username = machine_config['username']
     ip = machine_config['ip']
 
-    console.print(
-        f"SSHing into {username}@{ip}",
-        style="bold blue"
+    logger.info(
+        f"SSHing into {username}@{ip}"
     )
 
     try:
@@ -1201,9 +1199,8 @@ def run_script_on_machine(
         )
         return "error: machine statuses have failures"
 
-    console.print(
-        f"\t\tRunning script on {machine_config['machine_name']} ({machine_config['ip']}).",
-        style="bold blue"
+    logger.info(
+        f"\t\tRunning script on {machine_config['machine_name']} ({machine_config['ip']})."
     )
 
     script_string = machine_config['script']
@@ -1255,9 +1252,8 @@ def run_script_on_machine(
                 "error: return code not 0"
             )
         else:
-            console.print(
-                f"\t\t\tScript on {machine_config['machine_name']} ran successfully.",
-                style="bold green"
+            logger.info(
+                f"\t\t\tScript on {machine_config['machine_name']} ran successfully."
             )
             update_machine_status(
                 machine_statuses,
@@ -1334,9 +1330,8 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
     machine_name = machine_config['machine_name']
     machine_ip = machine_config['ip']
 
-    console.print(
-        f"\t\tDownloading results from {machine_name} ({machine_ip}).",
-        style="bold blue"
+    logger.info(
+        f"\t\tDownloading results from {machine_name} ({machine_ip})."
     )
 
     username = machine_config['username']
@@ -1396,10 +1391,9 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         csv_file = os.path.basename(csv_filepath)
         remote_csv_filepath = os.path.join(results_dir, csv_filepath)
         local_csv_filepath = os.path.join(local_results_dirpath, csv_file)
-        console.print(
+        logger.info(
             # f"\t\t\t{machine_name}: Downloading...\n\t{remote_csv_filepath} \n\tto \n\t{local_csv_filepath}",
-            f"\t\t\t{machine_name}: Downloading {csv_file}...",
-            style="bold blue"
+            f"\t\t\t{machine_name}: Downloading {csv_file}..."
         )
         download_command = f"scp {username}@{machine_ip}:{remote_csv_filepath} {local_csv_filepath}"
         download_process = subprocess.Popen(
@@ -1446,9 +1440,8 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         "results downloaded"
     )
 
-    console.print(
-        f"\t\tResults downloaded from {machine_name} ({machine_ip}).",
-        style="bold green"
+    logger.info(
+        f"\t\tResults downloaded from {machine_name} ({machine_ip})."
     )
 
 def delete_csvs_from_machines(machine_config) -> Optional[None]:
@@ -1681,17 +1674,15 @@ def run_test(
                     new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
                 ), "failed initial ssh check"
 
-        console.print(
-            f">{EXPERIMENT_NAME}< [{test_name}] Restarting all machines...",
-            style="bold blue"
+        logger.info(
+            f">{EXPERIMENT_NAME}< [{test_name}] Restarting all machines..."
         )
         
         # 2. Restart machines.
         if not SKIP_RESTART:
             for machine_config in machine_configs:
-                console.print(
-                    f"\t\tRestarting {machine_config['machine_name']}...",
-                    style="bold blue"
+                logger.info(
+                    f"\t\tRestarting {machine_config['machine_name']}..."
                 )
                 machine_ip = machine_config['ip']
                 restart_command = f"ssh -i {machine_config['ssh_key_path']} {machine_config['username']}@{machine_ip} 'sudo reboot'"
@@ -1703,9 +1694,8 @@ def run_test(
                         stderr=devnull
                     )
             
-            console.print(
-                f">{EXPERIMENT_NAME}< [{test_name}] All machines have restarted. Waiting 15 seconds...",
-                style="bold green"
+            logger.info(
+                f">{EXPERIMENT_NAME}< [{test_name}] All machines have restarted. Waiting 15 seconds..."
             )
             
             time.sleep(15)
@@ -1751,9 +1741,8 @@ def run_test(
             ), "failed connection checks"
             
         else:
-            console.print(
-                f">{EXPERIMENT_NAME}< [{test_name}] All machines are available.",
-                style="bold green"
+            logger.info(
+                f">{EXPERIMENT_NAME}< [{test_name}] All machines are available."
             )
 
     if DEBUG_MODE:
@@ -1818,9 +1807,8 @@ def run_test(
         ), "failed script distribution"
 
     # 6.1. Delete any old .csv files from previous tests.
-    console.print(
-        f">{EXPERIMENT_NAME}< [{test_name}] Deleting .csv files before test...",
-        style="bold blue"
+    logger.info(
+        f">{EXPERIMENT_NAME}< [{test_name}] Deleting .csv files before test..."
     )
 
     with Manager() as manager:
@@ -1844,9 +1832,8 @@ def run_test(
                 process.terminate()
                 process.join()
 
-    console.print(
-        f">{EXPERIMENT_NAME}< [{test_name}] .csv files deleted",
-        style="bold green"
+    logger.info(
+        f">{EXPERIMENT_NAME}< [{test_name}] .csv files deleted"
     )
 
     # 6.2. If noise generation is being used create the scripts and add to the existing scripts.
@@ -2191,7 +2178,7 @@ def get_pub_df_from_pub_0_filepath(pub_file: str = "") -> Optional[pd.DataFrame]
             break
     
     if end_index == 0:
-        # console.print(f"Couldn't find end index for {pub_file}.", style="bold red")
+        # logger.info(f"Couldn't find end index for {pub_file}.", )
         logger.error(
             f"Couldn't find end index for summary row for {pub_file}."
         )
@@ -2200,7 +2187,7 @@ def get_pub_df_from_pub_0_filepath(pub_file: str = "") -> Optional[pd.DataFrame]
     try:
         lat_df = pd.read_csv(pub_file, skiprows=start_index, nrows=end_index-start_index, on_bad_lines="skip")
     except pd.errors.EmptyDataError:
-        # console.print(f"EmptyDataError for {pub_file}.", style="bold red")
+        # logger.info(f"EmptyDataError for {pub_file}.", )
         logger.error(
             f"EmptyDataError for {pub_file}."
         )
@@ -2214,7 +2201,7 @@ def get_pub_df_from_pub_0_filepath(pub_file: str = "") -> Optional[pd.DataFrame]
             break
 
     if latency_col is None:
-        # console.print(f"Couldn't find latency column for {pub_file}.", style="bold red")
+        # logger.info(f"Couldn't find latency column for {pub_file}.", )
         logger.error(
             f"Couldn't find latency column for {pub_file}."
         )
@@ -2341,17 +2328,15 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
         if os.path.exists(dirpath_5pi):
             dirpath = dirpath_5pi
             output_dir_type = "5pi"
-            console.print(
-                f"Using 5pi directory: {dirpath}",
-                style="bold blue"
+            logger.info(
+                f"Using 5pi directory: {dirpath}"
             )
 
         elif os.path.exists(dirpath_3pi):
             dirpath = dirpath_3pi
             output_dir_type = "3pi"
-            console.print(
-                f"Using 3pi directory: {dirpath}",
-                style="bold blue"
+            logger.info(
+                f"Using 3pi directory: {dirpath}"
             )
 
         else:
@@ -2387,9 +2372,8 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
         logger.warning(f"Found no test folders in {dirpath}")
         return None
 
-    console.print(
-        f"Summarising {len(test_dirpaths)} tests...",
-        style="bold blue"
+    logger.info(
+        f"Summarising {len(test_dirpaths)} tests..."
     )
 
     summarised_test_count = 0
@@ -2401,9 +2385,8 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
         actual_csv_file_count = get_csv_file_count_from_dir(test_dirpath)
 
         if expected_csv_file_count != actual_csv_file_count:
-            console.print(
-                f"Skipping {test_name} because its missing {expected_csv_file_count - actual_csv_file_count} files",
-                style="bold red"
+            logger.info(
+                f"Skipping {test_name} because its missing {expected_csv_file_count - actual_csv_file_count} files"
             )
             continue
 
@@ -2433,15 +2416,13 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
             index=False
         )
 
-        console.print(
-            f"[{test_index + 1}/{len(test_dirpaths)}] Summarised {test_name}.csv",
-            style="bold green"
+        logger.info(
+            f"[{test_index + 1}/{len(test_dirpaths)}] Summarised {test_name}.csv"
         )
         summarised_test_count += 1
 
-    console.print(
-        f"Summarised {summarised_test_count}/{len(test_dirpaths)} tests...",
-        style="bold green"
+    logger.info(
+        f"Summarised {summarised_test_count}/{len(test_dirpaths)} tests..."
     )
 
 def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional[str]:
@@ -2477,9 +2458,8 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
             f"No csv files found in {summaries_dirpath}."
         )
     
-    console.print(
-        f"[{experiment_name}] Generating dataset from {len(test_csvs)} tests with {truncation_percent}% truncation...",
-        style="bold blue"
+    logger.info(
+        f"[{experiment_name}] Generating dataset from {len(test_csvs)} tests with {truncation_percent}% truncation..."
     )
 
     experiment_name = os.path.basename(dirpath)
@@ -2556,9 +2536,8 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
 
     dataset_df.to_csv(filename, index=False)
 
-    console.print(
-        f"[{experiment_name}] Generated dataset: {filename}",
-        style="bold green"
+    logger.info(
+        f"[{experiment_name}] Generated dataset: {filename}"
     )
     return filename
 
@@ -2582,20 +2561,19 @@ def main(sys_args: list[str] = []) -> Optional[None]:
     os.makedirs(DATASET_DIR, exist_ok=True)
 
     CONFIG_PATH = sys_args[1]
-    console.print(f"Reading config: {CONFIG_PATH}", style="bold blue")
+    logger.info(f"Reading config: {CONFIG_PATH}", )
     CONFIG, config_error = read_config(CONFIG_PATH)
     if config_error:
         logger.error(f"Error reading config: {config_error}")
         return
-    console.print(f"Config read: {CONFIG_PATH}", style="bold green")
+    logger.info(f"Config read: {CONFIG_PATH}", )
 
     for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
         EXPERIMENT_NAME = EXPERIMENT['experiment_name']
 
         # logger.debug(f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}...")
-        console.print(
-            f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}...",
-            style="bold blue"
+        logger.info(
+            f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}..."
         )
 
         EXPERIMENT_DIRPATH, dirname_error = get_dirname_from_experiment(EXPERIMENT)
@@ -2603,7 +2581,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             logger.error(f"Error getting experiment dirname: {dirname_error}")
             continue
         os.makedirs(EXPERIMENT_DIRPATH, exist_ok=True)
-        console.print(f"Created {EXPERIMENT_DIRPATH}", style="bold green")
+        logger.info(f"Created {EXPERIMENT_DIRPATH}", )
 
         is_pcg, if_pcg_error = get_if_pcg(EXPERIMENT)
         if if_pcg_error:
@@ -2611,14 +2589,13 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             continue 
 
         if is_pcg:
-            console.print(f"Experiment Campaign Type: PCG", style="bold green")
+            logger.info(f"Experiment Campaign Type: PCG", )
             COMBINATIONS, combinations_error = generate_combinations_from_qos(EXPERIMENT['qos_settings'])
             if combinations_error:
                 logger.error(f"Error generating combinations: {combinations_error}")
                 continue
-            console.print(
-                f">{EXPERIMENT_NAME}< Generated {len(COMBINATIONS)} combinations from config.", 
-                style="bold green"
+            logger.info(
+                f">{EXPERIMENT_NAME}< Generated {len(COMBINATIONS)} combinations from config.",
             )
 
             EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
@@ -2628,9 +2605,8 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             if ess_error:
                 logger.error(f"Error getting ess: {ess_error}")
                 continue
-            console.print(
-                f">{EXPERIMENT_NAME}< Got ESS.", 
-                style="bold green"
+            logger.info(
+                f">{EXPERIMENT_NAME}< Got ESS.",
             )
 
             ess_df_row_count = len(ess_df.index)
@@ -2660,15 +2636,13 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                         break
 
                     if have_last_n_tests_failed_bool:
-                        console.print(
-                            f">{EXPERIMENT_NAME}< Last {quit_after_n_failed_test_count} tests have failed. Quitting...",
-                            style="bold red"
+                        logger.info(
+                            f">{EXPERIMENT_NAME}< Last {quit_after_n_failed_test_count} tests have failed. Quitting..."
                         )
                         break
 
-                console.print(
-                    f">{EXPERIMENT_NAME}< [{test_index + 1}/{len(COMBINATIONS)}] Running {test_name}...",
-                    style="bold blue"
+                logger.info(
+                    f">{EXPERIMENT_NAME}< [{test_index + 1}/{len(COMBINATIONS)}] Running {test_name}..."
                 )
 
                 ess_df, run_test_error = run_test(
@@ -2680,23 +2654,21 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 )
                 if run_test_error:
                     logger.error(f"Error running test {test_name}: {run_test_error}")
-                    console.print(
-                        f">{EXPERIMENT_NAME}< [{test_index + 1}/{len(COMBINATIONS)}] {test_name} failed.",
-                        style="bold red"
+                    logger.info(
+                        f">{EXPERIMENT_NAME}< [{test_index + 1}/{len(COMBINATIONS)}] {test_name} failed."
                     )
                     continue
 
                 ess_df.to_csv(ESS_PATH, index = False)
 
-                console.print(
-                    f">{EXPERIMENT_NAME}< [{test_index + 1}/{len(COMBINATIONS)}] {test_name} finished running.",
-                    style="bold green"
+                logger.info(
+                    f">{EXPERIMENT_NAME}< [{test_index + 1}/{len(COMBINATIONS)}] {test_name} finished running."
                 )
 
             # logger.debug("PCG experiment complete.")
 
         else:
-            console.print(f"Experiment Campaign Type: RCG", style="bold green")
+            logger.info(f"Experiment Campaign Type: RCG", )
 
             target_test_count = EXPERIMENT['rcg_target_test_count']
 
@@ -2708,9 +2680,8 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 logger.error(f"Error getting ESS: {ess_error}")
                 continue
 
-            console.print(
-                f">{EXPERIMENT_NAME}< Got ESS.",
-                style="bold green"
+            logger.info(
+                f">{EXPERIMENT_NAME}< Got ESS."
             )
 
             ess_df_row_count = len(ess_df.index)
@@ -2753,9 +2724,8 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 test_name_string = f"[{test_name}]"
 
                 # Run test
-                console.print(
-                    f"{exp_name_string} {test_name_string} {counter_string} Running test {test_name}...",
-                    style="bold blue"
+                logger.info(
+                    f"{exp_name_string} {test_name_string} {counter_string} Running test {test_name}..."
                 )
                 ess_df, run_test_error = run_test(
                     test_config,
@@ -2766,9 +2736,8 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 )
                 if run_test_error:
                     logger.error(f"Error running test {test_name}: {run_test_error}")
-                    console.print(
-                        f">{EXPERIMENT_NAME}< [{completed_test_count + i + 1}/{targt_test_count}] {test_name} failed.",
-                        style="bold red"
+                    logger.info(
+                        f">{EXPERIMENT_NAME}< [{completed_test_count + i + 1}/{targt_test_count}] {test_name} failed."
                     )
                     continue
 
