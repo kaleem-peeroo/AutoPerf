@@ -97,18 +97,22 @@ def check_ssh_connection(machine_config: Dict = {}) -> Tuple[Optional[bool], Opt
     logger.info(f"SSHing into {username}@{ip}")
 
     try:
-        command = ["ssh", "-i", ssh_key_path, f"{username}@{ip}", "'echo", "\"SSH", "connection", "successful.\"'", ">", "/dev/null", "2>&1"]
-        ssh_check_process = subprocess.Popen(
+        command = ["ssh", "-i", ssh_key_path, f"{username}@{ip}", "echo \"SSH connection successful.\" >&2"]
+        result = subprocess.run(
             command,
-            stdout = subprocess.PIPE,
-            stderr = subprocess.PIPE
+            timeout=30,
+            capture_output=True,
+            text=True,
+            check=True
         )
+        stdout = result.stdout.strip()
+        stderr = result.stderr.strip()
 
-        stdout, stderr = ssh_check_process.communicate(timeout=30)
-        response = ssh_check_process.returncode 
+        response = result.returncode 
 
         if response == 0:
             return True, None
+
         else:
             error_string = f"""
             Error when checking ssh connection to {ip}:
@@ -117,6 +121,7 @@ def check_ssh_connection(machine_config: Dict = {}) -> Tuple[Optional[bool], Opt
             command: [{' '.join(command)}]
             response: [{response}]
             """
+
             return False, error_string
 
     except subprocess.TimeoutExpired:
