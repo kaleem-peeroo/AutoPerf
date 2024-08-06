@@ -28,7 +28,7 @@ import pandas as pd
 from constants import *
 
 DEBUG_MODE = True
-SKIP_RESTART = True
+SKIP_RESTART = False
 
 # Set up logging
 logging.basicConfig(
@@ -40,6 +40,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 console_handler = logging.StreamHandler()
+
 if DEBUG_MODE:
     console_handler.setLevel(logging.DEBUG)
 else:
@@ -1402,7 +1403,7 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         local_csv_filepath = os.path.join(local_results_dirpath, csv_file)
         logger.info(
             # f"\t\t\t{machine_name}: Downloading...\n\t{remote_csv_filepath} \n\tto \n\t{local_csv_filepath}",
-            f"\t\t\t{machine_name}: Downloading {csv_file}..."
+            f"\t\t{machine_name}: Downloading {csv_file}..."
         )
         download_command = f"scp {username}@{machine_ip}:{remote_csv_filepath} {local_csv_filepath}"
         download_process = subprocess.Popen(
@@ -1426,7 +1427,6 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
             )
             return None 
 
-
     delete_all_csv_command = f"ssh {username}@{machine_ip} 'rm {results_dir}/*.csv'"
     delete_all_csv_process = subprocess.Popen(
         delete_all_csv_command,
@@ -1434,7 +1434,7 @@ def download_results_from_machine(machine_config, machine_statuses, local_result
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
-    stdout, stderr = delete_all_csv_process.communicate(timeout=30)
+    stdout, stderr = delete_all_csv_process.communicate(timeout=120)
     stdout = stdout.decode('utf-8').strip()
     stderr = stderr.decode('utf-8').strip()
 
