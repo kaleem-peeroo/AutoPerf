@@ -27,7 +27,7 @@ import pandas as pd
 
 from constants import *
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 SKIP_RESTART = True
 
 # Set up logging
@@ -1579,6 +1579,19 @@ def get_noise_gen_scripts(config: Dict = {}) -> Tuple[Optional[List[str]], Optio
 
     return scripts, None
     
+def get_file_size_from_filepath(filepath: str = "") -> Tuple[Optional[int], Optional[str]]:
+    if filepath == "":
+        return None, f"No filepath given to get_file_size_from_filepath()"
+
+    if not os.path.exists(filepath):
+        return None, f"File path does NOT exist: {filepath}"
+
+    try:
+        size = os.path.getsize(filepath)
+        return size, None
+    except (OSError, ValueError) as e:
+        return None, f"Error getting file size of {filepath}: {e}"
+
 def run_test(
     test_config: Dict = {}, 
     machine_configs: List = [],
@@ -1969,6 +1982,48 @@ def run_test(
                 )
                 process.terminate()
                 process.join()
+
+    # Check all files are downloaded
+    expected_csv_file_count = get_expected_csv_file_count_from_test_name(test_name)
+    actual_csv_file_count = get_csv_file_count_from_dir(local_results_dir)
+
+    logger.debug(f"{expected_csv_file_count}/{actual_csv_file_count} downloaded files found.")
+
+    if expected_csv_file_count != actual_csv_file_count:
+        return update_ess_df(
+            new_ess_df,
+            start_timestamp,
+            datetime.datetime.now(),
+            test_name,
+            ping_count,
+            ssh_check_count,
+            f"expected {expected_csv_file_count} files and found {actual_csv_file_count} files instead.",
+            qos_config,
+            new_ess_row['comments'] + f"expected {expected_csv_file_count} files and found {actual_csv_file_count} files instead."
+        ), f"expected {expected_csv_file_count} files and found {actual_csv_file_count} files instead."
+
+    result_files = os.listdir(local_results_dir)
+    result_files = [os.path.join(local_results_dir, file) for file in result_files]
+    result_files = [_ for _ in result_files if _.lower().endswith(".csv")]
+
+    for result_file in result_files:
+        filesize, filesize_error = get_file_size_from_filepath(result_file)
+        if filesize_error:
+            logger.error(f"Error getting filesize: {filesize_error}")
+            continue
+
+        if filesize <= 20:
+            return update_ess_df(
+                new_ess_df,
+                start_timestamp,
+                datetime.datetime.now(),
+                test_name,
+                ping_count,
+                ssh_check_count,
+                f"{result_file} is {filesize} bytes.",
+                qos_config,
+                new_ess_row['comments'] + f"{result_file} is {filesize} bytes."
+            ), f"{result_file} is {filesize} bytes."
 
     # 9. Update ESS.
     new_ess_df = update_ess_df(
