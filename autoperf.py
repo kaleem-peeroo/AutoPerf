@@ -28,7 +28,7 @@ import pandas as pd
 from constants import *
 
 DEBUG_MODE = True
-SKIP_RESTART = False
+SKIP_RESTART = True
 
 # Set up logging
 logging.basicConfig(
@@ -449,8 +449,8 @@ def generate_combinations_from_qos(qos: Dict = {}) -> Tuple[Optional[List], Opti
 
 def get_ess_df(ess_filepath: str = "") -> Tuple[Optional[pd.DataFrame], Optional[str]]:
     """
-    Get the ESS dataframe from the given filepath.
 
+    Get the ESS dataframe from the given filepath.
     Params:
         - ess_filepath (str): Filepath for the ESS dataframe.
 
@@ -476,6 +476,7 @@ def get_ess_df(ess_filepath: str = "") -> Tuple[Optional[pd.DataFrame], Optional
             "ssh_check_count",
             "end_status",
             "qos_settings",
+            "scripts_per_machine",
             "comments"
        ])
 
@@ -1503,6 +1504,7 @@ def update_ess_df(
     ssh_check_count: int = 0,
     end_status: str = "",
     qos_settings: Dict = {},
+    scripts_per_machine: Dict = {},
     comments: str = ""
 ) -> Optional[pd.DataFrame]:
     """
@@ -1517,6 +1519,7 @@ def update_ess_df(
         - ssh_check_count (int): SSH check count.
         - end_status (str): End status.
         - qos_settings (Dict): QoS settings.
+        - scirpts_per_machine (Dict): Scripts run per machine.
         - comments (str): Comments.
 
     Returns:
@@ -1530,6 +1533,7 @@ def update_ess_df(
     new_ess_row['ssh_check_count'] = ssh_check_count
     new_ess_row['end_status'] = end_status
     new_ess_row['qos_settings'] = qos_settings
+    new_ess_row['scripts_per_machine'] = scripts_per_machine
     new_ess_row['comments'] = comments
 
     new_ess_row_df = pd.DataFrame([new_ess_row])
@@ -1679,6 +1683,7 @@ def run_test(
                     0,
                     "failed initial ping check",
                     test_config,
+                    {},
                     new_ess_row['comments'] + f"Failed to even ping {machine_ip} the first time."
                 ), f"failed initial ping check: {ping_error}"
 
@@ -1693,6 +1698,7 @@ def run_test(
                     0,
                     "failed initial ssh check",
                     test_config,
+                    {},
                     new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
                 ), f"failed initial ssh check: {ssh_check_error}"
 
@@ -1759,6 +1765,7 @@ def run_test(
                 ssh_check_count,
                 "failed connection checks",
                 test_config,
+                {},
                 new_ess_row['comments'] + f"Failed connection check after 5 pings and ssh checks."
             ), "failed connection checks"
             
@@ -1792,6 +1799,7 @@ def run_test(
             ssh_check_count,
             "failed script generation",
             qos_config,
+            {},
             new_ess_row['comments'] + " Failed to generate scripts from qos config."
         ), "failed script generation"
 
@@ -1811,6 +1819,7 @@ def run_test(
             ssh_check_count,
             "failed script distribution",
             qos_config,
+            {},
             new_ess_row['comments'] + " Failed to distribute scripts across machines."
         ), "failed script distribution"
 
@@ -1825,6 +1834,7 @@ def run_test(
             ssh_check_count,
             "failed script distribution",
             qos_config,
+            {},
             new_ess_row['comments'] + " No scripts allocated to machines."
         ), "failed script distribution"
 
@@ -1871,6 +1881,7 @@ def run_test(
                 ssh_check_count,
                 "failed noise generation script generation",
                 qos_config,
+                scripts_per_machine,
                 new_ess_row['comments'] + " Failed to generate scripts from noise generation config."
             ), f"failed noise generation script generation: {noise_gen_error}"
 
@@ -1944,6 +1955,7 @@ def run_test(
                 ssh_check_count,
                 "failed script execution",
                 qos_config,
+                scripts_per_machine,
                 new_ess_row['comments'] + " Errors running scripts on machines."
             ), "failed script execution"
 
@@ -1987,7 +1999,7 @@ def run_test(
     expected_csv_file_count = get_expected_csv_file_count_from_test_name(test_name)
     actual_csv_file_count = get_csv_file_count_from_dir(local_results_dir)
 
-    logger.debug(f"{expected_csv_file_count}/{actual_csv_file_count} downloaded files found.")
+    logger.debug(f"{actual_csv_file_count}/{expected_csv_file_count} downloaded files found.")
 
     if expected_csv_file_count != actual_csv_file_count:
         return update_ess_df(
@@ -1999,6 +2011,7 @@ def run_test(
             ssh_check_count,
             f"expected {expected_csv_file_count} files and found {actual_csv_file_count} files instead.",
             qos_config,
+            scripts_per_machine,
             new_ess_row['comments'] + f"expected {expected_csv_file_count} files and found {actual_csv_file_count} files instead."
         ), f"expected {expected_csv_file_count} files and found {actual_csv_file_count} files instead."
 
@@ -2022,6 +2035,7 @@ def run_test(
                 ssh_check_count,
                 f"{result_file} is {filesize} bytes.",
                 qos_config,
+                scripts_per_machine,
                 new_ess_row['comments'] + f"{result_file} is {filesize} bytes."
             ), f"{result_file} is {filesize} bytes."
 
@@ -2035,6 +2049,7 @@ def run_test(
         ssh_check_count,
         "success",
         qos_config,
+        scripts_per_machine,
         new_ess_row['comments']
     )
 
