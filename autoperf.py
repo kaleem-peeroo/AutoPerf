@@ -28,7 +28,7 @@ import pandas as pd
 from constants import *
 
 DEBUG_MODE = True
-SKIP_RESTART = True
+SKIP_RESTART = False
 
 # Set up logging
 logging.basicConfig(
