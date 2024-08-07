@@ -60,7 +60,7 @@ REQUIRED_DELAY_KEYS = [
 REQUIRED_BANDWIDTH_LIMIT_KEYS = [
     'rate',
     'max_burst',
-    'latency_cut_off'
+    'limit'
 ]
 
 PERCENTILES = [

@@ -1215,6 +1215,12 @@ def run_script_on_machine(
     )
 
     script_string = machine_config['script']
+
+    # If you see '; &' then remove the ; to make it just ' &'
+    if ";" in script_string[-10:] and "&" in script_string[-10:]:
+        semi_colon = script_string.rfind(";")
+        script_string = script_string[:semi_colon] + script_string[semi_colon + 1:]
+
     machine_ip = machine_config['ip']
     username = machine_config['username']
     ssh_command = f"ssh {username}@{machine_ip} '{script_string}'"
@@ -1235,10 +1241,19 @@ def run_script_on_machine(
 
         if DEBUG_MODE:
             logger.debug(
+                f"{username}@{machine_ip}"
+            )
+            logger.debug(
                 f"STDOUT:\n\t{stdout}"
             )
             logger.debug(
                 f"STDERR:\n\t{stderr}"
+            )
+            logger.debug(
+                f"""
+                Script:
+                {script_string}
+                """
             )
 
         if return_code != 0:
@@ -1562,24 +1577,47 @@ def get_noise_gen_scripts(config: Dict = {}) -> Tuple[Optional[List[str]], Optio
     
     bw_rate = config['bandwidth_limit']['rate']
     bw_burst = config['bandwidth_limit']['max_burst']
-    bw_latency_cut_off = config['bandwidth_limit']['latency_cut_off']
+    bw_limit = config['bandwidth_limit']['limit']
 
-    qdisc_str = "sudo tc qdisc add dev eth0 root"
+    qdisc_str = "sudo tc qdisc add dev eth0"
 
-    packet_loss_script = f"{qdisc_str} netem loss {packet_loss}"
-    packet_duplication_script = f"{qdisc_str} netem duplicate {packet_duplication}"
-    packet_corruption_script = f"{qdisc_str} netem corrupt {packet_corruption}"
+    # packet_loss_script = f"{qdisc_str} netem loss {packet_loss}"
+    # packet_duplication_script = f"{qdisc_str} netem duplicate {packet_duplication}"
+    # packet_corruption_script = f"{qdisc_str} netem corrupt {packet_corruption}"
+    
+    netem_script = f"{qdisc_str} root netem loss {packet_loss}"
+    netem_script = f"{netem_script} duplicate {packet_duplication}"
+    netem_script = f"{netem_script} rate {bw_rate}"
+    netem_script = f"{netem_script} corrupt {packet_corruption}"
+    netem_script = f"{netem_script} delay {delay_value}"
+    netem_script = f"{netem_script} {delay_variation}"
+    netem_script = f"{netem_script} {delay_correlation}"
 
-    delay_script = f"{qdisc_str} netem delay {delay_value} {delay_variation} {delay_correlation} distribution {delay_distribution}"
+    if int(delay_value.replace("ms", "")) > 0 and int(delay_variation.replace("ms", "")) > 0:
+        netem_script = f"{netem_script} distribution {delay_distribution}"
 
-    bw_script = f"{qdisc_str} tbf rate {bw_rate} burst {bw_burst} latency {bw_latency_cut_off}"
+    tbf_script = f"{qdisc_str} parent 1: tbf rate {bw_rate}"
+    tbf_script = f"{tbf_script} burst {bw_burst}"
+    tbf_script = f"{tbf_script} limit {bw_limit}"
+
+    # if int(delay_value.replace("ms", "")) > 0 and int(delay_variation.replace("ms", "")) > 0:
+    #     delay_script = f"{qdisc_str} netem delay {delay_value} {delay_variation} {delay_correlation} distribution {delay_distribution}"
+    # else:
+    #     delay_script = f"{qdisc_str} netem delay {delay_value} {delay_variation} {delay_correlation}"
+    #
+    # bw_script = f"{qdisc_str} tbf rate {bw_rate} burst {bw_burst} limit {bw_limit}"
 
     scripts = []
-    scripts.append(packet_loss_script)
-    scripts.append(packet_duplication_script)
-    scripts.append(packet_corruption_script)
-    scripts.append(delay_script)
-    scripts.append(bw_script)
+    scripts.append(f"sudo tc qdisc del dev eth0 root")
+    scripts.append(netem_script)
+    # scripts.append(tbf_script)
+    # scripts.append(f"sudo tc qdisc show dev eth0")
+
+    # scripts.append(packet_loss_script)
+    # scripts.append(packet_duplication_script)
+    # scripts.append(packet_corruption_script)
+    # scripts.append(delay_script)
+    # scripts.append(bw_script)
 
     return scripts, None
     
@@ -1668,111 +1706,110 @@ def run_test(
     new_ess_row = {}
     new_ess_row['comments'] = ""
 
-    if not DEBUG_MODE:
-        # 1. Check connections to machines.
-        for machine_config in machine_configs:
-            machine_ip = machine_config['ip']
-            ping_response, ping_error = ping_machine(machine_ip)
-            if ping_error:
-                return update_ess_df(
-                    new_ess_df,
-                    None,
-                    None,
-                    test_name,
-                    0,
-                    0,
-                    "failed initial ping check",
-                    test_config,
-                    {},
-                    new_ess_row['comments'] + f"Failed to even ping {machine_ip} the first time."
-                ), f"failed initial ping check: {ping_error}"
-
-            passed_ssh_check, ssh_check_error = check_ssh_connection(machine_config)
-            if ssh_check_error:
-                return update_ess_df(
-                    new_ess_df,
-                    None,
-                    None,
-                    test_name,
-                    1,
-                    0,
-                    "failed initial ssh check",
-                    test_config,
-                    {},
-                    new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
-                ), f"failed initial ssh check: {ssh_check_error}"
-
-        logger.info(
-            f"[{EXPERIMENT_NAME}] [{test_name}] Restarting all machines..."
-        )
-        
-        # 2. Restart machines.
-        if not SKIP_RESTART:
-            for machine_config in machine_configs:
-                logger.info(
-                    f"\t\tRestarting {machine_config['machine_name']}..."
-                )
-                machine_ip = machine_config['ip']
-                restart_command = f"ssh -i {machine_config['ssh_key_path']} {machine_config['username']}@{machine_ip} 'sudo reboot'"
-                with open(os.devnull, 'w') as devnull:
-                    subprocess.run(
-                        restart_command, 
-                        shell=True, 
-                        stdout=devnull, 
-                        stderr=devnull
-                    )
-            
-            logger.info(
-                f"[{EXPERIMENT_NAME}] [{test_name}] All machines have restarted. Waiting 15 seconds..."
-            )
-            
-            time.sleep(15)
-            
-        # 3. Check connections to machines.
-        ping_count = 0
-        ssh_check_count = 0
-        for machine_config in machine_configs:
-            machine_ip = machine_config['ip']
-            machine_name = machine_config['machine_name']
-           
-            # Ping machine up to 5 times.
-            for attempt in range(1, 6):
-                if ping_machine(machine_ip):
-                    ping_count = attempt
-                    break
-                        
-                time.sleep(3)
-        
-            # SSH into machine up to 5 times.
-            for attempt in range(1, 6):
-                if check_ssh_connection(
-                    machine_config
-                ):
-                    ssh_check_count = attempt
-                    break
-        
-                time.sleep(1)
-        
-        if ping_count == 5 and ssh_check_count == 5:
-            logger.warning(f"Machines failed connection checks.")
-
+    # 1. Check connections to machines.
+    for machine_config in machine_configs:
+        machine_ip = machine_config['ip']
+        ping_response, ping_error = ping_machine(machine_ip)
+        if ping_error:
             return update_ess_df(
                 new_ess_df,
                 None,
                 None,
                 test_name,
-                ping_count,
-                ssh_check_count,
-                "failed connection checks",
+                0,
+                0,
+                "failed initial ping check",
                 test_config,
                 {},
-                new_ess_row['comments'] + f"Failed connection check after 5 pings and ssh checks."
-            ), "failed connection checks"
-            
-        else:
+                new_ess_row['comments'] + f"Failed to even ping {machine_ip} the first time."
+            ), f"failed initial ping check: {ping_error}"
+
+        passed_ssh_check, ssh_check_error = check_ssh_connection(machine_config)
+        if ssh_check_error:
+            return update_ess_df(
+                new_ess_df,
+                None,
+                None,
+                test_name,
+                1,
+                0,
+                "failed initial ssh check",
+                test_config,
+                {},
+                new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
+            ), f"failed initial ssh check: {ssh_check_error}"
+
+    logger.info(
+        f"[{EXPERIMENT_NAME}] [{test_name}] Restarting all machines..."
+    )
+
+    # 2. Restart machines.
+    if not SKIP_RESTART:
+        for machine_config in machine_configs:
             logger.info(
-                f"[{EXPERIMENT_NAME}] [{test_name}] All machines are available."
+                f"\tRestarting {machine_config['machine_name']}..."
             )
+            machine_ip = machine_config['ip']
+            restart_command = f"ssh -i {machine_config['ssh_key_path']} {machine_config['username']}@{machine_ip} 'sudo reboot'"
+            with open(os.devnull, 'w') as devnull:
+                subprocess.run(
+                    restart_command, 
+                    shell=True, 
+                    stdout=devnull, 
+                    stderr=devnull
+                )
+        
+        logger.info(
+            f"[{EXPERIMENT_NAME}] [{test_name}] All machines have restarted. Waiting 15 seconds..."
+        )
+        
+        time.sleep(15)
+        
+    # 3. Check connections to machines.
+    ping_count = 0
+    ssh_check_count = 0
+    for machine_config in machine_configs:
+        machine_ip = machine_config['ip']
+        machine_name = machine_config['machine_name']
+       
+        # Ping machine up to 5 times.
+        for attempt in range(1, 6):
+            if ping_machine(machine_ip):
+                ping_count = attempt
+                break
+                    
+            time.sleep(3)
+    
+        # SSH into machine up to 5 times.
+        for attempt in range(1, 6):
+            if check_ssh_connection(
+                machine_config
+            ):
+                ssh_check_count = attempt
+                break
+    
+            time.sleep(1)
+    
+    if ping_count == 5 and ssh_check_count == 5:
+        logger.warning(f"Machines failed connection checks.")
+
+        return update_ess_df(
+            new_ess_df,
+            None,
+            None,
+            test_name,
+            ping_count,
+            ssh_check_count,
+            "failed connection checks",
+            test_config,
+            {},
+            new_ess_row['comments'] + f"Failed connection check after 5 pings and ssh checks."
+        ), "failed connection checks"
+        
+    else:
+        logger.info(
+            f"[{EXPERIMENT_NAME}] [{test_name}] All machines are available."
+        )
 
     if DEBUG_MODE:
         ping_count = 0
@@ -2866,7 +2903,10 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             )
 
 if __name__ == "__main__":
-    main(sys.argv)
+    try:
+        main(sys.argv)
+    except KeyboardInterrupt:
+        pass
     # if pytest.main(["-q", "./pytests/test_autoperf.py", "--exitfirst"]) == 0:
         # main(sys.argv)
     # else:
