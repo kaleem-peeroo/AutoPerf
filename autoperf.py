@@ -2763,7 +2763,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     test_config, 
                     EXPERIMENT['slave_machines'],
                     ess_df,
-                    EXPERIMENT_DIRNAME,
+                    EXPERIMENT_DIRPATH,
                     EXPERIMENT['noise_generation']
                 )
                 if run_test_error:
