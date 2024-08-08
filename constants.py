@@ -47,7 +47,7 @@ REQUIRED_NOISE_GENERATION_KEYS = [
     'packet_loss',
     'packet_corruption',
     'packet_duplication',
-    'bandwidth_limit'
+    'bandwidth_rate'
 ]
 
 REQUIRED_DELAY_KEYS = [
@@ -55,12 +55,6 @@ REQUIRED_DELAY_KEYS = [
     'variation',
     'correlation',
     'distribution'
-]
-
-REQUIRED_BANDWIDTH_LIMIT_KEYS = [
-    'rate',
-    'max_burst',
-    'limit'
 ]
 
 PERCENTILES = [

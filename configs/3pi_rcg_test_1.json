@@ -13,6 +13,7 @@
     "durability_level": [0, 3],
     "latency_count": [100]
   },
+  "noise_generation": {},
   "slave_machines": [
     {
       "machine_name": "p1",
