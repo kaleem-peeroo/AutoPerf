@@ -1185,6 +1185,10 @@ def calculate_elapsed_time_for_experiments(config: Dict = {}) -> Optional[Dict]:
         start_time = ess_df['start_timestamp'].min()
         end_time = ess_df['end_timestamp'].max()
 
+        if start_time is pd.NaT or end_time is pd.NaT:
+            experiment['elapsed_time_str'] = "-"
+            continue
+
         time_difference = end_time - start_time
         days, seconds = time_difference.days, time_difference.seconds
         hours = days * 24 + seconds // 3600
@@ -1195,6 +1199,34 @@ def calculate_elapsed_time_for_experiments(config: Dict = {}) -> Optional[Dict]:
         experiment['elapsed_time_str'] = elapsed_time_str
 
     return config
+
+def get_last_n_errors_for_experiments(ap_config: Dict = {}, n: int = 5) -> Optional[Dict]:
+
+    for experiment in ap_config:
+        if 'ess_df' not in experiment.keys():
+            logger.error(
+                f"ess_df not found for {experiment['experiment_name']}."
+            )
+            continue
+
+        ess_df = experiment['ess_df']
+        if ess_df is None:
+            logger.warning(
+                f"ess_df is None for {experiment['experiment_name']}."
+            )
+            continue
+
+        if ess_df.empty:
+            logger.warning(
+                f"ess_df is empty for {experiment['experiment_name']}."
+            )
+            continue
+
+        last_n_errors = ess_df['comments'].tail(n)
+        last_n_errors = "\n".join(last_n_errors)
+        experiment['last_n_errors'] = last_n_errors
+
+    return ap_config
 
 def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
     """
@@ -1314,6 +1346,14 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
         if ap_config is None:
             logger.error(
                 f"Couldn't calculate elapsed time for experiments."
+            )
+            return
+
+        status.update(f"Getting last 5 errors for experiments on {machine_name} ({machine_ip})...")
+        ap_config = get_last_n_errors_for_experiments(ap_config, 5)
+        if ap_config is None:
+            logger.error(
+                f"Couldn't get last 5 errors for experiments."
             )
             return
 
@@ -1451,6 +1491,10 @@ def get_last_timestamp_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame()) -> Opt
         return None
 
     last_timestamp = ess_df['end_timestamp'].max()
+
+    if last_timestamp is pd.NaT:
+        return "-"
+
     last_timestamp = last_timestamp.strftime("%Y-%m-%d %H:%M:%S")
     return last_timestamp
 
@@ -1485,6 +1529,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     table.add_column("/summarised\ndata", style="bold")
     table.add_column("/datasets", style="bold")
     table.add_column("ESS\nStatus", style="bold")
+    table.add_column("Last\n5\nComments", style="bold")
     table.add_column("Last\n100\nStatuses", style="bold")
 
     for experiment in ongoing_info:
@@ -1536,6 +1581,11 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         if data_count == "0":
             data_count = "-"
 
+        if "last_n_errors" not in experiment.keys():
+            last_n_errors = "-"
+        else:
+            last_n_errors = experiment['last_n_errors']
+
         table.add_row(
             f"[{completed_colour}]{experiment_name}[/{completed_colour}]",
             f"[{completed_colour}]{elapsed_time_str}[/{completed_colour}]",
@@ -1546,6 +1596,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
             f"[{completed_colour}]{summarised_data_count}[/{completed_colour}]",
             f"[{completed_colour}]{datasets_output}[/{completed_colour}]",
             f"[green]{success_percent}%[/green] [red]{failed_percent}%[/red]\n({ess_row_count} rows)",
+            f"[{completed_colour}]{last_n_errors}[/{completed_colour}]",
             last_n_statuses
         )
 
