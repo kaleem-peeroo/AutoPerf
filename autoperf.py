@@ -2522,6 +2522,18 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
 
         df_list = [pub_df, subs_df]
         df = pd.concat(df_list, axis=1)
+
+        # Calculate average and total for subs
+        sub_cols = [col for col in df.columns if 'sub' in col.lower()]
+        sub_cols_without_sub = ["_".join(col.split("_")[2:]) for col in sub_cols]
+        sub_metrics = list(set(sub_cols_without_sub))
+        for sub_metric in sub_metrics:
+            sub_metric_cols = [col for col in sub_cols if sub_metric in col]
+            sub_metric_df = df[sub_metric_cols]
+
+            df['avg_' + sub_metric + "_per_sub"] = sub_metric_df.mean(axis=1)
+            df['total_' + sub_metric + "_over_subs"] = sub_metric_df.sum(axis=1)
+
         df.to_csv(
             os.path.join(
                 summaries_dirpath,
