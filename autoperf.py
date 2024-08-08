@@ -2789,14 +2789,15 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     EXPERIMENT_DIRPATH,
                     EXPERIMENT['noise_generation']
                 )
+    
+                ess_df.to_csv(ESS_PATH, index = False)
+
                 if run_test_error:
                     logger.error(f"Error running test {test_name}: {run_test_error}")
                     logger.info(
                         f"[{EXPERIMENT_NAME}] [{test_index + 1}/{len(COMBINATIONS)}] {test_name} failed."
                     )
                     continue
-
-                ess_df.to_csv(ESS_PATH, index = False)
 
                 logger.info(
                     f"[{EXPERIMENT_NAME}] [{test_index + 1}/{len(COMBINATIONS)}] {test_name} finished running."
@@ -2871,6 +2872,9 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     EXPERIMENT_DIRPATH,
                     EXPERIMENT['noise_generation']
                 )
+
+                ess_df.to_csv(ESS_PATH, index = False)
+
                 if run_test_error:
                     logger.error(f"Error running test {test_name}: {run_test_error}")
                     logger.info(
@@ -2878,7 +2882,6 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     )
                     continue
 
-                ess_df.to_csv(ESS_PATH, index = False)
             
         # Do a check on all tests to make sure expected number of pub and sub files are the same
         test_dirpaths = [os.path.join(EXPERIMENT_DIRPATH, _) for _ in os.listdir(EXPERIMENT_DIRPATH)]

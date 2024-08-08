@@ -15,9 +15,9 @@
       "packet_corruption": "0%",
       "packet_duplication": "0%",
       "bandwidth_limit": {
-        "rate": "1000gbit",
-        "max_burst": "1000gbit",
-        "latency_cut_off": "100000ms"
+        "rate": "1000Gbit",
+        "max_burst": "1000000",
+        "limit": "100000"
       }
     },
     "qos_settings": {
