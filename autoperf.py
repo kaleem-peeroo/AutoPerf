@@ -12,6 +12,7 @@ import datetime
 import warnings
 import random
 import shutil
+import shlex
 
 from icecream import ic
 from typing import Dict, List, Optional, Tuple
@@ -97,49 +98,97 @@ def check_ssh_connection(machine_config: Dict = {}) -> Tuple[Optional[bool], Opt
 
     logger.info(f"SSHing into {username}@{ip}")
 
+    command = f"ssh -q {username}@{ip} exit; echo $?"
     try:
-        command = ["ssh", "-i", ssh_key_path, f"{username}@{ip}", "echo \"SSH connection successful.\" >&2"]
-        try:
-            result = subprocess.run(
-                command,
-                timeout=30,
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            stdout = result.stdout.strip()
-            stderr = result.stderr.strip()
-        except CalledProcessError:
-            error_string = f"""
-            Error when checking ssh connection to {ip}:
-            stdout: [{stdout}]
-            stderr: [{stderr}]
-            command: [{' '.join(command)}]
-            response: [{response}]
-            """
+        result = subprocess.run(
+            shlex.split(command),
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        exit_code = int(result.returncode)
 
-            return False, error_string
-
-        response = result.returncode 
-
-        if response == 0:
+        if exit_code != 0:
+            return False, f"SSH check failed with exit code {exit_code}"
+        else:
             return True, None
 
-        else:
-            error_string = f"""
-            Error when checking ssh connection to {ip}:
-            stdout: [{stdout}]
-            stderr: [{stderr}]
-            command: [{' '.join(command)}]
-            response: [{response}]
-            """
-
-            return False, error_string
-
     except subprocess.TimeoutExpired:
-        ssh_check_process.kill()
-        stdout, stderr = ssh_check_process.communicate()
-        return False, f"Timed out when checking SSH connection: [{stderr}]"
+        return False, "SSH check timed out after 60 seconds"
+
+    except Exception as e:
+        return False, f"Exception occured when checking SSH: {e}"
+
+    # ssh_response = os.popen(f"ssh -q {username}@{ip} exit; echo $?;").read()
+    # command = ['ssh', '-q', f"{username}@{ip}", "exit;", "echo", "$?;"]
+    #
+    # ssh_process = subprocess.Popen(
+    #     command,
+    #     stdout = subprocess.PIPE,
+    # )
+    #
+    # try:
+    #     ssh_process.wait(60)
+    # except subproces.TimeoutExpired:
+    #     ssh_process.kill()
+    #     return False, f"SSH check timed out after 60 seconds"
+    #
+    # ssh_response, err = ssh_process.communicate()
+    # if ssh_response != 0:
+    #     return False, f"SSH check failed with \n\tresponse code: {ssh_response}\n\terror: {err}"
+    #
+    # else:
+    #     return True, None
+
+    # try:
+    #     command = ["ssh", "-i", ssh_key_path, f"{username}@{ip}", "echo \"SSH connection successful.\" >&2"]
+    #     try:
+    #         result = subprocess.run(
+    #             command,
+    #             timeout=30,
+    #             capture_output=True,
+    #             text=True,
+    #             check=True
+    #         )
+    #         stdout = result.stdout.strip()
+    #         stderr = result.stderr.strip()
+    #     except subprocess.CalledProcessError as e:
+    #         error_string = f"""
+    #         Error when checking ssh connection to {ip}:
+    #         exception: [{e}]
+    #         command: [{' '.join(command)}]
+    #         """
+    #         return False, error_string
+    #
+    #     except subprocess.TimeoutExpired as e:
+    #         error_string = f"""
+    #         Error when checking ssh connection to {ip}:
+    #         exception: [{e}]
+    #         command: [{' '.join(command)}]
+    #         """
+    #
+    #         return False, error_string
+    #
+    #     response = result.returncode 
+    #
+    #     if response == 0:
+    #         return True, None
+    #
+    #     else:
+    #         error_string = f"""
+    #         Error when checking ssh connection to {ip}:
+    #         stdout: [{stdout}]
+    #         stderr: [{stderr}]
+    #         command: [{' '.join(command)}]
+    #         response: [{response}]
+    #         """
+    #
+    #         return False, error_string
+    #
+    # except subprocess.TimeoutExpired:
+    #     ssh_check_process.kill()
+    #     stdout, stderr = ssh_check_process.communicate()
+    #     return False, f"Timed out when checking SSH connection: [{stderr}]"
 
 def get_difference_between_lists(
     list_one: List = [], 

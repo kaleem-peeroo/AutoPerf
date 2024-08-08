@@ -1,9 +1,9 @@
 [
   {
-    "experiment_name": "1P3S Multicast Exploration No Noise Devtest",
+    "experiment_name": "1P3S Multicast Exploration No Noise devtest",
     "combination_generation_type": "pcg",
     "rcg_target_test_count": 0,
-    "quit_after_n_failed_tests": 10,
+    "quit_after_n_failed_tests": 0,
     "noise_generation": {
       "delay": {
         "value": "0ms",
