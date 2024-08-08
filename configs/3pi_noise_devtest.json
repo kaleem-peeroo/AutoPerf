@@ -13,11 +13,7 @@
     "packet_loss": "10%",
     "packet_corruption": "5%",
     "packet_duplication": "12%",
-    "bandwidth_limit": {
-      "rate": "1mbit",
-      "max_burst": "32kbit",
-      "latency_cut_off": "400ms"
-    }
+    "bandwidth_rate": "1mbit"
   },
   "qos_settings": {
     "duration_secs": [10],

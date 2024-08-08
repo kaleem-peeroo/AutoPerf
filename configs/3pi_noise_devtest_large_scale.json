@@ -14,11 +14,7 @@
       "packet_loss": "10%",
       "packet_corruption": "10%",
       "packet_duplication": "1%",
-      "bandwidth_limit": {
-        "rate": "100kbit",
-        "max_burst": "100kbit",
-        "latency_cut_off": "10000ms"
-      }
+      "bandwidth_rate": "100kbit"
     },
     "qos_settings": {
       "duration_secs": [600],
@@ -64,11 +60,7 @@
       "packet_loss": "50%",
       "packet_corruption": "20%",
       "packet_duplication": "10%",
-      "bandwidth_limit": {
-        "rate": "1mbit",
-        "max_burst": "1kbit",
-        "latency_cut_off": "10000ms"
-      }
+      "bandwidth_rate": "1mbit"
     },
     "qos_settings": {
       "duration_secs": [600],
@@ -114,11 +106,7 @@
       "packet_loss": "0%",
       "packet_corruption": "0%",
       "packet_duplication": "0%",
-      "bandwidth_limit": {
-        "rate": "1000kbit",
-        "max_burst": "1000kbit",
-        "latency_cut_off": "100000ms"
-      }
+      "bandwidth_rate": "1000kbit"
     },
     "qos_settings": {
       "duration_secs": [600],

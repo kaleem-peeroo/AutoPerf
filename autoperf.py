@@ -28,7 +28,7 @@ import pandas as pd
 from constants import *
 
 DEBUG_MODE = True
-SKIP_RESTART = False
+SKIP_RESTART = True
 
 # Set up logging
 logging.basicConfig(
@@ -1586,9 +1586,11 @@ def get_noise_gen_scripts(config: Dict = {}) -> Tuple[Optional[List[str]], Optio
     delay_distribution = config['delay']['distribution']
     delay_correlation = config['delay']['correlation']
     
-    bw_rate = config['bandwidth_limit']['rate']
-    bw_burst = config['bandwidth_limit']['max_burst']
-    bw_limit = config['bandwidth_limit']['limit']
+    bw_rate = config['bandwidth_rate']
+
+    # bw_rate = config['bandwidth_limit']['rate']
+    # bw_burst = config['bandwidth_limit']['max_burst']
+    # bw_limit = config['bandwidth_limit']['limit']
 
     qdisc_str = "sudo tc qdisc add dev eth0"
 
@@ -1607,9 +1609,9 @@ def get_noise_gen_scripts(config: Dict = {}) -> Tuple[Optional[List[str]], Optio
     if int(delay_value.replace("ms", "")) > 0 and int(delay_variation.replace("ms", "")) > 0:
         netem_script = f"{netem_script} distribution {delay_distribution}"
 
-    tbf_script = f"{qdisc_str} parent 1: tbf rate {bw_rate}"
-    tbf_script = f"{tbf_script} burst {bw_burst}"
-    tbf_script = f"{tbf_script} limit {bw_limit}"
+    # tbf_script = f"{qdisc_str} parent 1: tbf rate {bw_rate}"
+    # tbf_script = f"{tbf_script} burst {bw_burst}"
+    # tbf_script = f"{tbf_script} limit {bw_limit}"
 
     # if int(delay_value.replace("ms", "")) > 0 and int(delay_variation.replace("ms", "")) > 0:
     #     delay_script = f"{qdisc_str} netem delay {delay_value} {delay_variation} {delay_correlation} distribution {delay_distribution}"
