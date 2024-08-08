@@ -99,15 +99,26 @@ def check_ssh_connection(machine_config: Dict = {}) -> Tuple[Optional[bool], Opt
 
     try:
         command = ["ssh", "-i", ssh_key_path, f"{username}@{ip}", "echo \"SSH connection successful.\" >&2"]
-        result = subprocess.run(
-            command,
-            timeout=30,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        stdout = result.stdout.strip()
-        stderr = result.stderr.strip()
+        try:
+            result = subprocess.run(
+                command,
+                timeout=30,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            stdout = result.stdout.strip()
+            stderr = result.stderr.strip()
+        except CalledProcessError:
+            error_string = f"""
+            Error when checking ssh connection to {ip}:
+            stdout: [{stdout}]
+            stderr: [{stderr}]
+            command: [{' '.join(command)}]
+            response: [{response}]
+            """
+
+            return False, error_string
 
         response = result.returncode 
 
@@ -2775,7 +2786,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     test_config, 
                     EXPERIMENT['slave_machines'],
                     ess_df,
-                    EXPERIMENT_DIRNAME,
+                    EXPERIMENT_DIRPATH,
                     EXPERIMENT['noise_generation']
                 )
                 if run_test_error:
