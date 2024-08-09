@@ -1222,8 +1222,11 @@ def get_last_n_errors_for_experiments(ap_config: Dict = {}, n: int = 5) -> Optio
             )
             continue
 
-        last_n_errors = ess_df['comments'].tail(n)
-        last_n_errors = "\n".join(last_n_errors)
+        last_n_errors = ess_df['comments'].dropna().tail(n)
+        if len(last_n_errors) > 1:
+            last_n_errors = "\n----------\n".join(last_n_errors)
+        else:
+            last_n_errors = str(last_n_errors[0]) 
         experiment['last_n_errors'] = last_n_errors
 
     return ap_config
@@ -1349,8 +1352,8 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
             )
             return
 
-        status.update(f"Getting last 5 errors for experiments on {machine_name} ({machine_ip})...")
-        ap_config = get_last_n_errors_for_experiments(ap_config, 5)
+        status.update(f"Getting last n errors for experiments on {machine_name} ({machine_ip})...")
+        ap_config = get_last_n_errors_for_experiments(ap_config, 3)
         if ap_config is None:
             logger.error(
                 f"Couldn't get last 5 errors for experiments."
@@ -1526,10 +1529,10 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     table.add_column("Last\nTimestamp", style="bold")
     table.add_column("Target\nTest\nCount", style="bold")
     table.add_column("/data", style="bold")
-    table.add_column("/summarised\ndata", style="bold")
-    table.add_column("/datasets", style="bold")
+    table.add_column("/summ\ndata", style="bold")
+    table.add_column("/data\nsets", style="bold")
     table.add_column("ESS\nStatus", style="bold")
-    table.add_column("Last\n5\nComments", style="bold")
+    table.add_column("Last\n3\nComments", style="bold")
     table.add_column("Last\n100\nStatuses", style="bold")
 
     for experiment in ongoing_info:
@@ -1595,7 +1598,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
             f"[{completed_colour}]{data_count}[/{completed_colour}]",
             f"[{completed_colour}]{summarised_data_count}[/{completed_colour}]",
             f"[{completed_colour}]{datasets_output}[/{completed_colour}]",
-            f"[green]{success_percent}%[/green] [red]{failed_percent}%[/red]\n({ess_row_count} rows)",
+            f"[green]{success_percent}%[/green]\n[red]{failed_percent}%[/red]\n({ess_row_count}\nrows)",
             f"[{completed_colour}]{last_n_errors}[/{completed_colour}]",
             last_n_statuses
         )
