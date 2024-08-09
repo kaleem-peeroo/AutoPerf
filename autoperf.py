@@ -2968,15 +2968,15 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             # logger.info(f"Generated dataset with {truncation_percent}% truncation:\n\t{trunc_ds_path}")
 
         # Compress results at end of experiment
-        if os.path.exists(f"{EXPERIMENT_DIRNAME}.zip"):
+        if os.path.exists(f"{EXPERIMENT_DIRPATH}.zip"):
             logger.warning(f"A compressed version of the results already exists...")
 
         else:
-            logger.info(f"Compressing {EXPERIMENT_DIRNAME} to {EXPERIMENT_DIRNAME}.zip...")
+            logger.info(f"Compressing {EXPERIMENT_DIRPATH} to {EXPERIMENT_DIRPATH}.zip...")
             shutil.make_archive(
-                EXPERIMENT_DIRNAME,
+                EXPERIMENT_DIRPATH,
                 'zip',
-                EXPERIMENT_DIRNAME
+                EXPERIMENT_DIRPATH
             )
 
 if __name__ == "__main__":
