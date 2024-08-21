@@ -1223,7 +1223,10 @@ def get_last_n_errors_for_experiments(ap_config: Dict = {}, n: int = 5) -> Optio
             continue
 
         last_n_errors = ess_df['comments'].dropna().tail(n)
-        if len(last_n_errors) > 1:
+        if len(last_n_errors) == 0:
+            experiment['last_n_errors'] = "-"
+            continue
+        elif len(last_n_errors) > 1:
             last_n_errors = "\n----------\n".join(last_n_errors)
         else:
             last_n_errors = str(last_n_errors[0]) 
