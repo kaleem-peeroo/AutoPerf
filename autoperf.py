@@ -823,12 +823,6 @@ def have_last_n_tests_failed(ess_df: pd.DataFrame, n: int = 10) -> Tuple[Optiona
     if len(ess_df.index) == 0:
         return False, None
 
-    if len(ess_df.index) < n:
-        # logger.warning(
-        #     f"ESS dataframe has less than {n} tests."
-        # )
-        n = len(ess_df.index)
-
     last_n_tests = ess_df.tail(n)
     if last_n_tests is None:
         return False, f"Couldn't get the last {n} tests."
@@ -1726,22 +1720,25 @@ def run_test(
         return None, f"Couldn't get the name of the next test to run."
 
     """
-    1. Check connections to machines.
+    1. Check connections to machine (ping + ssh).
     2. Restart machines.
-    3. Check connections to machines.
-    4. Get qos config.
-    5. Generate scripts.
-    6. Allocate scripts to machines.
-    7. Run scripts.
-    8. Check results.
-    9. Update ESS.
-    10. Return ESS.
+    3. Check connections to machines (ping + ssh).
+    4. Get QoS configuration.
+    5. Generate test scripts from QoS config.
+    6. Allocate scripts per machine.
+    7. Delete any artifact csv files.
+    8. Generate noise genertion scripts if needed and add to existing scripts. 
+    9. Run scripts.
+    10. Check for and download results.
+    11. Confirm all files are downloaded.
+    12. Updated ESS.
+    13. Return ESS.
     """
 
     new_ess_row = {}
     new_ess_row['comments'] = ""
 
-    # 1. Check connections to machines.
+    # 1. Check connections to machine (ping + ssh).
     for machine_config in machine_configs:
         machine_ip = machine_config['ip']
         ping_response, ping_error = ping_machine(machine_ip)
@@ -1800,7 +1797,7 @@ def run_test(
         
         time.sleep(15)
         
-    # 3. Check connections to machines.
+    # 3. Check connections to machines (ping + ssh).
     ping_count = 0
     ssh_check_count = 0
     for machine_config in machine_configs:
@@ -1850,10 +1847,10 @@ def run_test(
         ping_count = 0
         ssh_check_count = 0
 
-    # 4. Get qos config.
+    # 4. Get QoS configuration.
     qos_config = test_config
 
-    # 5. Generate scripts.
+    # 5. Generate test scripts from QoS config.
     scripts = generate_scripts_from_qos_config(
         qos_config
     )
@@ -1875,7 +1872,7 @@ def run_test(
             new_ess_row['comments'] + " Failed to generate scripts from qos config."
         ), "failed script generation"
 
-    # 6. Allocate scripts to machines.
+    # 6. Allocate scripts per machine.
     scripts_per_machine = distribute_scripts_to_machines(
         scripts,
         machine_configs
@@ -1910,7 +1907,7 @@ def run_test(
             new_ess_row['comments'] + " No scripts allocated to machines."
         ), "failed script distribution"
 
-    # 6.1. Delete any old .csv files from previous tests.
+    # 7. Delete any artifact csv files.
     logger.info(
         f"[{EXPERIMENT_NAME}] [{test_name}] Deleting .csv files before test..."
     )
@@ -1940,7 +1937,7 @@ def run_test(
         f"[{EXPERIMENT_NAME}] [{test_name}] .csv files deleted"
     )
 
-    # 6.2. If noise generation is being used create the scripts and add to the existing scripts.
+    # 8. Generate noise genertion scripts if needed and add to existing scripts. 
     if noise_gen_config != {}:
         noise_gen_scripts, noise_gen_error = get_noise_gen_scripts(noise_gen_config)
         if noise_gen_error:
@@ -1966,8 +1963,7 @@ def run_test(
             script = script_per_machine['script']
             script_per_machine['script'] = f"{noise_gen_script};{script}"
 
-    # 7. Run scripts.
-
+    # 9. Run scripts.
     test_duration_secs = qos_config['duration_secs']
     buffer_duration_secs = get_buffer_duration_secs_from_test_duration_secs(
         test_duration_secs
@@ -2034,7 +2030,7 @@ def run_test(
     # End timestamp
     end_timestamp = datetime.datetime.now()
 
-    # 8. Check and download results.
+    # 10. Check for and download results.
     local_results_dir = os.path.join(experiment_dirpath, test_name)
     with Manager() as manager:
         machine_statuses = manager.dict()
@@ -2067,7 +2063,7 @@ def run_test(
                 process.terminate()
                 process.join()
 
-    # Check all files are downloaded
+    # 11. Confirm all files are downloaded.
     expected_csv_file_count = get_expected_csv_file_count_from_test_name(test_name)
     actual_csv_file_count = get_csv_file_count_from_dir(local_results_dir)
 
@@ -2111,7 +2107,7 @@ def run_test(
                 new_ess_row['comments'] + f"{result_file} is {filesize} bytes."
             ), f"{result_file} is {filesize} bytes."
 
-    # 9. Update ESS.
+    # 12. Update ESS
     new_ess_df = update_ess_df(
         new_ess_df,
         start_timestamp,
@@ -2125,7 +2121,7 @@ def run_test(
         new_ess_row['comments']
     )
 
-    # 10. Return ESS.
+    # 13. Return ESS
     return new_ess_df, None
 
 def generate_test_config_from_qos(qos: Optional[Dict] = None) -> Optional[Dict]:
@@ -2513,7 +2509,7 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
             )
             return None
 
-    os.makedirs(summaries_dirpath)
+    os.makedirs(summaries_dirpath, exist_ok=True)
     test_dirpaths = [os.path.join(dirpath, _) for _ in os.listdir(dirpath)]
     test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
     test_dirpaths = [_ for _ in test_dirpaths if "summarised_data" not in _.lower()]
@@ -2753,6 +2749,32 @@ def check_if_ess_rows_match_expected_test_count(experiment_config: Dict = {}) ->
 
     return True, None
 
+def get_must_wait_for_self_reboot(ess_df: pd.DataFrame = pd.DataFrame()) -> Tuple[Optional[bool], Optional[str]]:
+    if len(ess_df.index) == 0:
+        return False, "ESS is empty."
+
+    """
+    1. Have last n tests failed?
+    2. Yes? Have last n tests failed because of same machine (i.e. all comments share same IP)
+    3. Yes? Return True
+    """
+
+    have_last_n_test_failed_bool, have_last_n_error = have_last_n_tests_failed(ess_df, 3)
+    if have_last_n_error:
+        return False, have_last_n_error
+
+    if not have_last_n_test_failed_bool:
+        return False, None
+
+    ess_df['ip'] = ess_df['comments'].apply(extract_ip)
+    all_ips_match = ess_df['ip'].nunique() == 1
+
+    return all_ips_match, None
+
+def extract_ip(comment: str = ""):
+    ips = re.findall(r'[0-9]+(?:\.[0-9]+){3}', comment)
+    return ips[0] if ips else None
+    
 def main(sys_args: list[str] = []) -> Optional[None]:
     if len(sys_args) < 2:
         logger.error(
@@ -2800,170 +2822,100 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             logger.error(f"Error check if PCG: {if_pcg_error}")
             continue 
 
+        EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
+        ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.csv")
+        ess_df, ess_error = get_ess_df(ESS_PATH)
+        if ess_error:
+            logger.error(f"Error getting ess: {ess_error}")
+            continue
+
         if is_pcg:
-            logger.info(f"Experiment Campaign Type: PCG", )
-            COMBINATIONS, combinations_error = generate_combinations_from_qos(EXPERIMENT['qos_settings'])
+            COMBINATIONS, combinations_error = generate_combinations_from_qos(
+                EXPERIMENT['qos_settings']
+            )
             if combinations_error:
                 logger.error(f"Error generating combinations: {combinations_error}")
                 continue
-            logger.info(
-                f"[{EXPERIMENT_NAME}] Generated {len(COMBINATIONS)} combinations from config.",
-            )
+            target_test_count = len(COMBINATIONS)
+        else:
+            target_test_count = EXPERIMENT['rcg_target_test_count']
 
-            EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
-            ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.csv")
+        ESS_DF_ROW_COUNT = len(ess_df.index)
+
+        current_test_index = ESS_DF_ROW_COUNT
+        last_test_index = target_test_count
+
+        for test_index in range(current_test_index, last_test_index):
+            current_test_index_string = test_index + 1
+            target_test_count_string = target_test_count
+            counter_string = f"[{current_test_index_string}/{target_test_count_string}]"
 
             ess_df, ess_error = get_ess_df(ESS_PATH)
             if ess_error:
                 logger.error(f"Error getting ess: {ess_error}")
                 continue
-            logger.info(
-                f"[{EXPERIMENT_NAME}] Got ESS.",
-            )
 
-            ess_df_row_count = len(ess_df.index)
-            starting_test_index = ess_df_row_count
-
-            for test_config in COMBINATIONS[starting_test_index:]:
-                ess_df, ess_error = get_ess_df(ESS_PATH)
-                if ess_error:
-                    logger.error(f"Error getting ess: {ess_error}")
-                    continue
-
-                test_index = COMBINATIONS.index(test_config)
-
-                test_name, test_name_error = get_test_name_from_combination_dict(test_config)
-                if test_name_error:
-                    logger.error(f"Error getting test name: {test_name_error}")
-                    continue
-
-                quit_after_n_failed_test_count = EXPERIMENT['quit_after_n_failed_tests']
-                if quit_after_n_failed_test_count > 0:
-                    have_last_n_tests_failed_bool, have_last_n_tests_failed_error = have_last_n_tests_failed(
-                        ess_df, 
-                        quit_after_n_failed_test_count
-                    )
-                    if have_last_n_tests_failed_error:
-                        logger.error(f"Error checking for last n failed tests: {have_last_n_tests_failed_error}")
-                        break
-
-                    if have_last_n_tests_failed_bool:
-                        logger.info(
-                            f"[{EXPERIMENT_NAME}] Last {quit_after_n_failed_test_count} tests have failed. Quitting..."
-                        )
-                        break
-
-                logger.info(
-                    f"[{EXPERIMENT_NAME}] [{test_index + 1}/{len(COMBINATIONS)}] Running {test_name}..."
+            must_wait_for_self_reboot, must_self_reboot_error = get_must_wait_for_self_reboot(ess_df)
+            if must_self_reboot_error:
+                logger.warning(
+                    f"Couldn't check if self-reboot needed: {must_self_reboot_error}"
                 )
 
-                ess_df, run_test_error = run_test(
-                    test_config, 
-                    EXPERIMENT['slave_machines'],
-                    ess_df,
-                    EXPERIMENT_DIRPATH,
-                    EXPERIMENT['noise_generation']
-                )
-    
-                ess_df.to_csv(ESS_PATH, index = False)
+            if must_wait_for_self_reboot:
+                logger.warning(f"""
+Last few tests have failed because of the same machine being unsshable.
+Waiting 5 minutes for the machine to self-reboot.
+                """)
+                time.sleep(300)
 
-                if run_test_error:
-                    logger.error(f"Error running test {test_name}: {run_test_error}")
-                    logger.info(
-                        f"[{EXPERIMENT_NAME}] [{test_index + 1}/{len(COMBINATIONS)}] {test_name} failed."
-                    )
-                    continue
-
-                logger.info(
-                    f"[{EXPERIMENT_NAME}] [{test_index + 1}/{len(COMBINATIONS)}] {test_name} finished running."
-                )
-
-            # logger.debug("PCG experiment complete.")
-
-        else:
-            logger.info(f"Experiment Campaign Type: RCG", )
-
-            target_test_count = EXPERIMENT['rcg_target_test_count']
-
-            EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
-            ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.csv")
-
-            ess_df, ess_error = get_ess_df(ESS_PATH)
-            if ess_error:
-                logger.error(f"Error getting ESS: {ess_error}")
-                continue
-
-            logger.info(
-                f"[{EXPERIMENT_NAME}] Got ESS."
-            )
-
-            ess_df_row_count = len(ess_df.index)
-
-            remaining_test_count = target_test_count - ess_df_row_count
-            completed_test_count = ess_df_row_count
-
-            for i in range(remaining_test_count):
-                ess_df, ess_error = get_ess_df(ESS_PATH)
-                if ess_error:
-                    logger.error(f"Error getting ESS: {ess_error}")
-                    continue
-
-                quit_after_n_failed_test_count = EXPERIMENT['quit_after_n_failed_tests']
-                if quit_after_n_failed_test_count > 0:
-                    have_last_n_tests_failed_bool, error = have_last_n_tests_failed(
-                        ess_df, 
-                        quit_after_n_failed_test_count
-                    )
-                    if error:
-                        continue
-
-                    if have_last_n_tests_failed_bool:
-                        logger.error(f"Last {quit_after_n_failed_test_count} tests have failed. Quitting....")
-                        break
-
-                # Generate new combination configuration
+            if is_pcg:
+                test_config = COMBINATIONS[test_index]
+            else:
                 test_config = generate_test_config_from_qos(EXPERIMENT['qos_settings'])
                 if test_config is None:
                     logger.error("Error generating RCG config")
                     continue
 
-                test_name, test_name_error = get_test_name_from_combination_dict(test_config)
-                if test_name_error:
-                    logger.error(f"Error gettign test name: {test_name_error}")
-                    continue
+            test_name, test_name_error = get_test_name_from_combination_dict(test_config)
+            if test_name_error:
+                logger.error(f"Error getting test name: {test_name_error}")
+                continue
 
-                counter_string = f"[{completed_test_count + i + 1}/{target_test_count}]"
-                exp_name_string = f"[{EXPERIMENT_NAME}]"
-                test_name_string = f"[{test_name}]"
+            logger.info(
+                f"{counter_string} [{test_name}] Running test..."
+            )
 
-                # Run test
+            ess_df, run_test_error = run_test(
+                test_config,
+                EXPERIMENT['slave_machines'],
+                ess_df,
+                EXPERIMENT_DIRPATH,
+                EXPERIMENT['noise_generation']
+            )
+
+            ess_df.to_csv(ESS_PATH, index = False)
+
+            if run_test_error:
+                logger.error(f"Error running test {test_name}: {run_test_error}")
                 logger.info(
-                    f"{exp_name_string} {test_name_string} {counter_string} Running test {test_name}..."
+                    f"[{EXPERIMENT_NAME}] {counter_string} [{test_name}] failed."
                 )
-                ess_df, run_test_error = run_test(
-                    test_config,
-                    EXPERIMENT['slave_machines'],
-                    ess_df,
-                    EXPERIMENT_DIRPATH,
-                    EXPERIMENT['noise_generation']
-                )
-
-                ess_df.to_csv(ESS_PATH, index = False)
-
-                if run_test_error:
-                    logger.error(f"Error running test {test_name}: {run_test_error}")
-                    logger.info(
-                        f"[{EXPERIMENT_NAME}] [{completed_test_count + i + 1}/{target_test_count}] {test_name} failed."
-                    )
-                    continue
-
-        do_ess_rows_match_test_count, do_ess_rows_match_test_count_error = check_if_ess_rows_match_expected_test_count(EXPERIMENT)
-        if do_ess_rows_match_test_count_error:
-            logger.error(f"Error checking if the number of rows in the ESS matches the number of expected tests for {EXPERIMENT_NAME}. Skipping post test data processing...")
+                continue
+        
+        do_ess_rows_match_test_count, func_error = check_if_ess_rows_match_expected_test_count(
+            EXPERIMENT
+        )
+        if func_error:
+            logger.error(f"""
+{func_error}
+ Error checking if ESS row count matches expected test count for {EXPERIMENT_NAME}.
+ Skipping post test data processing...""")
             continue
 
         if not do_ess_rows_match_test_count:
-            logger.warning(f"ESS rows don't match expected test count for {EXPERIMENT_NAME}. Skipping post test data processing...")
+            logger.warning(f"""
+ESS rows don't match expected test count for {EXPERIMENT_NAME}. 
+Skipping post test data processing...""")
             continue
             
         # Do a check on all tests to make sure expected number of pub and sub files are the same
