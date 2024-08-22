@@ -2767,13 +2767,25 @@ def get_must_wait_for_self_reboot(ess_df: pd.DataFrame = pd.DataFrame()) -> Tupl
         return False, None
 
     ess_df['ip'] = ess_df['comments'].apply(extract_ip)
-    all_ips_match = ess_df['ip'].nunique() == 1
+    ess_df_tail = ess_df.tail(3)
+    all_ips_match = ess_df_tail['ip'].nunique() == 1
 
     return all_ips_match, None
 
 def extract_ip(comment: str = ""):
-    ips = re.findall(r'[0-9]+(?:\.[0-9]+){3}', comment)
-    return ips[0] if ips else None
+    if comment == "":
+        logger.warning("No comment passed to extract_ip()")
+        return None
+
+    if 'nan' in str(comment).lower():
+        return None
+
+    try:
+        ips = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', comment)
+        return ips[0] if ips else None
+    except Exception as e:
+        logger.error(f"Error when extracting ip from '{comment}': {e}")
+        return None
     
 def main(sys_args: list[str] = []) -> Optional[None]:
     if len(sys_args) < 2:
@@ -2863,7 +2875,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
             if must_wait_for_self_reboot:
                 logger.warning(f"""
-Last few tests have failed because of the same machine being unsshable.
+Last few tests have failed because of the same machine being unreachable.
 Waiting 5 minutes for the machine to self-reboot.
                 """)
                 time.sleep(300)
