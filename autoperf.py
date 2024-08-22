@@ -29,7 +29,7 @@ import pandas as pd
 from constants import *
 
 DEBUG_MODE = True
-SKIP_RESTART = True
+SKIP_RESTART = False
 
 # Set up logging
 logging.basicConfig(
@@ -1637,16 +1637,8 @@ def get_noise_gen_scripts(config: Dict = {}) -> Tuple[Optional[List[str]], Optio
     
     bw_rate = config['bandwidth_rate']
 
-    # bw_rate = config['bandwidth_limit']['rate']
-    # bw_burst = config['bandwidth_limit']['max_burst']
-    # bw_limit = config['bandwidth_limit']['limit']
-
     qdisc_str = "sudo tc qdisc add dev eth0"
 
-    # packet_loss_script = f"{qdisc_str} netem loss {packet_loss}"
-    # packet_duplication_script = f"{qdisc_str} netem duplicate {packet_duplication}"
-    # packet_corruption_script = f"{qdisc_str} netem corrupt {packet_corruption}"
-    
     netem_script = f"{qdisc_str} root netem loss {packet_loss}"
     netem_script = f"{netem_script} duplicate {packet_duplication}"
     netem_script = f"{netem_script} rate {bw_rate}"
@@ -1658,28 +1650,9 @@ def get_noise_gen_scripts(config: Dict = {}) -> Tuple[Optional[List[str]], Optio
     if int(delay_value.replace("ms", "")) > 0 and int(delay_variation.replace("ms", "")) > 0:
         netem_script = f"{netem_script} distribution {delay_distribution}"
 
-    # tbf_script = f"{qdisc_str} parent 1: tbf rate {bw_rate}"
-    # tbf_script = f"{tbf_script} burst {bw_burst}"
-    # tbf_script = f"{tbf_script} limit {bw_limit}"
-
-    # if int(delay_value.replace("ms", "")) > 0 and int(delay_variation.replace("ms", "")) > 0:
-    #     delay_script = f"{qdisc_str} netem delay {delay_value} {delay_variation} {delay_correlation} distribution {delay_distribution}"
-    # else:
-    #     delay_script = f"{qdisc_str} netem delay {delay_value} {delay_variation} {delay_correlation}"
-    #
-    # bw_script = f"{qdisc_str} tbf rate {bw_rate} burst {bw_burst} limit {bw_limit}"
-
     scripts = []
     scripts.append(f"sudo tc qdisc del dev eth0 root")
     scripts.append(netem_script)
-    # scripts.append(tbf_script)
-    # scripts.append(f"sudo tc qdisc show dev eth0")
-
-    # scripts.append(packet_loss_script)
-    # scripts.append(packet_duplication_script)
-    # scripts.append(packet_corruption_script)
-    # scripts.append(delay_script)
-    # scripts.append(bw_script)
 
     return scripts, None
     
@@ -2729,6 +2702,57 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
     )
     return filename
 
+def get_ess_df_from_experiment(experiment_config: Dict = {}) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
+    if experiment_config == {}:
+        return None, "No experiment config passed to get_ess_df_from_experiment()"
+
+    EXPERIMENT_DIRPATH, dirname_error = get_dirname_from_experiment(experiment_config)
+    if dirname_error:
+        return None, dirname_error
+
+    EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
+    ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.csv")
+
+    ess_df, ess_error = get_ess_df(ESS_PATH)
+    if ess_error:
+        return None, ess_error
+
+    return ess_df, None
+
+def get_expected_test_count_from_experiment(experiment_config: Dict = {}) -> Tuple[Optional[int], Optional[str]]:
+    if experiment_config == {}:
+        return None, "No experiment config passed."
+
+    if experiment_config['rcg_target_test_count'] == 0:
+        experiment_combinations, experiment_combinations_error = generate_combinations_from_qos(experiment_config['qos_settings'])
+        if experiment_combinations_error:
+            return None, experiment_combinations_error
+          
+        expected_test_count = len(experiment_combinations)
+    else:
+        expected_test_count = experiment_config['rcg_target_test_count']
+
+    return expected_test_count, None
+
+def check_if_ess_rows_match_expected_test_count(experiment_config: Dict = {}) -> Tuple[Optional[bool], Optional[str]]:
+    if experiment_config == {}:
+        return None, "No experiment config passed."
+
+    ess_df, ess_df_error = get_ess_df_from_experiment(experiment_config)
+    if ess_df_error:
+        return None, ess_df_error
+
+    ess_row_count = len(ess_df.index)
+
+    expected_test_count, expected_test_count_error = get_expected_test_count_from_experiment(experiment_config)
+    if expected_test_count_error:
+        return None, expected_test_count_error
+
+    if ess_row_count != expected_test_count:
+        return False, None
+
+    return True, None
+
 def main(sys_args: list[str] = []) -> Optional[None]:
     if len(sys_args) < 2:
         logger.error(
@@ -2933,6 +2957,14 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     )
                     continue
 
+        do_ess_rows_match_test_count, do_ess_rows_match_test_count_error = check_if_ess_rows_match_expected_test_count(EXPERIMENT)
+        if do_ess_rows_match_test_count_error:
+            logger.error(f"Error checking if the number of rows in the ESS matches the number of expected tests for {EXPERIMENT_NAME}. Skipping post test data processing...")
+            continue
+
+        if not do_ess_rows_match_test_count:
+            logger.warning(f"ESS rows don't match expected test count for {EXPERIMENT_NAME}. Skipping post test data processing...")
+            continue
             
         # Do a check on all tests to make sure expected number of pub and sub files are the same
         test_dirpaths = [os.path.join(EXPERIMENT_DIRPATH, _) for _ in os.listdir(EXPERIMENT_DIRPATH)]
