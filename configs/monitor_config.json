@@ -1,7 +1,7 @@
 [
   {
     "name": "5pi",
-    "ip": "10.210.55.24",
+    "ip": "100.103.95.99",
     "ssh_key_path": "~/.ssh/id_rsa",
     "username": "acwh025",
     "config_path": "configs/5pi_mcast_exploration_with_noise.json"
