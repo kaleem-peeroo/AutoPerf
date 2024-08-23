@@ -1222,7 +1222,7 @@ def get_last_n_errors_for_experiments(ap_config: Dict = {}, n: int = 5) -> Optio
             )
             continue
 
-        last_n_errors = ess_df['comments'].dropna().tail(n)
+        last_n_errors = ess_df['comments'].dropna().tail(n).tolist()
         if len(last_n_errors) == 0:
             experiment['last_n_errors'] = "-"
             continue
@@ -1461,11 +1461,13 @@ def get_last_n_statuses_as_string_from_ess_df(ess_df: pd.DataFrame = pd.DataFram
     last_n_statuses = ess_df['end_status'].tail(n).tolist()
 
     last_n_statuses_output = ""
-    for status in last_n_statuses:
+    for i, status in enumerate(last_n_statuses):
         if "success" in status.lower():
             last_n_statuses_output += "🟢"
-        else:
+        elif "fail" in status.lower():
             last_n_statuses_output += "🔴"
+        else:
+            last_n_statuses_output += "🟠"
 
     # Add a line break after every line_break_point
     last_n_statuses_output = "\n".join(
