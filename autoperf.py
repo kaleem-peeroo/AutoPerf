@@ -1127,8 +1127,8 @@ def get_buffer_duration_secs_from_test_duration_secs(test_duration_secs: int = 0
 
     buffer_duration_sec = test_duration_secs * 0.05
 
-    if buffer_duration_sec < 30:
-        buffer_duration_sec = 30
+    if buffer_duration_sec < 60:
+        buffer_duration_sec = 60
 
     return int(buffer_duration_sec)
 
@@ -1754,7 +1754,7 @@ def run_test(
                 test_config,
                 {},
                 new_ess_row['comments'] + f"Failed to even ping {machine_ip} the first time."
-            ), f"failed initial ping check: {ping_error}"
+            ), f"failed initial ping check on {machine_ip}: {ping_error}"
 
         passed_ssh_check, ssh_check_error = check_ssh_connection(machine_config)
         if ssh_check_error:
@@ -1769,7 +1769,7 @@ def run_test(
                 test_config,
                 {},
                 new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
-            ), f"failed initial ssh check: {ssh_check_error}"
+            ), f"failed initial ssh check on {machine_ip}: {ssh_check_error}"
 
     logger.info(
         f"[{EXPERIMENT_NAME}] [{test_name}] Restarting all machines..."
