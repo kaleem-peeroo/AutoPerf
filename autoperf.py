@@ -2919,16 +2919,42 @@ Waiting 5 minutes for the machine to self-reboot.
         )
         if func_error:
             logger.error(f"""
-{func_error}
- Error checking if ESS row count matches expected test count for {EXPERIMENT_NAME}.
- Skipping post test data processing...""")
+                {func_error}
+                Error checking if ESS row count matches expected test count for {EXPERIMENT_NAME}.
+                Skipping post test data processing...""")
             continue
 
         if not do_ess_rows_match_test_count:
             logger.warning(f"""
-ESS rows don't match expected test count for {EXPERIMENT_NAME}. 
-Skipping post test data processing...""")
+                ESS rows don't match expected test count for {EXPERIMENT_NAME}. 
+                Skipping post test data processing...""")
             continue
+
+        # TODO: Retry failed tests here
+        """
+        for failed_test in failed_tests:
+            retry_counter = 3
+            test_status = "failed"
+
+            while retry_counter > 0 and test_status != "success":
+                ess_df, run_test_error = run_test(
+                    failed_test,
+                    EXPERIMENT['slave_machines'],
+                    ess_df,
+                    EXPERIMENT_DIRPATH,
+                    EXPERIMENT['noise_generation']
+                )
+
+                if run_test_error:
+                    logger.error(f"Error running test {test_name}: {run_test_error}")
+                    logger.info(
+                        f"[{EXPERIMENT_NAME}] {counter_string} [{test_name}] failed."
+                    )
+                    continue
+
+                test_status = "success"
+                retry_counter -= 1
+        """
             
         # Do a check on all tests to make sure expected number of pub and sub files are the same
         test_dirpaths = [os.path.join(EXPERIMENT_DIRPATH, _) for _ in os.listdir(EXPERIMENT_DIRPATH)]
