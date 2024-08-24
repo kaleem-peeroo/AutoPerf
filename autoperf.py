@@ -2976,10 +2976,8 @@ Skipping post test data processing...""")
             )
 
 if __name__ == "__main__":
-    try:
-        main(sys.argv)
-    except KeyboardInterrupt:
-        pass
+    main(sys.argv)
+
     # if pytest.main(["-q", "./pytests/test_autoperf.py", "--exitfirst"]) == 0:
         # main(sys.argv)
     # else:
