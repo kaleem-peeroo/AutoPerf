@@ -8,7 +8,7 @@ import json
 import warnings
 
 from icecream import ic
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from pprint import pprint
 from multiprocessing import Process, Manager
 from rich.progress import track
@@ -967,6 +967,70 @@ def read_ap_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     return config_dict
 
+def get_folder_and_datasets_count_for_experiments(
+    config: Dict = {}, machine_config: Dict = {}
+) -> Tuple[Optional[Dict], Optional[str]]:
+    """
+    Get the folder count for experiments.
+
+    Params:
+        config: Dict: Dictionary containing experiment configuration.
+        machine_config: Dict: Dictionary containing machine configuration.
+
+    Returns:
+        Dict: Experiment configuration with folder count if successful, None
+        str: Error
+    """
+
+    if config == {}: 
+        return None, "No config passed."
+
+    if machine_config == {}:
+        return None, "No machine config passed."
+
+    for experiment in config:
+        experiment_dirname = get_dirname_from_experiment(experiment)
+        if experiment_dirname is None:
+            logger.warning(
+                f"Couldn't get experiment dirname for {experiment['experiment_name']}."
+            )
+            continue
+
+        exp_name = os.path.basename(experiment_dirname)
+
+        data_path = os.path.join("~/AutoPerf", "output/data", exp_name)
+        summ_data_path = os.path.join("~/AutoPerf", "output/summarised_data", exp_name)
+        datasets_dir = os.path.join("~/AutoPerf", "output/datasets")
+
+        count_folder_command = f"ls -l {data_path} | grep -c ^d; ls -l {summ_data_path} | grep -c ^d"
+        list_datasets_command = f"ls -l {datasets_dir} | grep -o '.*{exp_name}.*'"
+        get_datasets_command = f"ls -l {datasets_dir} | grep -o '.*{exp_name}.*'"
+
+        full_command = f"{count_folder_command}; {list_datasets_command}; {get_datasets_command}"
+
+        command_output = run_command_via_ssh(
+            machine_config,
+            full_command
+        )
+        if command_output is None:
+            logger.warning(
+                f"Couldn't run commands \n{full_command}\n on {machine_config['name']} ({machine_config['ip']})."
+            )
+            continue
+
+        command_output = command_output.split("\n")
+        experiment['data'] = command_output[0]
+        experiment['summarised_data'] = command_output[1]
+        datasets = command_output[2:]
+        
+        formatted_datasets = []
+        for dataset in datasets:
+            formatted_datasets.append(dataset.split(" ")[-1])
+
+        experiment['datasets'] = formatted_datasets
+
+    return config, None
+
 def get_folder_count_for_experiments(config: Dict = {}, machine_config: Dict = {}, folder_path: str = "") -> Optional[Dict]:
     """
     Get the folder count for experiments.
@@ -1307,27 +1371,10 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
             )
             return
 
-        status.update(f"Counting folders in output/data on {machine_name} ({machine_ip})...")
-        ap_config = get_folder_count_for_experiments(ap_config, machine_config, "output/data")
-        if ap_config is None:
+        ap_config, error = get_folder_and_datasets_count_for_experiments(ap_config, machine_config)
+        if error:
             logger.error(
-                f"Couldn't get data count for experiments."
-            )
-            return
-
-        status.update(f"Counting folders in /summarised_data on {machine_name} ({machine_ip})...")
-        ap_config = get_folder_count_for_experiments(ap_config, machine_config, "output/summarised_data")
-        if ap_config is None:
-            logger.error(
-                f"Couldn't get summarised data count for experiments."
-            )
-            return
-
-        status.update(f"Counting datasets on {machine_name} ({machine_ip})...")
-        ap_config = get_datasets_for_experiments(ap_config, machine_config)
-        if ap_config is None:
-            logger.error(
-                f"Couldn't get datasets for experiments."
+                f"Couldn't get folder and datasets count for experiments: {error}"
             )
             return
 
@@ -1562,7 +1609,8 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
             ess_row_count = 0
         
         if len(datasets) > 0:
-            datasets_output = "\n".join(datasets)
+            # datasets_output = "\n".join(datasets)
+            datasets_output = str(len(datasets))
         else:
             datasets_output = "-"
 
