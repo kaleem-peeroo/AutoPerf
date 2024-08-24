@@ -883,18 +883,18 @@ def get_ess_df_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> 
 
         experiment_name = os.path.basename(experiment_dirname)
         ess_filepath = os.path.join("~/AutoPerf/output/ess", f"{experiment_name}.csv")
-        check_ess_exists_command = f"ls {ess_filepath}"
-        check_ess_exists_output = run_command_via_ssh(
-            machine_config,
-            check_ess_exists_command
-        )
-        if check_ess_exists_output is None:
-            experiment['ess_df'] = None
-            continue
-
-        if "No such file or directory" in check_ess_exists_output:
-            experiment['ess_df'] = None
-            continue
+        # check_ess_exists_command = f"ls {ess_filepath}"
+        # check_ess_exists_output = run_command_via_ssh(
+        #     machine_config,
+        #     check_ess_exists_command
+        # )
+        # if check_ess_exists_output is None:
+        #     experiment['ess_df'] = None
+        #     continue
+        #
+        # if "No such file or directory" in check_ess_exists_output:
+        #     experiment['ess_df'] = None
+        #     continue
 
         ess_file_cat_command = f"cat {ess_filepath}"
         ess_file_cat_output = run_command_via_ssh(
@@ -968,7 +968,9 @@ def read_ap_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
     return config_dict
 
 def get_folder_and_datasets_count_for_experiments(
-    config: Dict = {}, machine_config: Dict = {}
+    config: Dict = {}, 
+    machine_config: Dict = {},
+    status: Optional[Dict] = {}
 ) -> Tuple[Optional[Dict], Optional[str]]:
     """
     Get the folder count for experiments.
@@ -997,17 +999,20 @@ def get_folder_and_datasets_count_for_experiments(
             continue
 
         exp_name = os.path.basename(experiment_dirname)
+        ess_filepath = os.path.join("~/AutoPerf/output/ess", f"{exp_name}.csv")
 
         data_path = os.path.join("~/AutoPerf", "output/data", exp_name)
         summ_data_path = os.path.join("~/AutoPerf", "output/summarised_data", exp_name)
         datasets_dir = os.path.join("~/AutoPerf", "output/datasets")
+        ess_file_cat_command = f"echo 'CUT_HERE'; cat {ess_filepath}"
 
         count_folder_command = f"ls -l {data_path} | grep -c ^d; ls -l {summ_data_path} | grep -c ^d"
         list_datasets_command = f"ls -l {datasets_dir} | grep -o '.*{exp_name}.*'"
         get_datasets_command = f"ls -l {datasets_dir} | grep -o '.*{exp_name}.*'"
 
-        full_command = f"{count_folder_command}; {list_datasets_command}; {get_datasets_command}"
+        full_command = f"{count_folder_command}; {list_datasets_command}; {get_datasets_command}; {ess_file_cat_command}"
 
+        status.update(f"Getting data on {machine_config['name']} ({machine_config['ip']}) for {experiment['experiment_name']}.")
         command_output = run_command_via_ssh(
             machine_config,
             full_command
@@ -1018,16 +1023,29 @@ def get_folder_and_datasets_count_for_experiments(
             )
             continue
 
-        command_output = command_output.split("\n")
-        experiment['data'] = command_output[0]
-        experiment['summarised_data'] = command_output[1]
-        datasets = command_output[2:]
+        folder_outputs = command_output.split("CUT_HERE")[0]
+        folder_output = folder_outputs.split("\n")
+        experiment['data'] = folder_output[0]
+        experiment['summarised_data'] = folder_output[1]
+        datasets = folder_output[2:-1]
         
         formatted_datasets = []
         for dataset in datasets:
             formatted_datasets.append(dataset.split(" ")[-1])
 
         experiment['datasets'] = formatted_datasets
+
+        ess_output = command_output.split("CUT_HERE")[-1]
+        ess_output = StringIO(ess_output)
+        try:
+            ess_df = pd.read_csv(ess_output)
+            experiment['ess_df'] = ess_df
+        except pd.errors.EmptyDataError:
+            experiment['ess_df'] = None
+            continue
+        except pd.errors.ParserError:
+            experiment['ess_df'] = None
+            continue
 
     return config, None
 
@@ -1371,7 +1389,7 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
             )
             return
 
-        ap_config, error = get_folder_and_datasets_count_for_experiments(ap_config, machine_config)
+        ap_config, error = get_folder_and_datasets_count_for_experiments(ap_config, machine_config, status)
         if error:
             logger.error(
                 f"Couldn't get folder and datasets count for experiments: {error}"
@@ -1383,14 +1401,6 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
         if ap_config is None:
             logger.error(
                 f"Couldn't calculate expected total time for experiments."
-            )
-            return
-
-        status.update(f"Getting ESS for experiments on {machine_name} ({machine_ip})...")
-        ap_config = get_ess_df_for_experiments(ap_config, machine_config)
-        if ap_config is None:
-            logger.error(
-                f"Couldn't get ESS for experiments."
             )
             return
         
@@ -1584,7 +1594,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     table.add_column("/summ\ndata", style="bold")
     table.add_column("/data\nsets", style="bold")
     table.add_column("ESS\nStatus", style="bold")
-    table.add_column("Last\n3\nComments", style="bold")
+    # table.add_column("Last\n3\nComments", style="bold")
     table.add_column("Last\n100\nStatuses", style="bold")
 
     for experiment in ongoing_info:
@@ -1652,7 +1662,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
             f"[{completed_colour}]{summarised_data_count}[/{completed_colour}]",
             f"[{completed_colour}]{datasets_output}[/{completed_colour}]",
             f"[green]{success_percent}%[/green]\n[red]{failed_percent}%[/red]\n({ess_row_count}\nrows)",
-            f"[{completed_colour}]{last_n_errors}[/{completed_colour}]",
+            # f"[{completed_colour}]{last_n_errors}[/{completed_colour}]",
             last_n_statuses
         )
 
