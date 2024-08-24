@@ -7,6 +7,7 @@ import logging
 import json
 import warnings
 
+from datetime import datetime
 from icecream import ic
 from typing import Dict, List, Optional, Tuple
 from pprint import pprint
@@ -1694,6 +1695,7 @@ def main(sys_args: list[str] = []) -> None:
     for MACHINE_CONFIG in CONFIG:
         console.print(Markdown(f"# {MACHINE_CONFIG['name']} ({MACHINE_CONFIG['ip']})"))
 
+        start_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ongoing_info = get_ongoing_info_from_machine(MACHINE_CONFIG)
         if ongoing_info is None:
             logger.error(
@@ -1702,6 +1704,12 @@ def main(sys_args: list[str] = []) -> None:
             continue
 
         display_as_table(ongoing_info)
+
+        end_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        duration = datetime.strptime(end_timestamp, "%Y-%m-%d %H:%M:%S") - datetime.strptime(start_timestamp, "%Y-%m-%d %H:%M:%S")
+        duration = duration.total_seconds()
+        duration = int(duration)
+        console.print(f"Ran in {duration} seconds.")
 
 if __name__ == "__main__":
     main(sys.argv)
