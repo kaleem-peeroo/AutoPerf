@@ -1359,7 +1359,7 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
     - Get elapsed time
     """
 
-    with console.status(f"Getting latest config from {machine_name} ({machine_ip})...") as status:
+    with console.status(f"Getting data from {machine_name} ({machine_ip})...") as status:
         if machine_config['config_path'] == "":
             ap_config = get_latest_config_from_machine(machine_config)
             if ap_config is None:
@@ -1472,7 +1472,7 @@ def get_status_percentage_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame(), sta
     status_percent = round(status_percent, 1)
     return status_percent
 
-def get_last_n_statuses_as_string_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame(), n: int = 0, line_break_point: int = 20) -> Optional[str]:
+def get_last_n_statuses_as_string_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame(), n: int = 0, line_break_point: int = 10) -> Optional[str]:
     """
     Get the last n statuses as a string of red or green circles from the ESS DataFrame.
 
@@ -1533,6 +1533,63 @@ def get_last_n_statuses_as_string_from_ess_df(ess_df: pd.DataFrame = pd.DataFram
     )
 
     return last_n_statuses_output
+
+def get_ip_output_from_ess_df(ess_df):
+    if ess_df is None:
+        return "", {}
+
+    ip_df = ess_df['ip'].dropna()
+
+    unique_ips = ip_df.unique()
+    all_emojis = ["🟠", "🟣", "🟡", "🔵", "🟤", "⚫", "⚪", "🟦", "🟧", "🟨", "🟩", "🟪", "🟫", "🟥", "🟦", "🟪", "🟧", "🟨", "🟩", "🟪", "🟫"]
+
+    ip_emoji_dict = {}
+    for i, ip in enumerate(unique_ips):
+        ip = "xxx." + ip.split(".")[-1]
+        if ip == "🟢":
+            ip_emoji_dict[ip] = "🟢"
+
+        ip_emoji_dict[ip] = all_emojis[i]
+
+    # Go through each row, if the comment has success add green
+    # if comment has fail add red
+    # if comment has fail and IP then swap the IP with the emoji
+
+    ip_output = ""
+    for index, row in ess_df.iterrows():
+        end_status = row['end_status']
+        ip = str(row['ip'])
+        ip = "xxx." + ip.split(".")[-1]
+
+        if "success" in end_status.lower():
+            ip_output += "🟢"
+        elif "fail" in end_status.lower():
+            if ip in ip_emoji_dict.keys():
+                ip_output += ip_emoji_dict[ip]
+            else:
+                ip_output += "🔴"
+        else:
+            ip_output += "🔴"
+        
+    line_break_point = 5
+    ip_output = "\n".join(
+        [ip_output[i:i+line_break_point] for i in range(
+            0, 
+            len(ip_output), 
+            line_break_point
+        )]
+    )
+
+    # Sort the dict by IP number by removing the XXX. and converting to int
+    ip_emoji_dict = {k: v for k, v in sorted(
+        ip_emoji_dict.items(), 
+        key=lambda item: int(
+            item[0].replace("xxx.", "")
+        )
+    )}
+
+    return ip_output, ip_emoji_dict
+
 
 def get_last_timestamp_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame()) -> Optional[str]:
     """
@@ -1597,13 +1654,18 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     table.add_column("ESS\nStatus", style="bold")
     # table.add_column("Last\n3\nComments", style="bold")
     table.add_column("Last\n100\nStatuses", style="bold")
+    table.add_column("Failed\nIPs", style="bold")
 
     for experiment in ongoing_info:
         experiment_name = experiment['experiment_name']
+        experiment_name = experiment_name.replace(" ", "\n")
         target_test_count = experiment['target_test_count']
         data_count = experiment['data']
         datasets = experiment['datasets']
         summarised_data_count = experiment['summarised_data']
+        ess_df = experiment['ess_df']
+
+        ip_output, ip_dict = get_ip_output_from_ess_df(ess_df)
 
         last_timestamp = get_last_timestamp_from_ess_df(experiment['ess_df'])
         if last_timestamp is None:
@@ -1615,7 +1677,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
             summarised_data_count = "-"
 
         if experiment['ess_df'] is not None:
-            ess_row_count = len(experiment['ess_df'].index)
+            ess_row_count = len(ess_df.index)
         else:
             ess_row_count = 0
         
@@ -1625,10 +1687,10 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         else:
             datasets_output = "-"
 
-        failed_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "fail")
-        success_percent = get_status_percentage_from_ess_df(experiment['ess_df'], "success")
+        failed_percent = get_status_percentage_from_ess_df(ess_df, "fail")
+        success_percent = get_status_percentage_from_ess_df(ess_df, "success")
 
-        last_n_statuses = get_last_n_statuses_as_string_from_ess_df(experiment['ess_df'], 100, 10)
+        last_n_statuses = get_last_n_statuses_as_string_from_ess_df(ess_df, 100, 5)
 
         if "expected_time_str" not in experiment.keys():
             expected_time_str = "-"
@@ -1653,6 +1715,12 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         else:
             last_n_errors = experiment['last_n_errors']
 
+        ip_dict_string = ""
+        for ip, emoji in ip_dict.items():
+            ip_dict_string += f"{emoji} {ip}\n"
+
+        failed_ip_output = ip_output + "\n\n" + ip_dict_string
+
         table.add_row(
             f"[{completed_colour}]{experiment_name}[/{completed_colour}]",
             f"[{completed_colour}]{elapsed_time_str}[/{completed_colour}]",
@@ -1664,7 +1732,8 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
             f"[{completed_colour}]{datasets_output}[/{completed_colour}]",
             f"[green]{success_percent}%[/green]\n[red]{failed_percent}%[/red]\n({ess_row_count}\nrows)",
             # f"[{completed_colour}]{last_n_errors}[/{completed_colour}]",
-            last_n_statuses
+            last_n_statuses,
+            failed_ip_output
         )
 
     console.print(table)
