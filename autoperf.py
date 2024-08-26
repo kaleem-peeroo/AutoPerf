@@ -1750,7 +1750,7 @@ def run_test(
                 test_name,
                 0,
                 0,
-                "failed initial ping check",
+                f"failed initial ping check on {machine_ip}: {ping_error}",
                 test_config,
                 {},
                 new_ess_row['comments'] + f"Failed to even ping {machine_ip} the first time."
@@ -1765,7 +1765,7 @@ def run_test(
                 test_name,
                 1,
                 0,
-                "failed initial ssh check",
+                f"failed initial ssh check on {machine_ip}: {ssh_check_error}",
                 test_config,
                 {},
                 new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
