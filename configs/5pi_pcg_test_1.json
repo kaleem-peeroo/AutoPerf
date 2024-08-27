@@ -6,8 +6,8 @@
   "qos_settings": {
     "duration_secs": [60],
     "datalen_bytes": [100],
-    "pub_count": [1, 5, 10],
-    "sub_count": [1, 5, 10],
+    "pub_count": [1, 5],
+    "sub_count": [1, 5],
     "use_reliable": [true],
     "use_multicast": [true],
     "durability_level": [0],
@@ -25,7 +25,7 @@
     },
     {
       "machine_name": "k3",
-      "participant_allocation": "sub",
+      "participant_allocation": "pub",
       "ip": "169.254.251.22",
       "ssh_key_path": "~/.ssh/id_rsa",
       "username": "acwh025",
