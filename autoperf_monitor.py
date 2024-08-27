@@ -1638,21 +1638,35 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     """
     # TODO: Validate parameters
 
-    console.print(f"Legend: [green]Completed[/green], [red]Failed[/red], [white]Not Completed[/white]")
+    # console.print(f"Legend: [green]Completed[/green], [red]Failed[/red], [white]Not Completed[/white]")
 
-    table = Table(title="Experiments Overview", show_lines=True)
-    table.add_column("Experiment Name", style="bold")
-    table.add_column("Elapsed\nTime", style="bold")
-    table.add_column("Expected\nTime", style="bold")
-    table.add_column("Last\nTimestamp", style="bold")
-    table.add_column("Target\nTest\nCount", style="bold")
-    table.add_column("/data", style="bold")
-    table.add_column("/summ\ndata", style="bold")
-    table.add_column("/data\nsets", style="bold")
-    table.add_column("ESS\nStatus", style="bold")
-    # table.add_column("Last\n3\nComments", style="bold")
-    table.add_column("Last\n100\nStatuses", style="bold")
-    table.add_column("Failed\nIPs", style="bold")
+    table = Table(
+        title="Experiments Overview", show_lines=True
+    )
+    table.add_column(
+        "Experiment Name", 
+        style="bold"
+    )
+    table.add_column(
+        "Elapsed\n-----\nExpected\nTime", 
+        style="bold"
+    )
+    table.add_column(
+        "Last\nTimestamp", 
+        style="bold"
+    )
+    table.add_column(
+        "/data\n-----\n/summ_data\n-----\n/datasets\n-----\nTarget\nTest\nCount", 
+        style="bold"
+    )
+    table.add_column(
+        "Last\n100\nStatuses", 
+        style="bold"
+    )
+    table.add_column(
+        "Failed\nIPs", 
+        style="bold"
+    )
 
     for experiment in ongoing_info:
         experiment_name = experiment['experiment_name']
@@ -1700,18 +1714,13 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         else:
             elapsed_time_str = experiment['elapsed_time_str'].replace(" ", "\n")
 
-        if len(datasets) > 0:
-            completed_colour = "green"
-        else:
-            completed_colour = "white"
-
         if data_count == "0":
             data_count = "-"
 
-        if "last_n_errors" not in experiment.keys():
-            last_n_errors = "-"
-        else:
-            last_n_errors = experiment['last_n_errors']
+        # if "last_n_errors" not in experiment.keys():
+        #     last_n_errors = "-"
+        # else:
+        #     last_n_errors = experiment['last_n_errors']
 
         ip_dict_string = ""
         for ip, emoji in ip_dict.items():
