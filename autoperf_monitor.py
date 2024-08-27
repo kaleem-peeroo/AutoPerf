@@ -1619,6 +1619,28 @@ def get_last_timestamp_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame()) -> Opt
     last_timestamp = last_timestamp.strftime("%Y-%m-%d %H:%M:%S")
     return last_timestamp
 
+def get_ip_fail_percent(ip, ess_df):
+    if ess_df is None:
+        return 0
+
+    ip_df = ess_df['ip'].dropna()
+    if ip_df.empty:
+        return 0
+    if len(ip_df.index) == 0:
+        return 0
+
+    ip_df = ip_df.dropna()
+    ip_df = ip_df.apply(lambda x: "xxx." + x.split(".")[-1])
+    total_ip_count = len(ip_df.index)
+
+    ip_df = ip_df[ip_df == ip]
+    current_ip_count = len(ip_df.index)
+
+    ip_fail_percent = (current_ip_count / total_ip_count) * 100
+    ip_fail_percent = round(ip_fail_percent, 1)
+
+    return ip_fail_percent
+
 def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     """
     Display ongoing info as a table with the following columns:
@@ -1713,7 +1735,8 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
 
         ip_dict_string = ""
         for ip, emoji in ip_dict.items():
-            ip_dict_string += f"{emoji} {ip}\n"
+            ip_fail_percent = get_ip_fail_percent(ip, ess_df)
+            ip_dict_string += f"{emoji} {ip} ({ip_fail_percent}%)\n"
 
         failed_ip_output = ip_output + "\n\n" + ip_dict_string
 
