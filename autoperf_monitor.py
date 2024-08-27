@@ -1534,7 +1534,7 @@ def get_last_n_statuses_as_string_from_ess_df(ess_df: pd.DataFrame = pd.DataFram
 
     return last_n_statuses_output
 
-def get_ip_output_from_ess_df(ess_df):
+def get_ip_output_from_ess_df(ess_df, line_break_point: int = 5):
     if ess_df is None:
         return "", {}
 
@@ -1571,7 +1571,6 @@ def get_ip_output_from_ess_df(ess_df):
         else:
             ip_output += "🔴"
         
-    line_break_point = 5
     ip_output = "\n".join(
         [ip_output[i:i+line_break_point] for i in range(
             0, 
@@ -1589,7 +1588,6 @@ def get_ip_output_from_ess_df(ess_df):
     )}
 
     return ip_output, ip_emoji_dict
-
 
 def get_last_timestamp_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame()) -> Optional[str]:
     """
@@ -1665,7 +1663,8 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         summarised_data_count = experiment['summarised_data']
         ess_df = experiment['ess_df']
 
-        ip_output, ip_dict = get_ip_output_from_ess_df(ess_df)
+        line_break_point = 10
+        ip_output, ip_dict = get_ip_output_from_ess_df(ess_df, line_break_point)
 
         last_timestamp = get_last_timestamp_from_ess_df(experiment['ess_df'])
         if last_timestamp is None:
@@ -1682,7 +1681,6 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
             ess_row_count = 0
         
         if len(datasets) > 0:
-            # datasets_output = "\n".join(datasets)
             datasets_output = str(len(datasets))
         else:
             datasets_output = "-"
@@ -1690,7 +1688,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         failed_percent = get_status_percentage_from_ess_df(ess_df, "fail")
         success_percent = get_status_percentage_from_ess_df(ess_df, "success")
 
-        last_n_statuses = get_last_n_statuses_as_string_from_ess_df(ess_df, 100, 5)
+        last_n_statuses = get_last_n_statuses_as_string_from_ess_df(ess_df, 100, line_break_point)
 
         if "expected_time_str" not in experiment.keys():
             expected_time_str = "-"
