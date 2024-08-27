@@ -1638,8 +1638,6 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     """
     # TODO: Validate parameters
 
-    # console.print(f"Legend: [green]Completed[/green], [red]Failed[/red], [white]Not Completed[/white]")
-
     table = Table(
         title="Experiments Overview", show_lines=True
     )
@@ -1689,11 +1687,6 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         if summarised_data_count == "0":
             summarised_data_count = "-"
 
-        if experiment['ess_df'] is not None:
-            ess_row_count = len(ess_df.index)
-        else:
-            ess_row_count = 0
-        
         if len(datasets) > 0:
             datasets_output = str(len(datasets))
         else:
@@ -1717,11 +1710,6 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
 
         if data_count == "0":
             data_count = "-"
-
-        # if "last_n_errors" not in experiment.keys():
-        #     last_n_errors = "-"
-        # else:
-        #     last_n_errors = experiment['last_n_errors']
 
         ip_dict_string = ""
         for ip, emoji in ip_dict.items():
