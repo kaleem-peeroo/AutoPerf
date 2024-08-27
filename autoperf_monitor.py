@@ -1703,6 +1703,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         success_percent = get_status_percentage_from_ess_df(ess_df, "success")
 
         last_n_statuses = get_last_n_statuses_as_string_from_ess_df(ess_df, 100, line_break_point)
+        last_n_statuses = f"{last_n_statuses}\n\n🟢 success ({success_percent}%)\n🔴 fail ({failed_percent}%)"
 
         if "expected_time_str" not in experiment.keys():
             expected_time_str = "-"
@@ -1728,17 +1729,15 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
 
         failed_ip_output = ip_output + "\n\n" + ip_dict_string
 
+        test_count_row_str = f"{data_count}\n-----\n{summarised_data_count}"
+        test_count_row_str = f"{test_count_row_str}\n-----\n{datasets_output}"
+        test_count_row_str = f"{test_count_row_str}\n-----\n{target_test_count}"
+
         table.add_row(
-            f"[{completed_colour}]{experiment_name}[/{completed_colour}]",
-            f"[{completed_colour}]{elapsed_time_str}[/{completed_colour}]",
-            f"[{completed_colour}]{expected_time_str}[/{completed_colour}]",
-            f"[{completed_colour}]{last_timestamp}[/{completed_colour}]",
-            f"[{completed_colour}]{target_test_count}[/{completed_colour}]",
-            f"[{completed_colour}]{data_count}[/{completed_colour}]",
-            f"[{completed_colour}]{summarised_data_count}[/{completed_colour}]",
-            f"[{completed_colour}]{datasets_output}[/{completed_colour}]",
-            f"[green]{success_percent}%[/green]\n[red]{failed_percent}%[/red]\n({ess_row_count}\nrows)",
-            # f"[{completed_colour}]{last_n_errors}[/{completed_colour}]",
+            f"{experiment_name}",
+            f"{elapsed_time_str}\n-----\n{expected_time_str}",
+            f"{last_timestamp}",
+            f"{test_count_row_str}",
             last_n_statuses,
             failed_ip_output
         )
