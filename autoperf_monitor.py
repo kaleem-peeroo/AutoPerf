@@ -1538,6 +1538,9 @@ def get_ip_output_from_ess_df(ess_df, line_break_point: int = 5):
     if ess_df is None:
         return "", {}
 
+    if 'ip' not in ess_df.columns:
+        return "", {}
+
     ip_df = ess_df['ip'].dropna()
 
     unique_ips = ip_df.unique()
@@ -1740,7 +1743,9 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
 
         failed_ip_output = ip_output + "\n\n" + ip_dict_string
 
-        test_count_row_str = f"{data_count}\n-----\n{summarised_data_count}"
+        test_count_row_str = f"{data_count}"
+        test_count_row_str = f"{test_count_row_str}\n-----\n"
+        test_count_row_str = f"{test_count_row_str}{summarised_data_count}"
         test_count_row_str = f"{test_count_row_str}\n-----\n{datasets_output}"
         test_count_row_str = f"{test_count_row_str}\n-----\n{target_test_count}"
 
