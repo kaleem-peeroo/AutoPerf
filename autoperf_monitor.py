@@ -959,7 +959,20 @@ def read_ap_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
         )
         return None
 
-    config_dict = json.loads(config_contents)
+    if config_contents.strip() == "":
+        logger.error(
+            f"Config file is empty on {machine_config['name']} ({machine_config['ip']})."
+        )
+        return None
+
+    try:
+        config_dict = json.loads(config_contents)
+    except json.JSONDecodeError as e:
+        logger.error(
+            f"Couldn't parse config file from {machine_config['name']} ({machine_config['ip']}): {e}"
+        )
+        return None
+
     if config_dict is None:
         logger.error(
             f"Couldn't parse config file from {machine_config['name']} ({machine_config['ip']})."
