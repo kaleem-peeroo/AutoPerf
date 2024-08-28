@@ -1750,7 +1750,7 @@ def run_test(
                 test_name,
                 0,
                 0,
-                f"failed initial ping check on {machine_ip}: {ping_error}",
+                f"ping_check_fail",
                 test_config,
                 {},
                 new_ess_row['comments'] + f"Failed to even ping {machine_ip} the first time."
@@ -1765,7 +1765,7 @@ def run_test(
                 test_name,
                 1,
                 0,
-                f"failed initial ssh check on {machine_ip}: {ssh_check_error}",
+                f"ssh_check_fail",
                 test_config,
                 {},
                 new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
@@ -1832,7 +1832,7 @@ def run_test(
             test_name,
             ping_count,
             ssh_check_count,
-            "failed connection checks",
+            "connection_check_fail",
             test_config,
             {},
             new_ess_row['comments'] + f"Failed connection check after 5 pings and ssh checks."
@@ -1866,7 +1866,7 @@ def run_test(
             test_name,
             ping_count,
             ssh_check_count,
-            "failed script generation",
+            "script_generation_fail",
             qos_config,
             {},
             new_ess_row['comments'] + " Failed to generate scripts from qos config."
@@ -1886,7 +1886,7 @@ def run_test(
             test_name,
             ping_count,
             ssh_check_count,
-            "failed script distribution",
+            "script_distribution_fail",
             qos_config,
             {},
             new_ess_row['comments'] + " Failed to distribute scripts across machines."
@@ -1901,7 +1901,7 @@ def run_test(
             test_name,
             ping_count,
             ssh_check_count,
-            "failed script distribution",
+            "script_distribution_fail",
             qos_config,
             {},
             new_ess_row['comments'] + " No scripts allocated to machines."
@@ -1948,7 +1948,7 @@ def run_test(
                 test_name,
                 ping_count,
                 ssh_check_count,
-                "failed noise generation script generation",
+                "noise_script_generation_fail",
                 qos_config,
                 scripts_per_machine,
                 new_ess_row['comments'] + " Failed to generate scripts from noise generation config."
@@ -2021,7 +2021,7 @@ def run_test(
                 test_name,
                 ping_count,
                 ssh_check_count,
-                "failed script execution",
+                "script_execution_fail",
                 qos_config,
                 scripts_per_machine,
                 new_ess_row['comments'] + " Errors running scripts on machines."
@@ -2077,7 +2077,7 @@ def run_test(
             test_name,
             ping_count,
             ssh_check_count,
-            f"expected {expected_csv_file_count} files and found {actual_csv_file_count} files instead.",
+            f"file_count_mismatch",
             qos_config,
             scripts_per_machine,
             new_ess_row['comments'] + f"expected {expected_csv_file_count} files and found {actual_csv_file_count} files instead."
@@ -2101,7 +2101,7 @@ def run_test(
                 test_name,
                 ping_count,
                 ssh_check_count,
-                f"{result_file} is {filesize} bytes.",
+                f"empty_file_found",
                 qos_config,
                 scripts_per_machine,
                 new_ess_row['comments'] + f"{result_file} is {filesize} bytes."
