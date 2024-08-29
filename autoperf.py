@@ -13,6 +13,7 @@ import warnings
 import random
 import shutil
 import shlex
+import socket
 
 from icecream import ic
 from typing import Dict, List, Optional, Tuple
@@ -53,6 +54,37 @@ console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
 
+def check_connection(machine, connection_type="ping"):
+    # TODO: Validate parameters 
+    # connection type can be only ping or ssh
+
+    name = machine['machine_name']
+    username = machine['username']
+    ip = machine['ip']
+    
+    if connection_type == "ping":
+        command = ["ping", "-c", "5", "-W", "10", ip]
+    else:
+        command = [
+            "ssh",
+            "-o", "ConnectTimeout=10",
+            f"{username}@{ip}",
+            "hostname"
+        ]
+
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, timeout=10)
+
+        if result.returncode != 0:
+            return False, result.stderr.strip()
+        else:
+            return True, None
+
+    except subprocess.TimeoutExpired:
+        return False, "Timed out"
+    except Exception as e:
+        return False, e
+
 def ping_machine(ip: str = "") -> Tuple[Optional[bool], Optional[str]]:
     """
     Ping a machine to check if it's online.
@@ -82,6 +114,22 @@ def ping_machine(ip: str = "") -> Tuple[Optional[bool], Optional[str]]:
     else:
         return False, f"Failed to ping {ip}"
 
+def check_ssh_connection_with_socket(machine_config: Dict = {}) -> Tuple[Optional[bool], Optional[str]]:
+    ssh_key_path = machine_config['ssh_key_path']
+    username = machine_config['username']
+    ip = machine_config['ip']
+
+    logger.info(f"SSHing into {username}@{ip}")
+    
+    try:
+        test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        test_socket.connect((ip, 22))
+
+    except Exception as e:
+        return False, e
+    else:
+        return True, None
+    
 def check_ssh_connection(machine_config: Dict = {}) -> Tuple[Optional[bool], Optional[str]]:
     """
     Check if an SSH connection can be established to a machine.
@@ -1670,8 +1718,20 @@ def run_test(
     # 1. Check connections to machine (ping + ssh).
     for machine_config in machine_configs:
         machine_ip = machine_config['ip']
-        ping_response, ping_error = ping_machine(machine_ip)
-        if ping_error:
+        machine_name = machine_config['machine_name']
+
+        ping_attempts = 3
+        while ping_attempts > 0:
+            logger.info(
+                f"[{4 - ping_attempts}/3] Pinging {machine_name}"
+            )
+            was_pinged, ping_error = check_connection(machine_config, "ping")    
+            if was_pinged:
+                break
+
+            ping_attempts -= 1
+
+        if ping_attempts == 0:
             return update_ess_df(
                 new_ess_df,
                 None,
@@ -1682,23 +1742,65 @@ def run_test(
                 f"ping_check_fail",
                 test_config,
                 {},
-                new_ess_row['comments'] + f"Failed to even ping {machine_ip} the first time."
-            ), f"failed initial ping check on {machine_ip}: {ping_error}"
+                new_ess_row['comments'] + f"Failed to even ping {machine_ip} after 3 attempts."
+            ), f"failed initial ping check on {machine_ip}"
 
-        passed_ssh_check, ssh_check_error = check_ssh_connection(machine_config)
-        if ssh_check_error:
+        ssh_attempts = 3
+        while ssh_attempts > 0 and ping_attempts > 0:
+            logger.info(
+                f"[{4 - ssh_attempts}/3] SSHing {machine_name}"
+            )
+            was_sshed, ssh_error = check_connection(machine_config, "ssh")
+            if was_sshed:
+                break
+
+            ssh_attempts -= 1
+
+        if ssh_attempts == 0:
             return update_ess_df(
                 new_ess_df,
                 None,
                 None,
                 test_name,
-                1,
+                0,
                 0,
                 f"ssh_check_fail",
                 test_config,
                 {},
-                new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
-            ), f"failed initial ssh check on {machine_ip}: {ssh_check_error}"
+                new_ess_row['comments'] + f"Failed to even ssh {machine_ip} after 3 attempts."
+            ), f"failed initial ssh check on {machine_ip}"
+
+
+        # machine_ip = machine_config['ip']
+        # ping_response, ping_error = ping_machine(machine_ip)
+        # if ping_error:
+        #     return update_ess_df(
+        #         new_ess_df,
+        #         None,
+        #         None,
+        #         test_name,
+        #         0,
+        #         0,
+        #         f"ping_check_fail",
+        #         test_config,
+        #         {},
+        #         new_ess_row['comments'] + f"Failed to even ping {machine_ip} the first time."
+        #     ), f"failed initial ping check on {machine_ip}: {ping_error}"
+        #
+        # passed_ssh_check, ssh_check_error = check_ssh_connection_with_socket(machine_config)
+        # if ssh_check_error:
+        #     return update_ess_df(
+        #         new_ess_df,
+        #         None,
+        #         None,
+        #         test_name,
+        #         1,
+        #         0,
+        #         f"ssh_check_fail",
+        #         test_config,
+        #         {},
+        #         new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
+        #     ), f"failed initial ssh check on {machine_ip}: {ssh_check_error}"
 
     logger.info(
         f"[{EXPERIMENT_NAME}] [{test_name}] Restarting all machines..."
@@ -1743,7 +1845,7 @@ def run_test(
     
         # SSH into machine up to 5 times.
         for attempt in range(1, 6):
-            if check_ssh_connection(
+            if check_ssh_connection_with_socket(
                 machine_config
             ):
                 ssh_check_count = attempt
