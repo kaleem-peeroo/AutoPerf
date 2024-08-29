@@ -1,10 +1,10 @@
 [{
   "experiment_name": "5Pi RCG SSH Server Restart Check",
   "combination_generation_type": "rcg",
-  "rcg_target_test_count": 100,
+  "rcg_target_test_count": 4,
   "quit_after_n_failed_tests": 0,
   "qos_settings": {
-    "duration_secs": [600],
+    "duration_secs": [60],
     "datalen_bytes": [100],
     "pub_count": [1, 75],
     "sub_count": [1, 75],
