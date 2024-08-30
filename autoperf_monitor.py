@@ -884,18 +884,6 @@ def get_ess_df_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> 
 
         experiment_name = os.path.basename(experiment_dirname)
         ess_filepath = os.path.join("~/AutoPerf/output/ess", f"{experiment_name}.csv")
-        # check_ess_exists_command = f"ls {ess_filepath}"
-        # check_ess_exists_output = run_command_via_ssh(
-        #     machine_config,
-        #     check_ess_exists_command
-        # )
-        # if check_ess_exists_output is None:
-        #     experiment['ess_df'] = None
-        #     continue
-        #
-        # if "No such file or directory" in check_ess_exists_output:
-        #     experiment['ess_df'] = None
-        #     continue
 
         ess_file_cat_command = f"cat {ess_filepath}"
         ess_file_cat_output = run_command_via_ssh(
@@ -1436,56 +1424,11 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     return ap_config
 
-def get_status_percentage_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame(), status: str = "") -> Optional[float]:
-    """
-    Get the percentage of a tests of a certain status (succesful or failed) from the ESS DataFrame.
-
-    Params:
-        ess_df: pd.DataFrame: DataFrame containing ESS data.
-        status: str: Status to check for.
-
-    Returns:
-        float: Percentage of tests with the given status if successful, None if not.
-    """
-
-    # TODO: Write unit tests
-
-    if ess_df is None:
-        logger.warning(
-            f"No ESS DataFrame passed."
-        )
-        return None
-
-    if ess_df.empty:
-        logger.error(
-            f"ESS DataFrame is empty."
-        )
-        return None
-
-    if status == "":
-        logger.error(
-            f"No status passed."
-        )
-        return None
-
-    if status not in ["success", "fail"]:
-        logger.error(
-            f"Invalid status passed."
-        )
-        return None
-
-    if status == "success":
-        chosen_tests = ess_df[ess_df['end_status'] == status]
-    else:
-        chosen_tests = ess_df[ess_df['end_status'].str.contains(status)]
-    chosest_test_count = len(chosen_tests.index)
-    total_test_count = len(ess_df.index)
-
-    status_percent = (chosest_test_count / total_test_count) * 100
-    status_percent = round(status_percent, 1)
-    return status_percent
-
-def get_last_n_statuses_as_string_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame(), n: int = 0, line_break_point: int = 10) -> Optional[str]:
+def get_last_n_statuses_as_string_from_ess_df(
+    ess_df: pd.DataFrame = pd.DataFrame(), 
+    n: int = 0, 
+    line_break_point: int = 10
+) -> Tuple[Optional[str], Optional[Dict]]:
     """
     Get the last n statuses as a string of red or green circles from the ESS DataFrame.
 
@@ -1503,49 +1446,68 @@ def get_last_n_statuses_as_string_from_ess_df(ess_df: pd.DataFrame = pd.DataFram
         logger.warning(
             f"No ESS DataFrame passed."
         )
-        return None
+        return "", {}
 
     if ess_df.empty:
         logger.error(
             f"ESS DataFrame is empty."
         )
-        return None
+        return "", {}
 
     if n == 0:
         logger.error(
             f"No n passed."
         )
-        return None
+        return "", {}
 
     if n < 0:
         logger.error(
             f"Invalid n passed."
         )
-        return None
+        return "", {}
 
     if line_break_point < 0:
         logger.error(
             f"Invalid line_break_point passed."
         )
-        return None
+        return "", {}
 
     last_n_statuses = ess_df['end_status'].tail(n).tolist()
+    all_emojis = ["🟠", "🟣", "🟡", "🔵", "🟤", "⚫", "⚪", "🟦", "🟧", "🟨", "🟩", "🟪", "🟫", "🟥", "🟦", "🟪", "🟧", "🟨", "🟩", "🟪", "🟫"]
+
+    unique_statuses = ess_df['end_status'].unique().tolist()
+
+    status_emoji_dict = {}
+    for i, status in enumerate(unique_statuses):
+        if "success" in status.lower():
+            status_emoji_dict[status] = "🟢"
+        elif status.lower().strip() == "fail":
+            status_emoji_dict[status] = "🔴"
+        else:
+            status_emoji_dict[status] = all_emojis[i]
 
     last_n_statuses_output = ""
-    for i, status in enumerate(last_n_statuses):
-        if "success" in status.lower():
-            last_n_statuses_output += "🟢"
-        elif "fail" in status.lower():
-            last_n_statuses_output += "🔴"
-        else:
-            last_n_statuses_output += "🟠"
+    for status in last_n_statuses:
+        last_n_statuses_output += status_emoji_dict[status]
 
     # Add a line break after every line_break_point
     last_n_statuses_output = "\n".join(
-        [last_n_statuses_output[i:i+line_break_point] for i in range(0, len(last_n_statuses_output), line_break_point)]
+        [
+            last_n_statuses_output[i:i+line_break_point] for i in range(
+                0, 
+                len(last_n_statuses_output), 
+                line_break_point
+            )
+        ]
     )
 
-    return last_n_statuses_output
+    # Sort the dict by status
+    status_emoji_dict = {k: v for k, v in sorted(
+        status_emoji_dict.items(), 
+        key=lambda item: item[0]
+    )}
+
+    return last_n_statuses_output, status_emoji_dict
 
 def get_ip_output_from_ess_df(ess_df, line_break_point: int = 5):
     if ess_df is None:
@@ -1657,6 +1619,27 @@ def get_ip_fail_percent(ip, ess_df):
 
     return ip_fail_percent
 
+def get_status_percentage_from_ess_df(ess_df, status):
+    if ess_df is None:
+        return 0
+
+    status_df = ess_df['end_status'].dropna()
+    if status_df.empty:
+        return 0
+    if len(status_df.index) == 0:
+        return 0
+
+    status_df = status_df.dropna()
+    total_status_count = len(status_df.index)
+
+    status_df = status_df[status_df == status]
+    current_status_count = len(status_df.index)
+
+    status_fail_percent = (current_status_count / total_status_count) * 100
+    status_fail_percent = round(status_fail_percent, 1)
+
+    return status_fail_percent
+
 def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
     """
     Display ongoing info as a table with the following columns:
@@ -1730,11 +1713,13 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         else:
             datasets_output = "-"
 
-        failed_percent = get_status_percentage_from_ess_df(ess_df, "fail")
-        success_percent = get_status_percentage_from_ess_df(ess_df, "success")
+        last_n_statuses, status_dict = get_last_n_statuses_as_string_from_ess_df(ess_df, 100, line_break_point)
+        status_dict_string = ""
+        for status, emoji in status_dict.items():
+            status_percentage = get_status_percentage_from_ess_df(ess_df, status)
+            status_dict_string += f"{emoji} {status} ({status_percentage}%)\n"
 
-        last_n_statuses = get_last_n_statuses_as_string_from_ess_df(ess_df, 100, line_break_point)
-        last_n_statuses = f"{last_n_statuses}\n\n🟢 success ({success_percent}%)\n🔴 fail ({failed_percent}%)"
+        last_n_statuses = last_n_statuses + "\n\n" + status_dict_string
 
         if "expected_time_str" not in experiment.keys():
             expected_time_str = "-"
