@@ -1674,10 +1674,20 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         "Last\nTimestamp", 
         style="bold"
     )
+
+    data_col_str = "[green]/data[/green]"
+    summ_data_col_str = "[blue]/summ_data[/blue]"
+    dataset_col_str = "[red]/datasets[/red]"
+    data_col_str = f"{data_col_str}"
+    data_col_str = f"{data_col_str}\n-----\n"
+    data_col_str = f"{data_col_str}{summ_data_col_str}"
+    data_col_str = f"{data_col_str}\n-----\n{dataset_col_str}"
+    data_col_str = f"{data_col_str}\n-----\nTarget\nTest\nCount"
     table.add_column(
-        "/data\n-----\n/summ_data\n-----\n/datasets\n-----\nTarget\nTest\nCount", 
+        data_col_str,
         style="bold"
     )
+
     table.add_column(
         "Last\n100\nStatuses", 
         style="bold"
@@ -1741,7 +1751,10 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
 
         failed_ip_output = ip_output + "\n\n" + ip_dict_string
 
-        test_count_row_str = f"{data_count}"
+        summarised_data_count = f"[blue]{summarised_data_count}[/blue]"
+        datasets_output = f"[red]{datasets_output}[/red]"
+
+        test_count_row_str = f"[green]{data_count}[/green]"
         test_count_row_str = f"{test_count_row_str}\n-----\n"
         test_count_row_str = f"{test_count_row_str}{summarised_data_count}"
         test_count_row_str = f"{test_count_row_str}\n-----\n{datasets_output}"
