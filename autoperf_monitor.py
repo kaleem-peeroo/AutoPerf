@@ -1663,7 +1663,7 @@ def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
         title="Experiments Overview", show_lines=True
     )
     table.add_column(
-        "Experiment Name", 
+        "Experiment\nName", 
         style="bold"
     )
     table.add_column(
