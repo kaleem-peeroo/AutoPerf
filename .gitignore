@@ -19,3 +19,4 @@ summarised_data/
 logs/
 ess/
 output/
+my_secrets.py
