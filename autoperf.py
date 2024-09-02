@@ -14,7 +14,13 @@ import random
 import shutil
 import shlex
 import socket
+import smtplib
 
+
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+from secrets import APP_PASSWORD
 from icecream import ic
 from typing import Dict, List, Optional, Tuple
 from pprint import pprint
@@ -53,6 +59,37 @@ formatter = logging.Formatter(
 console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
+
+def send_email(
+    subject: str = "", 
+    body: str = ""
+) -> Optional[Tuple[bool, Optional[str]]]:
+    if body == "":
+        return False, "Body is empty"
+
+    if subject == "":
+        return False, "Subject is empty"
+
+    sender = 'KaleemPeeroo@gmail.com'
+    recipients = ['KaleemPeeroo@gmail.com']
+    path_to_file = ''
+
+    message = MIMEMultipart()
+    message['From'] = sender
+    message['To'] = ', '.join(recipients)
+    message['Subject'] = subject
+    body_part = MIMEText(body)
+    message.attach(body_part)
+
+    # with open(path_to_file, 'r') as file:
+    #     attachment = MIMEApplication(file.read(), Name='')
+    #     message.attach(attachment)
+
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+        server.login(sender, APP_PASSWORD)
+        server.sendmail(sender, recipients, message.as_string())
+
+    return True, None
 
 def check_connection(machine, connection_type="ping"):
     # TODO: Validate parameters 
@@ -2818,6 +2855,67 @@ def extract_ip(comment: str = ""):
         logger.error(f"Error when extracting ip from '{comment}': {e}")
         return None
     
+def get_ip_output_from_ess_df(
+    ess_df, 
+    line_break_point: int = 5
+) -> Tuple[str, Dict, Optional[str]]:
+    if ess_df is None:
+        return "", {}, None
+
+    if 'ip' not in ess_df.columns:
+        return "", {}, None
+
+    ip_df = ess_df['ip'].dropna()
+
+    unique_ips = ip_df.unique()
+    all_emojis = ["🟠", "🟣", "🟡", "🔵", "🟤", "⚫", "⚪", "🟦", "🟧", "🟨", "🟩", "🟪", "🟫", "🟥", "🟦", "🟪", "🟧", "🟨", "🟩", "🟪", "🟫"]
+
+    ip_emoji_dict = {}
+    for i, ip in enumerate(unique_ips):
+        ip = "xxx." + ip.split(".")[-1]
+        if ip == "🟢":
+            ip_emoji_dict[ip] = "🟢"
+
+        ip_emoji_dict[ip] = all_emojis[i]
+
+    # Go through each row, if the comment has success add green
+    # if comment has fail add red
+    # if comment has fail and IP then swap the IP with the emoji
+
+    ip_output = ""
+    for index, row in ess_df.iterrows():
+        end_status = row['end_status']
+        ip = str(row['ip'])
+        ip = "xxx." + ip.split(".")[-1]
+
+        if "success" in end_status.lower():
+            ip_output += "🟢"
+        elif "fail" in end_status.lower():
+            if ip in ip_emoji_dict.keys():
+                ip_output += ip_emoji_dict[ip]
+            else:
+                ip_output += "🔴"
+        else:
+            ip_output += "🔴"
+        
+    ip_output = "\n".join(
+        [ip_output[i:i+line_break_point] for i in range(
+            0, 
+            len(ip_output), 
+            line_break_point
+        )]
+    )
+
+    # Sort the dict by IP number by removing the XXX. and converting to int
+    ip_emoji_dict = {k: v for k, v in sorted(
+        ip_emoji_dict.items(), 
+        key=lambda item: int(
+            item[0].replace("xxx.", "")
+        )
+    )}
+
+    return ip_output, ip_emoji_dict, None
+
 def main(sys_args: list[str] = []) -> Optional[None]:
     if len(sys_args) < 2:
         logger.error(
@@ -2905,11 +3003,25 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 )
 
             if must_wait_for_self_reboot:
+                ip_output, ip_emoji_dict, ip_error = get_ip_output_from_ess_df(ess_df)
+                if ip_error:
+                    logger.warning(f"Error getting ip output to send email: {ip_error}")
+
+                emoji_output = ""
+                for ip, emoji in ip_emoji_dict.items():
+                    emoji_output += f"{ip}: {emoji}\n"
+
+                logger.info("Sending email to notify of self-reboot...")
+                send_email(
+                    "AutoPerf: Reboot Notification"
+                    f"{EXPERIMENT_NAME}\n {ip_output} {emoji_output}"
+                )
+
                 logger.warning(f"""
 Last few tests have failed because of the same machine being unreachable.
-Waiting 5 minutes for the machine to self-reboot.
+Waiting 2 minutes for the machine to self-reboot.
                 """)
-                time.sleep(300)
+                time.sleep(120)
 
             if is_pcg:
                 test_config = COMBINATIONS[test_index]
