@@ -1,11 +1,42 @@
 import os
+import logging
 
 from typing import Dict, Optional, Tuple
 from rich.console import Console
 console = Console()
 
-from constants import DATA_DIR
-from utility_functions import get_valid_dirname
+
+from constants import *
+from ap_config_functions import *
+from ap_execution_functions import *
+from ap_test_functions import *
+from campaign_functions import *
+from connection_functions import *
+from ess_functions import *
+from qos_functions import *
+from utility_functions import *
+
+# Set up logging
+logging.basicConfig(
+    level=logging.DEBUG, 
+    filename="logs/autoperf.log", 
+    filemode="w",
+    format='%(asctime)s \t%(levelname)s \t%(message)s'
+)
+logger = logging.getLogger(__name__)
+
+console_handler = logging.StreamHandler()
+
+if DEBUG_MODE:
+    console_handler.setLevel(logging.DEBUG)
+else:
+    console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    '%(asctime)s \t%(levelname)s \t%(message)s'
+)
+console_handler.setFormatter(formatter)
+
+logger.addHandler(console_handler)
 
 def get_if_pcg(experiment: Optional[Dict] = None) -> Tuple[ Optional[bool], Optional[str] ]:
     """

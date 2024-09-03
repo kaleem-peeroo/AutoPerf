@@ -1,15 +1,48 @@
 import re
 import os
 import smtplib
+import logging
 import pandas as pd
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
 from my_secrets import APP_PASSWORD
 from typing import Dict, List, Optional, Tuple
 from rich.console import Console
 console = Console()
+
+from constants import *
+from ap_config_functions import *
+from ap_execution_functions import *
+from ap_test_functions import *
+from campaign_functions import *
+from connection_functions import *
+from ess_functions import *
+from qos_functions import *
+from utility_functions import *
+
+# Set up logging
+logging.basicConfig(
+    level=logging.DEBUG, 
+    filename="logs/autoperf.log", 
+    filemode="w",
+    format='%(asctime)s \t%(levelname)s \t%(message)s'
+)
+logger = logging.getLogger(__name__)
+
+console_handler = logging.StreamHandler()
+
+if DEBUG_MODE:
+    console_handler.setLevel(logging.DEBUG)
+else:
+    console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    '%(asctime)s \t%(levelname)s \t%(message)s'
+)
+console_handler.setFormatter(formatter)
+
+logger.addHandler(console_handler)
+
 
 def get_difference_between_lists(
     list_one: List = [], 
