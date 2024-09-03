@@ -1,11 +1,35 @@
 import subprocess
 import os
 import socket
+import logging
 
 from typing import Dict, Optional, Tuple
 from rich.console import Console
 console = Console()
 
+from constants import DEBUG_MODE
+
+# Set up logging
+logging.basicConfig(
+    level=logging.DEBUG, 
+    filename="logs/autoperf.log", 
+    filemode="w",
+    format='%(asctime)s \t%(levelname)s \t%(message)s'
+)
+logger = logging.getLogger(__name__)
+
+console_handler = logging.StreamHandler()
+
+if DEBUG_MODE:
+    console_handler.setLevel(logging.DEBUG)
+else:
+    console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    '%(asctime)s \t%(levelname)s \t%(message)s'
+)
+console_handler.setFormatter(formatter)
+
+logger.addHandler(console_handler)
 
 def check_connection(machine, connection_type="ping"):
     # TODO: Validate parameters 
