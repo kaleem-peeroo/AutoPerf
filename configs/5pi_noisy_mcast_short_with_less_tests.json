@@ -1,6 +1,6 @@
 [
   {
-    "experiment_name": "1P3S Multicast Exploration No Noise Short",
+    "experiment_name": "1P3S Multicast Exploration No Noise Short With Less Tests",
     "combination_generation_type": "pcg",
     "rcg_target_test_count": 0,
     "quit_after_n_failed_tests": 10,

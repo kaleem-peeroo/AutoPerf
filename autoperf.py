@@ -16,11 +16,10 @@ import shlex
 import socket
 import smtplib
 
-
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
-from secrets import APP_PASSWORD
+from my_secrets import APP_PASSWORD
 from icecream import ic
 from typing import Dict, List, Optional, Tuple
 from pprint import pprint
