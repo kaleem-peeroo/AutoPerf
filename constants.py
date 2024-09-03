@@ -1,3 +1,5 @@
+DEBUG_MODE = True
+SKIP_RESTART = False
 DATA_DIR = 'output/data/'
 LOG_DIR = 'output/logs/'
 SUMMARISED_DIR = 'output/summarised_data/'
