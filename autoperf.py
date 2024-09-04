@@ -15,11 +15,14 @@ import shutil
 import shlex
 import socket
 import smtplib
+import asyncio
 
+from tapo import ApiClient
+from pprint import pprint
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
-from my_secrets import APP_PASSWORD
+from my_secrets import APP_PASSWORD, TAPO_USERNAME, TAPO_PASSWORD
 from icecream import ic
 from typing import Dict, List, Optional, Tuple
 from pprint import pprint
@@ -58,6 +61,47 @@ formatter = logging.Formatter(
 console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
+
+async def restart_tapo_plug_from_machine_name(machine_name: str = ""):
+    if machine_name == "":
+        logger.warning("No machine name given to restart tapo plug.")
+        return
+
+    if machine_name.lower().strip() not in ['k2', 'k3', 'k4', 'k5']:
+        logger.warning("Machine name is not k2, k3, k4, or k5")
+        return
+
+    TAPO_PLUGS = [
+        {"name": "k2", "ip": "192.168.1.102"},
+        {"name": "k3", "ip": "192.168.1.103"},
+        {"name": "k4", "ip": "192.168.1.104"},
+        {"name": "k5", "ip": "192.168.1.105"},
+    ]
+
+    chosen_plug = None
+    for PLUG in TAPO_PLUGS:
+        if PLUG['name'] == machine_name:
+            chosen_plug = PLUG
+            break
+    if chosen_ip == None:
+        logger.warning("Couldn't get IP for {machine_name}")
+        return
+
+    client = ApiClient(TAPO_USERNAME, TAPO_PASSWORD)
+    device = await client.p100(chosen_plug['IP'])
+
+    logger.info(f"Turning off {machine_name}")
+    await device.off()
+
+    logger.info(f"Waiting 3 seconds")
+    await asyncio.sleep(2)
+
+    logger.info(f"Turning on {machine_name}")
+    await device.on()
+
+    with open('output/tapo_restart.log', 'a+') as f:
+        date_timestamp = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+        f.write(f"[{date_timestamp}] Restarted {chosen_plug['name']} with IP {chosen_plug['ip']}")
 
 def send_email(
     subject: str = "", 
@@ -201,7 +245,6 @@ def check_ssh_connection(machine_config: Dict = {}) -> Tuple[Optional[bool], Opt
 
     except Exception as e:
         return False, f"Exception occured when checking SSH: {e}"
-
 
 def get_difference_between_lists(
     list_one: List = [], 
@@ -3002,25 +3045,10 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 )
 
             if must_wait_for_self_reboot:
-                ip_output, ip_emoji_dict, ip_error = get_ip_output_from_ess_df(ess_df)
-                if ip_error:
-                    logger.warning(f"Error getting ip output to send email: {ip_error}")
-
-                emoji_output = ""
-                for ip, emoji in ip_emoji_dict.items():
-                    emoji_output += f"{ip}: {emoji}\n"
-
-                logger.info("Sending email to notify of self-reboot...")
-                send_email(
-                    "AutoPerf: Reboot Notification"
-                    f"{EXPERIMENT_NAME}\n {ip_output} {emoji_output}"
-                )
-
-                logger.warning(f"""
-Last few tests have failed because of the same machine being unreachable.
-Waiting 2 minutes for the machine to self-reboot.
-                """)
-                time.sleep(120)
+                logger.info("Restarting all plugs...")
+                for machine in EXPERIMENT['slave_machines']:
+                    machine_name = machine['machine_name']
+                    asyncio.run(restart_tapo_plug_from_machine_name(machine_name))
 
             if is_pcg:
                 test_config = COMBINATIONS[test_index]
