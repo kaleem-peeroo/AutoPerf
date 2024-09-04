@@ -4,7 +4,6 @@ import time
 import ast
 import itertools
 import re
-import pytest
 import os
 import logging
 import json
@@ -12,7 +11,6 @@ import datetime
 import warnings
 import random
 import shutil
-import shlex
 import socket
 import smtplib
 import asyncio
@@ -21,9 +19,7 @@ from tapo import ApiClient
 from pprint import pprint
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
 from my_secrets import APP_PASSWORD, TAPO_USERNAME, TAPO_PASSWORD
-from icecream import ic
 from typing import Dict, List, Optional, Tuple
 from pprint import pprint
 from multiprocessing import Process, Manager
@@ -83,8 +79,8 @@ async def restart_tapo_plug_from_machine_name(machine_name: str = ""):
         if PLUG['name'] == machine_name:
             chosen_plug = PLUG
             break
-    if chosen_ip == None:
-        logger.warning("Couldn't get IP for {machine_name}")
+    if chosen_plug == None:
+        logger.warning(f"Couldn't get IP for {machine_name}")
         return
 
     client = ApiClient(TAPO_USERNAME, TAPO_PASSWORD)
