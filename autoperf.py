@@ -63,8 +63,8 @@ async def restart_tapo_plug_from_machine_name(machine_name: str = ""):
         logger.warning("No machine name given to restart tapo plug.")
         return
 
-    if machine_name.lower().strip() not in ['k2', 'k3', 'k4', 'k5']:
-        logger.warning("Machine name is not k2, k3, k4, or k5")
+    if machine_name.lower().strip() not in ['k2', 'k3', 'k4', 'k5', 'p1', 'p2']:
+        logger.warning("Machine name is not p1, p2, k2, k3, k4, or k5")
         return
 
     TAPO_PLUGS = [
@@ -72,6 +72,8 @@ async def restart_tapo_plug_from_machine_name(machine_name: str = ""):
         {"name": "k3", "ip": "192.168.1.103"},
         {"name": "k4", "ip": "192.168.1.104"},
         {"name": "k5", "ip": "192.168.1.105"},
+        {"name": "p1", "ip": "192.168.1.106"},
+        {"name": "p2", "ip": "192.168.1.107"},
     ]
 
     chosen_plug = None
