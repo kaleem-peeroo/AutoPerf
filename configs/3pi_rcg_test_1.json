@@ -1,7 +1,7 @@
 [{
   "experiment_name": "DevTest RCG 100 5Min Tests",
   "combination_generation_type": "rcg",
-  "rcg_target_test_count": 4,
+  "rcg_target_test_count": 100,
   "quit_after_n_failed_tests": 10,
   "qos_settings": {
     "duration_secs": [300],
