@@ -1,10 +1,12 @@
 import subprocess
+import time
 import sys
 import itertools
 import re
 import os
 import logging
 import json
+import paramiko
 import warnings
 
 from datetime import datetime
@@ -13,9 +15,12 @@ from pprint import pprint
 from rich.table import Table
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.live import Live
+from rich.spinner import Spinner
+from rich.logging import RichHandler
 from io import StringIO
 
-console = Console()
+console = Console(record=True)
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -23,25 +28,25 @@ import pandas as pd
 
 DEBUG_MODE = False
 
-# Set up logging
 logging.basicConfig(
-    level=logging.DEBUG, 
-    filename="logs/autoperf_monitor.log", 
+    level=logging.DEBUG,
+    filename="logs/autoperf_monitor_refactor.log",
     filemode="w",
-    format='%(asctime)s \t%(levelname)s \t%(message)s'
+    format='%(message)s'
 )
+
 logger = logging.getLogger(__name__)
 
-console_handler = logging.StreamHandler()
+console_handler = RichHandler(markup=True)
 if DEBUG_MODE:
     console_handler.setLevel(logging.DEBUG)
 else:
     console_handler.setLevel(logging.ERROR)
+
 formatter = logging.Formatter(
-    '%(asctime)s \t%(levelname)s \t%(message)s'
+    "%(message)s"
 )
 console_handler.setFormatter(formatter)
-
 logger.addHandler(console_handler)
 
 REQUIRED_MACHINE_KEYS = [
@@ -96,36 +101,38 @@ def ping_machine(ip: str = "") -> Optional[bool]:
     else:
         return False
 
-def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
-    """
-    Check if SSH connection can be established to a machine
+def check_connection(machine, connection_type="ping"):
+    # TODO: Validate parameters 
+    # connection type can be only ping or ssh
 
-    Params:
-        machine_config: Dict: Dictionary containing machine configuration.
-
-    Returns:
-        bool: True if SSH connection can be established, False if it can't.
-    """
-    if machine_config == {}:
-        logger.error(
-            f"No machine config passed to check_ssh_connection()."
-        )
-        return None
+    username = machine['username']
+    name = machine['name']
+    ip = machine['ip']
     
-    ssh_key_path = machine_config['ssh_key_path']
-    username = machine_config['username']
-    ip = machine_config['ip']
-
-    # logger.debug(
-    #     f"Checking SSH connection to {username}@{ip}"
-    # )
-
-    response = os.system(f"ssh -i {ssh_key_path} {username}@{ip} 'echo \"SSH connection successful.\"' > /dev/null 2>&1")
-
-    if response == 0:
-        return True
+    if connection_type == "ping":
+        logger.debug(f"Pinging {name} ({ip})")
+        command = ["ping", "-c", "5", "-W", "10", ip]
     else:
-        return False
+        logger.debug(f"SSHing into {name} ({ip})")
+        command = [
+            "ssh",
+            "-o", "ConnectTimeout=10",
+            f"{username}@{ip}",
+            "hostname"
+        ]
+
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, timeout=10)
+
+        if result.returncode != 0:
+            return False, result.stderr.strip()
+        else:
+            return True, None
+
+    except subprocess.TimeoutExpired:
+        return False, "Timed out"
+    except Exception as e:
+        return False, e
 
 def get_difference_between_lists(list_one: List = [], list_two: List = []):
     """
@@ -281,6 +288,7 @@ def read_config(config_path: str = ""):
 
     """
 
+    logger.debug(f"Reading config file: {config_path}")
     if config_path == "":
         logger.error(
             f"No config path passed to read_config()"
@@ -335,7 +343,9 @@ def read_config(config_path: str = ""):
                     
     return config
 
-def get_valid_dirname(dir_name: str = "") -> Optional[str]:
+def get_valid_dirname(
+    dir_name: str = ""
+) -> Tuple[Optional[str], Optional[str]]:
     """
     Validate a directory name by removing any special characters and spaces.
 
@@ -344,30 +354,22 @@ def get_valid_dirname(dir_name: str = "") -> Optional[str]:
 
     Returns:
         str: Valid directory name if valid, None if not.
+        str: Error message if not.
     """
     if dir_name == "":
-        logger.error(
-            f"No dirname passed for validation."
-        )
-        return None
+        return None, f"No dirname passed for validation."
 
     dir_name = re.sub(r'[<>:"/\\|?*]', '_', dir_name)
     dir_name = dir_name.strip()
     dir_name = re.sub(r'\s+', '_', dir_name)
 
     if not dir_name:
-        logger.error(
-            f"Dirname can't be empty after validation."
-        )
-        return None
+        return None, f"Dirname can't be empty after validation."
 
     if len(dir_name) > 255:
-        logger.error(
-            f"Dirname can't be more than 255 characters:\n\t{dir_name}"
-        )
-        return None
+        return None, f"Dirname can't be more than 255 characters:\n\t{dir_name}"
 
-    return dir_name
+    return dir_name, None
 
 def get_qos_dict_from_test_name(test_name: str = "") -> Optional[Dict]:
     """
@@ -492,80 +494,9 @@ def get_qos_dict_from_test_name(test_name: str = "") -> Optional[Dict]:
 
     return qos_dict
 
-def run_command_via_ssh(machine_config: Dict = {}, command: str = "") -> Optional[str]:
-    """
-    Run a command on a machine via SSH.
-
-    Params:
-        machine_config: Dict: Dictionary containing machine configuration including name, ip, username, ssh_key_path.
-        command: str: Command to run on the machine.
-
-    Returns:
-        str: Output of the command if successful, None if not.
-    """
-    if machine_config == {}:
-        logger.error(
-            f"No machine config passed."
-        )
-        return None
-
-    if command == "":
-        logger.error(
-            f"No command passed."
-        )
-        return None
-
-    machine_name = machine_config['name']
-    machine_ip = machine_config['ip']
-    username = machine_config['username']
-    ssh_key = machine_config['ssh_key_path']
-
-    logger.debug(
-        f"Running {command} on {machine_name} ({machine_ip})."
-    )
-
-    if not ping_machine(machine_ip):
-        logger.error(
-            f"Couldn't ping {machine_name} ({machine_ip})."
-        )
-        return None
-
-    if not check_ssh_connection(machine_config):
-        logger.error(
-            f"Couldn't SSH into {machine_name} ({machine_ip})."
-        )
-        return None
-
-    ssh_command = f"ssh -i {ssh_key} {username}@{machine_ip} '{command}'"
-    command_process = subprocess.Popen(
-        ssh_command,
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    stdout, stderr = command_process.communicate(timeout=30)
-    stdout = stdout.decode('utf-8').strip()
-    stderr = stderr.decode('utf-8').strip()
-
-    if command_process.returncode != 0:
-        if "No such file or directory" not in stderr:
-            if stderr.strip() == "":
-                return stdout
-            else:
-                logger.error(
-                    f"\nError running {command} over SSH on {machine_name}:\n\t{stderr}\n"
-                )
-                return None
-
-        if "No such file or directory" in stderr:
-            if "summarised_data" in command:
-               return stdout
-            elif "data" in command:
-                return stdout
-         
-    return stdout
-
-def get_latest_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
+def get_latest_config_from_machine(
+    machine_config: Dict = {}
+) -> Tuple[Optional[Dict], Optional[str]]:
     """
     Get the latest config file used on a machine by checking the bash history.
 
@@ -574,13 +505,11 @@ def get_latest_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     Returns:
         Dict: Dictionary containing the latest config file used if successful,
+        error: str: Error message if not.
     """
     if machine_config == {}:
-        logger.error(
-            f"No machine config passed."
-        )
-        return None
-
+        return None, "No machine config passed."
+        
     last_autoperf_command = "tail -n 50 ~/.bash_history | grep \"python autoperf.py\" | tail -n 1"
     last_autoperf_output = run_command_via_ssh(
         machine_config,
@@ -711,7 +640,9 @@ def calculate_pcg_target_test_count(experiment_config: Dict = {}) -> Optional[in
     target_test_count = len(combinations)
     return target_test_count
    
-def calculate_target_test_count_for_experiments(config: Dict = {}) -> Optional[Dict]:
+def calculate_target_test_count_for_experiment(
+    experiment: Dict = {}
+) -> Tuple[Optional[int], Optional[str]]:
     """
     Calculate the target test count for experiments by generating combinations from QoS settings.
 
@@ -720,21 +651,22 @@ def calculate_target_test_count_for_experiments(config: Dict = {}) -> Optional[D
 
     Returns:
         Dict: Experiment configuration with target test count if successful, None if not.
+        str: Error message if not.
     """
     # TODO: Validate parameters
     # TODO: Write unit tests for this function
 
-    for experiment in config:
-        is_pcg = experiment['combination_generation_type'] == "pcg"
+    is_pcg = experiment['combination_generation_type'] == "pcg"
 
-        if not is_pcg:
-            experiment['target_test_count'] = experiment['rcg_target_test_count']
-        else:
-            experiment['target_test_count'] = calculate_pcg_target_test_count(experiment)
+    if not is_pcg:
+        return experiment['rcg_target_test_count'], None
+    else:
+        target_test_count = calculate_pcg_target_test_count(experiment)
+        return target_test_count, None
 
-    return config
-
-def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[str]:
+def get_dirname_from_experiment(
+    experiment: Optional[Dict] = None
+) -> Tuple[Optional[str], Optional[str]]:
     """
     Get the name of the folder where the data is stored for the experiment.
 
@@ -743,23 +675,19 @@ def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Optional[s
 
     Returns:
         str: Dirname if successful,
+        str: Error message if not.
     """
     if experiment is None:
-        logger.error(
-            f"No experiment config passed."
-        )
-        return None
+        return None, f"No experiment config passed."
 
     experiment_name = experiment['experiment_name']
     experiment_dirname = get_valid_dirname(experiment_name)
     if experiment_dirname is None:
-        logger.error(
-            f"Couldn't get valid dirname for {experiment_name}."
-        )
-        return None
+        return None, f"Couldn't get valid dirname for {experiment_name}."
+
     experiment_dirname = os.path.join("output/data", experiment_dirname)
 
-    return experiment_dirname
+    return experiment_dirname, None
 
 def calculate_completed_tests_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> Optional[Dict]:
     """
@@ -777,11 +705,9 @@ def calculate_completed_tests_for_experiments(config: Dict = {}, machine_config:
     # TODO: Write unit tests for this function
 
     for experiment in config:
-        experiment_dirname = get_dirname_from_experiment(experiment)
-        if experiment_dirname is None:
-            logger.error(
-                f"Couldn't get experiment dirname for {experiment['experiment_name']}."
-            )
+        experiment_dirname, error = get_dirname_from_experiment(experiment)
+        if error:
+            logger.warning(f"Couldn't get experiment dirname for {experiment['experiment_name']}.")
             continue
 
         experiment_dirname = os.path.join("~/AutoPerf", experiment_dirname)
@@ -905,7 +831,9 @@ def get_ess_df_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> 
 
     return config
 
-def read_ap_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
+def read_ap_config_from_machine(
+    machine_config: Dict = {}
+) -> Tuple[Optional[Dict], Optional[str]]:
     """
     Read the AutoPerf config from a machine.
 
@@ -914,57 +842,40 @@ def read_ap_config_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     Returns:
         Dict: AutoPerf config if successful, None if not.
+        str: Error message if not.
     """
     config_path = machine_config['config_path']
     if config_path == "":
-        logger.error(
-            f"No config path passed to read_ap_config_from_machine()"
-        )
-        return None
-
+        return None, "No config path passed."
+        
     if not config_path.endswith(".json"):
-        logger.error(
-            f"Invalid config path passed: {config_path}"
-        )
-        return None
-
+        return None, "Config path doesn't end with .json."
+        
     if "~" not in config_path:
         config_path = os.path.join("~/AutoPerf", config_path)
 
     console.print(f"Last config file used: {config_path}", style="bold green")
 
     read_config_command = f"cat {config_path}"
-    config_contents = run_command_via_ssh(
+    config_contents, error = run_command_via_ssh(
         machine_config,
         read_config_command
     )
-    if config_contents is None:
-        logger.error(
-            f"Couldn't read config file from {machine_config['name']} ({machine_config['ip']})."
-        )
-        return None
+    if error or config_contents is None:
+        return None, f"Couldn't read config file from {machine_config['name']} ({machine_config['ip']})."
 
     if config_contents.strip() == "":
-        logger.error(
-            f"Config file is empty on {machine_config['name']} ({machine_config['ip']})."
-        )
-        return None
+        return None, f"Config file is empty on {machine_config['name']} ({machine_config['ip']})."
 
     try:
         config_dict = json.loads(config_contents)
     except json.JSONDecodeError as e:
-        logger.error(
-            f"Couldn't parse config file from {machine_config['name']} ({machine_config['ip']}): {e}"
-        )
-        return None
+        return None, f"Couldn't parse config file from {machine_config['name']} ({machine_config['ip']}): {e}"
 
     if config_dict is None:
-        logger.error(
-            f"Couldn't parse config file from {machine_config['name']} ({machine_config['ip']})."
-        )
-        return None
+        return None, f"Couldn't parse config file from {machine_config['name']} ({machine_config['ip']})."
 
-    return config_dict
+    return config_dict, None
 
 def get_folder_and_datasets_count_for_experiments(
     config: Dict = {}, 
@@ -990,10 +901,10 @@ def get_folder_and_datasets_count_for_experiments(
         return None, "No machine config passed."
 
     for experiment in config:
-        experiment_dirname = get_dirname_from_experiment(experiment)
-        if experiment_dirname is None:
+        experiment_dirname, error = get_dirname_from_experiment(experiment)
+        if error:
             logger.warning(
-                f"Couldn't get experiment dirname for {experiment['experiment_name']}."
+                f"Couldn't get experiment dirname for {experiment['experiment_name']}. {error}"
             )
             continue
 
@@ -1012,13 +923,13 @@ def get_folder_and_datasets_count_for_experiments(
         full_command = f"{count_folder_command}; {list_datasets_command}; {get_datasets_command}; {ess_file_cat_command}"
 
         status.update(f"Getting data on {machine_config['name']} ({machine_config['ip']}) for {experiment['experiment_name']}.")
-        command_output = run_command_via_ssh(
+        command_output, error = run_command_via_ssh(
             machine_config,
             full_command
         )
-        if command_output is None:
+        if error or command_output is None:
             logger.warning(
-                f"Couldn't run commands \n{full_command}\n on {machine_config['name']} ({machine_config['ip']})."
+                f"Couldn't run commands \n{full_command}\n on {machine_config['name']} ({machine_config['ip']}). {error}"
             )
             continue
 
@@ -1048,7 +959,11 @@ def get_folder_and_datasets_count_for_experiments(
 
     return config, None
 
-def get_folder_count_for_experiments(config: Dict = {}, machine_config: Dict = {}, folder_path: str = "") -> Optional[Dict]:
+def get_folder_count_for_experiment(
+    experiment: Dict = {}, 
+    machine_config: Dict = {}, 
+    folder_path: str = ""
+) -> Tuple[Optional[int], Optional[str]]:
     """
     Get the folder count for experiments.
 
@@ -1058,52 +973,48 @@ def get_folder_count_for_experiments(config: Dict = {}, machine_config: Dict = {
         folder_path: str: Path to the folder to count.
 
     Returns:
-        Dict: Experiment configuration with folder count if successful, None
+        int: Folder count if successful, None
+        str: Error
     """
 
     if folder_path == "":
-        logger.error(
-            f"No folder path passed."
-        )
-        return None
+        return None, f"No folder path passed."
 
-    if config == {}: 
-        logger.error(
-            f"No config passed."
-        )
-        return None
+    if experiment == {}: 
+        return None, f"No config passed."
 
     if machine_config == {}:
-        logger.error(
-            f"No machine config passed."
-        )
-        return None
+        return None, f"No machine config passed."
 
-    for experiment in config:
-        experiment_dirname = get_dirname_from_experiment(experiment)
-        if experiment_dirname is None:
-            logger.error(
-                f"Couldn't get experiment dirname for {experiment['experiment_name']}."
-            )
-            continue
-        exp_name = os.path.basename(experiment_dirname)
+    experiment_dirname, error = get_valid_dirname(experiment['experiment_name'])
+    if error or experiment_dirname is None:
+        return None, f"Couldn't get experiment dirname for {experiment['experiment_name']}."
 
-        dir_path = os.path.join("~/AutoPerf", folder_path, exp_name)
+    exp_name = os.path.basename(experiment_dirname)
 
-        count_folder_command = f"ls -l {dir_path} | grep -c ^d"
-        count_folder_output = run_command_via_ssh(
-            machine_config,
-            count_folder_command
-        )
-        if count_folder_output is None:
-            logger.error(
-                f"Couldn't count folders in {dir_path} on {machine_config['name']} ({machine_config['ip']})."
-            )
-            continue
+    dir_path = os.path.join("~/AutoPerf", folder_path, exp_name)
 
-        experiment[os.path.basename(folder_path)] = count_folder_output
+    count_folder_command = f"ls -l {dir_path} | grep -c ^d"
 
-    return config
+    ip = machine_config['ip']
+    name = machine_config['name']
+    username = machine_config['username']
+    ssh_key_path = machine_config['ssh_key_path']
+
+    logger.debug(f"Getting folder count for {experiment['experiment_name']} on {machine_config['name']} ({machine_config['ip']}).")
+
+    try:
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(ip, username=username, key_filename=ssh_key_path)
+        
+        stdin, stdout, stderr = ssh.exec_command(count_folder_command)
+        count_folder_output = stdout.read().decode().strip()
+        count_folder_output = int(count_folder_output)
+    
+        return count_folder_output, None
+    except SSHException as e:
+        return None, f"Couldn't connect to {name} ({ip}): {e}"
 
 def get_datasets_for_experiments(config: Dict = {}, machine_config: Dict = {}) -> Optional[Dict]:
     """
@@ -1315,7 +1226,9 @@ def get_last_n_errors_for_experiments(ap_config: Dict = {}, n: int = 5) -> Optio
 
     return ap_config
 
-def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
+def get_ongoing_info_from_machine(
+    machine_config: Dict = {}
+) -> Tuple[Optional[Dict], Optional[str]]:
     """
     Get ongoing info from a machine.
 
@@ -1324,13 +1237,11 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
 
     Returns:
         Dict: Updated machine_config if successful, None if not.
+        str: Error message if not.
     """
     if machine_config == {}:
-        logger.error(
-            f"No machine config passed."
-        )
-        return None
-
+        return None, "No machine config passed."
+        
     machine_name = machine_config['name']
     machine_ip = machine_config['ip']
     
@@ -1358,73 +1269,60 @@ def get_ongoing_info_from_machine(machine_config: Dict = {}) -> Optional[Dict]:
     """
 
     with console.status(f"Getting data from {machine_name} ({machine_ip})...") as status:
-        if machine_config['config_path'] == "":
-            ap_config = get_latest_config_from_machine(machine_config)
-            if ap_config is None:
-                logger.error(
-                    f"Couldn't get latest config from {machine_name} ({machine_ip})."
-                )
-                return
+        config_path = machine_config['config_path']
+
+        if os.path.exists(config_path):
+            ap_config = json.load(open(config_path, 'r'))
+            
         else:
-            ap_config = read_ap_config_from_machine(machine_config)
-            if ap_config is None:
-                logger.error(
-                    f"Couldn't read config from {machine_name} ({machine_ip})."
-                )
-                return
+            if machine_config['config_path'] == "":
+                ap_config, error = get_latest_config_from_machine(machine_config)
+                if error:
+                    return None, f"Couldn't get latest config from {machine_name}: {error}"
+            else:
+                ap_config, error = read_ap_config_from_machine(machine_config)
+                if error:
+                    return None, f"Couldn't read config from {machine_name}: {error}."
 
         status.update(f"Calculating target test count for experiments on {machine_name} ({machine_ip})...")
-        ap_config = calculate_target_test_count_for_experiments(ap_config)
-        if ap_config is None:
-            logger.error(
-                f"Couldn't calculate target test count for experiments."
-            )
-            return
+        ap_config, error = calculate_target_test_count_for_experiments(ap_config)
+        if error:
+            return None, f"Couldn't calculate target test count for experiments. {error}"
 
-        exp_name = get_dirname_from_experiment(ap_config[0])
-        if exp_name is None:
-            logger.error(
-                f"Couldn't get dirname for experiment."
-            )
-            return
+        exp_name, error = get_dirname_from_experiment(ap_config[0])
+        if error or exp_name is None:
+            return None, f"Couldn't get dirname for experiment."
 
+        start_time = datetime.now()
         ap_config, error = get_folder_and_datasets_count_for_experiments(ap_config, machine_config, status)
         if error:
-            logger.error(
-                f"Couldn't get folder and datasets count for experiments: {error}"
-            )
-            return
+            return None, f"Couldn't get folder and datasets count for experiments: {error}"
+        end_time = datetime.now()
+        time_taken = (end_time - start_time).total_seconds()
+        print(f"Time taken to get folder and dataset counts: {time_taken} seconds")
 
-        status.update(f"Calculating expected total time for experiments on {machine_name} ({machine_ip})...")
         ap_config = calculate_expected_time_for_experiments(ap_config)
         if ap_config is None:
-            logger.error(
-                f"Couldn't calculate expected total time for experiments."
-            )
-            return
+            return None, f"Couldn't calculate expected total time for experiments."
         
-        status.update(f"Calculating elapsed time for experiments on {machine_name} ({machine_ip})...")
+        status.update(
+            f"Calculating elapsed time for experiments on {machine_name} ({machine_ip})..."
+        )
         ap_config = calculate_elapsed_time_for_experiments(ap_config)
         if ap_config is None:
-            logger.error(
-                f"Couldn't calculate elapsed time for experiments."
-            )
-            return
+            return None, f"Couldn't calculate elapsed time for experiments."
 
         status.update(f"Getting last n errors for experiments on {machine_name} ({machine_ip})...")
         ap_config = get_last_n_errors_for_experiments(ap_config, 3)
         if ap_config is None:
-            logger.error(
-                f"Couldn't get last 5 errors for experiments."
-            )
-            return
+            return None, f"Couldn't get last 5 errors for experiments."
 
-    return ap_config
+    return ap_config, None
 
 def get_last_n_statuses_as_string_from_ess_df(
     ess_df: pd.DataFrame = pd.DataFrame(), 
     n: int = 0, 
-    line_break_point: int = 10
+    line_break_point: int = 5
 ) -> Tuple[Optional[str], Optional[Dict]]:
     """
     Get the last n statuses as a string of red or green circles from the ESS DataFrame.
@@ -1564,7 +1462,9 @@ def get_ip_output_from_ess_df(ess_df, line_break_point: int = 5):
 
     return ip_output, ip_emoji_dict
 
-def get_last_timestamp_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame()) -> Optional[str]:
+def get_last_timestamp_from_ess_df(
+    ess_df: pd.DataFrame = pd.DataFrame()
+) -> Tuple[Optional[str], Optional[str]]:
     """
     Get the last timestamp from the ESS DataFrame.
 
@@ -1575,24 +1475,18 @@ def get_last_timestamp_from_ess_df(ess_df: pd.DataFrame = pd.DataFrame()) -> Opt
         str: Last timestamp if successful, None if not.
     """
     if ess_df is None:
-        logger.warning(
-            f"No ESS DataFrame passed."
-        )
-        return None
+        return None, f"No ESS DataFrame passed."
 
     if ess_df.empty:
-        logger.error(
-            f"ESS DataFrame is empty."
-        )
-        return None
+        return None, f"ESS DataFrame is empty."
 
     last_timestamp = ess_df['end_timestamp'].max()
 
     if last_timestamp is pd.NaT:
-        return "-"
+        return None, f"Last timestamp is NaT."
 
     last_timestamp = last_timestamp.strftime("%Y-%m-%d %H:%M:%S")
-    return last_timestamp
+    return last_timestamp, None
 
 def get_ip_fail_percent(ip, ess_df):
     if ess_df is None:
@@ -1637,178 +1531,408 @@ def get_status_percentage_from_ess_df(ess_df, status):
 
     return status_fail_percent
 
-def display_as_table(ongoing_info: Dict = {}) -> Optional[None]:
-    """
-    Display ongoing info as a table with the following columns:
-    - Experiment Name
-    - Target Test Count
-    - /data
-    - /summarised_data
-    - Datasets
-    - ESS Status
-    - Last 100 Statuses
+def create_empty_table() -> Table:
+    table = Table()
+    table.add_column("Experiment Name")
+    table.add_column(
+        "Elapsed\n-----\nExpected\nTime"
+    )
+    table.add_column(
+        "Last\nTimestamp"
+    )
+    table.add_column(
+        "Last\n100\nStatuses"
+    )
+    table.add_column(
+        "Failed\nIPs"
+    )
+    table.add_column(
+        "Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount"
+    )
 
-    Params:
-        ongoing_info: Dict: Dictionary containing ongoing info.
+    table.add_row(
+        "",
+        "",
+        Spinner("dots", text="Loading...", style="green"),
+    )
 
-    Returns:
-        None
-    """
+    return table
+
+def get_ap_config_from_machine(machine_config) -> Tuple[Optional[Dict], Optional[str]]:
+    logger.debug(f"Getting AP config from {machine_config['name']} ({machine_config['ip']}).")
+    if machine_config == {}:
+        return None, "No machine config passed."
+
     # TODO: Validate parameters
 
-    table = Table(
-        title="Experiments Overview", show_lines=True
+    config_path = machine_config['config_path']
+    if not os.path.exists(config_path):
+        return None, "Config path doesn't exist."
+
+    try:
+        ap_config = json.load(open(config_path, 'r'))
+    except json.JSONDecodeError as e:
+        return None, f"Couldn't parse config file: {e}"
+
+    return ap_config, None
+
+def create_table(table_data: Dict = {}) -> Table:
+    table = Table(show_lines=True)
+    table.add_column("Experiment Name")
+    table.add_column(
+        "Elapsed\n-----\nExpected\nTime"
     )
     table.add_column(
-        "Experiment\nName", 
-        style="bold"
+        "Last\nTimestamp"
     )
     table.add_column(
-        "Elapsed\n-----\nExpected\nTime", 
-        style="bold"
+        "Last\n100\nStatuses"
     )
     table.add_column(
-        "Last\nTimestamp", 
-        style="bold"
+        "Failed\nIPs"
     )
-
-    data_col_str = "[green]/data[/green]"
-    summ_data_col_str = "[blue]/summ_data[/blue]"
-    dataset_col_str = "[red]/datasets[/red]"
-    data_col_str = f"{data_col_str}"
-    data_col_str = f"{data_col_str}\n-----\n"
-    data_col_str = f"{data_col_str}{summ_data_col_str}"
-    data_col_str = f"{data_col_str}\n-----\n{dataset_col_str}"
-    data_col_str = f"{data_col_str}\n-----\nTarget\nTest\nCount"
+    data_str = "[red]Data[/red]"
+    summ_data_str = "[blue]Summarised\nData[/blue]"
+    datasets_str = "[green]Datasets[/green]"
+    target_test_str = "[yellow]Target\nTest\nCount[/yellow]"
     table.add_column(
-        data_col_str,
-        style="bold"
+        f"{data_str}\n-----\n{summ_data_str}\n-----\n{datasets_str}\n-----\n{target_test_str}"
     )
 
-    table.add_column(
-        "Last\n100\nStatuses", 
-        style="bold"
-    )
-    table.add_column(
-        "Failed\nIPs", 
-        style="bold"
-    )
-
-    for experiment in ongoing_info:
-        experiment_name = experiment['experiment_name']
-        experiment_name = experiment_name.replace(" ", "\n")
-        target_test_count = experiment['target_test_count']
-        data_count = experiment['data']
-        datasets = experiment['datasets']
-        summarised_data_count = experiment['summarised_data']
-        ess_df = experiment['ess_df']
-
-        line_break_point = 10
-        ip_output, ip_dict = get_ip_output_from_ess_df(ess_df, line_break_point)
-
-        last_timestamp = get_last_timestamp_from_ess_df(experiment['ess_df'])
-        if last_timestamp is None:
-            last_timestamp = "-"
-        else:
-            last_timestamp = last_timestamp.replace(" ", "\n")
-
-        if summarised_data_count == "0":
-            summarised_data_count = "-"
-
-        if len(datasets) > 0:
-            datasets_output = str(len(datasets))
-        else:
-            datasets_output = "-"
-
-        last_n_statuses, status_dict = get_last_n_statuses_as_string_from_ess_df(ess_df, 100, line_break_point)
-        status_dict_string = ""
-        for status, emoji in status_dict.items():
-            status_percentage = get_status_percentage_from_ess_df(ess_df, status)
-            status_dict_string += f"{emoji} {status} ({status_percentage}%)\n"
-
-        last_n_statuses = last_n_statuses + "\n\n" + status_dict_string
-
-        if "expected_time_str" not in experiment.keys():
-            expected_time_str = "-"
-        else:
-            expected_time_str = experiment['expected_time_str'].replace(" ", "\n")
-
-        if "elapsed_time_str" not in experiment.keys():
-            elapsed_time_str = "-"
-        else:
-            elapsed_time_str = experiment['elapsed_time_str'].replace(" ", "\n")
-
-        if data_count == "0":
-            data_count = "-"
-
-        ip_dict_string = ""
-        for ip, emoji in ip_dict.items():
-            ip_fail_percent = get_ip_fail_percent(ip, ess_df)
-            ip_dict_string += f"{emoji} {ip} ({ip_fail_percent}%)\n"
-
-        failed_ip_output = ip_output + "\n\n" + ip_dict_string
-
-        summarised_data_count = f"[blue]{summarised_data_count}[/blue]"
-        datasets_output = f"[red]{datasets_output}[/red]"
-
-        test_count_row_str = f"[green]{data_count}[/green]"
-        test_count_row_str = f"{test_count_row_str}\n-----\n"
-        test_count_row_str = f"{test_count_row_str}{summarised_data_count}"
-        test_count_row_str = f"{test_count_row_str}\n-----\n{datasets_output}"
-        test_count_row_str = f"{test_count_row_str}\n-----\n{target_test_count}"
-
+    for key, value in table_data.items():
         table.add_row(
-            f"{experiment_name}",
-            f"{elapsed_time_str}\n-----\n{expected_time_str}",
-            f"{last_timestamp}",
-            f"{test_count_row_str}",
-            last_n_statuses,
-            failed_ip_output
+            key,
+            *value.values()
         )
 
-    console.print(table)
-    
-def main(sys_args: list[str] = []) -> None:
+    return table
+
+def run_ssh_command_with_paramiko(
+    ip: str = "", 
+    username: str = "", 
+    ssh_key_path: str = "", 
+    command: str = ""
+) -> Tuple[
+        Optional[str], Optional[str], Optional[str]
+    ]:
+    logger.debug(f"Running command: {command} on {ip}.")
+    if ip == "":
+        return None, None, "No IP passed."
+
+    if username == "":
+        return None, None, "No username passed."
+
+    if ssh_key_path == "":
+        return None, None, "No SSH key passed."
+
+    if command == "":
+        return None, None, "No command passed."
+
+    if not os.path.exists(ssh_key_path):
+        return None, None, f"SSH key doesn't exist: {ssh_key_path}"
+
+    connection = paramiko.SSHClient()
+    connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    connection.connect(
+        ip,
+        username=username,
+        key_filename=ssh_key_path
+    )
+
+    try:
+        stdin, stdout, stderr = connection.exec_command(command)
+        output = stdout.read().decode()
+        error = stderr.read().decode()
+    except paramiko.SSHException as e:
+        return None, None, f"Couldn't run command on {ip}: {e}"
+
+    return output, error, None
+
+def get_ess_df(
+    machine_config: Dict = {}, 
+    campaign_config: Dict = {}
+) -> Tuple[Optional[Dict], Optional[str]]:
+    logger.debug(f"Getting ESS from {machine_config['name']} ({machine_config['ip']}).")
+    if machine_config == {}:
+        return None, "No machine config passed."
+
+    if campaign_config == {}:
+        return None, "No campaign config passed."
+
+    ip = machine_config['ip']
+    username = machine_config['username']
+    ssh_key = machine_config['ssh_key_path']
+    machine_name = machine_config['name']
+
+    exp_name = campaign_config['experiment_name']
+    exp_dirname, error = get_valid_dirname(exp_name)
+    if error:
+        return None, f"Couldn't get experiment dirname for {exp_name}: {error}"
+    exp_ess_filename = f"{exp_dirname}.csv"
+
+    full_exp_dirname = os.path.join("/home/acwh025/AutoPerf/output/ess/", exp_ess_filename)
+
+    connection = paramiko.SSHClient()
+    connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    connection.connect(
+        ip,
+        username=username,
+        key_filename=ssh_key
+    )
+    sftp = connection.open_sftp()
+    logger.debug(
+        f"Downloading {exp_ess_filename} from {machine_name} ({ip})."
+    )
+    os.makedirs("./output/monitor/ess", exist_ok=True)
+
+    try:
+        sftp.stat(full_exp_dirname)
+    except IOError as e:
+        return None, f"{full_exp_dirname} doesn't exist on {machine_name} ({ip}): {e}"
+
+    sftp.get(full_exp_dirname, f"./output/monitor/ess/{exp_ess_filename}")
+    sftp.close()
+    connection.close()
+
+    ess_df = pd.read_csv(f"./output/monitor/ess/{exp_ess_filename}")
+    return ess_df, None
+
+def get_elapsed_time_from_ess(
+    ess_df: pd.DataFrame = pd.DataFrame()
+) -> Tuple[Optional[str], Optional[str]]:
+    logger.debug(f"Getting elapsed time from ESS.")
+    if ess_df is None:
+        return None, "No ESS DataFrame passed."
+
+    if ess_df.empty:
+        return None, "ESS DataFrame is empty."
+
+    ess_df['start_timestamp'] = pd.to_datetime(ess_df['start_timestamp'])
+    ess_df['end_timestamp'] = pd.to_datetime(ess_df['end_timestamp'])
+
+    start_time = ess_df['start_timestamp'].min()
+    end_time = ess_df['end_timestamp'].max()
+
+    if start_time is pd.NaT or end_time is pd.NaT:
+        return None, "Start or end time is NaT."
+
+    time_difference = end_time - start_time
+    days, seconds = time_difference.days, time_difference.seconds
+    hours = days * 24 + seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+
+    elapsed_time_str = f"{hours} hrs\n{minutes} mins"
+
+    return elapsed_time_str, None
+
+def get_expected_time_from_config(
+    campaign_config: Dict = {}
+) -> Tuple[Optional[str], Optional[str]]:
+    if campaign_config == {}:
+        return None, "No campaign config passed."
+
+    target_test_count, error = calculate_target_test_count_for_experiment(campaign_config)
+    if error:
+        return None, f"Couldn't calculate target test count: {error}"
+
+    duration_secs = max(campaign_config['qos_settings']['duration_secs'])
+    expected_time_secs = target_test_count * duration_secs
+
+    total_time_hours = expected_time_secs // 3600
+    total_time_minutes = (expected_time_secs % 3600) // 60
+    total_time_str = f"{total_time_hours} hrs\n{total_time_minutes} mins"
+
+    return total_time_str, None
+
+def main(sys_args: list[str] = []) -> Optional[str]:
     if len(sys_args) < 2:
-        logger.error(
-            f"Config filepath not specified."
-        )
-        return None
+        return f"Config filepath not specified."
 
     CONFIG_PATH = sys_args[1]
     if not os.path.exists(CONFIG_PATH):
-        logger.error(
-            f"Config path {CONFIG_PATH} does NOT exist."
-        )
-        return None
-
-    logger.debug(f"Reading {CONFIG_PATH}.")
+        return f"Config path {CONFIG_PATH} does NOT exist."
 
     CONFIG = read_config(CONFIG_PATH)
     if CONFIG is None:
-        logger.error(
-            f"Couldn't read config of {CONFIG_PATH}."
-        )
-        return None
+        return f"Couldn't read config of {CONFIG_PATH}."
+
+    table = create_empty_table()
+    loading_spinner = Spinner("dots", text="Loading...", style="green")
 
     for MACHINE_CONFIG in CONFIG:
-        console.print(Markdown(f"# {MACHINE_CONFIG['name']} ({MACHINE_CONFIG['ip']})"))
+        logger.debug(f"Monitoring {MACHINE_CONFIG['name']} ({MACHINE_CONFIG['ip']}).")
+        table_data = {}
 
-        start_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        ongoing_info = get_ongoing_info_from_machine(MACHINE_CONFIG)
-        if ongoing_info is None:
-            logger.error(
-                f"Couldn't get ongoing info from {MACHINE_CONFIG['name']} ({MACHINE_CONFIG['ip']})."
-            )
-            continue
+        with Live(table, refresh_per_second=8) as live:
+            ap_config, error = get_ap_config_from_machine(MACHINE_CONFIG)
+            if error or ap_config is None:
+                logger.error(
+                    f"Couldn't get AutoPerf config from {MACHINE_CONFIG['name']} ({MACHINE_CONFIG['ip']}). {error}"
+                )
+                continue
 
-        display_as_table(ongoing_info)
+            for index, campaign in enumerate(ap_config):
+                index_str = f"[{index + 1}/{len(ap_config)}]"
+                logger.debug(f"{index_str} Monitoring {campaign['experiment_name']}.")
 
-        end_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        duration = datetime.strptime(end_timestamp, "%Y-%m-%d %H:%M:%S") - datetime.strptime(start_timestamp, "%Y-%m-%d %H:%M:%S")
-        duration = duration.total_seconds()
-        duration = int(duration)
-        console.print(f"Ran in {duration} seconds.")
+                campaign_data = {
+                    "Elapsed\n-----\nExpected\nTime": loading_spinner,
+                    "Last\nTimestamp": loading_spinner,
+                    "Last\n100\nStatuses": loading_spinner,
+                    "Failed\nIPs": loading_spinner,
+                    "Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount": loading_spinner
+                }
+
+                experiment_name = campaign['experiment_name']
+                experiment_name = experiment_name.replace(" ", "\n")
+                table_data[experiment_name] = campaign_data
+                updated_table = create_table(table_data)
+                live.update(updated_table)
+
+                ess_df, error = get_ess_df(MACHINE_CONFIG, campaign)
+                if error or ess_df is None:
+                    logger.warning(f"Error getting ESS: {error}")
+                    error_keys = [
+                        "Elapsed\n-----\nExpected\nTime",
+                        "Last\nTimestamp",
+                        "Last\n100\nStatuses",
+                        "Failed\nIPs",
+                        "Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount",
+                    ]
+                    for key in error_keys:
+                        campaign_data[key] = "[red]Error"
+                    updated_table = create_table(table_data)
+                    live.update(updated_table)
+                    continue
+
+                elapsed_time, error = get_elapsed_time_from_ess(ess_df)
+                if error or elapsed_time is None:
+                    logger.warning(f"Error getting elapsed time: {error}")
+                    campaign_data['Elapsed\n-----\nExpected\nTime'] = "[red]Error"
+                    updated_table = create_table(table_data)
+                    live.update(updated_table)
+                    continue
+
+                expected_time, error = get_expected_time_from_config(campaign)
+                if error or expected_time is None:
+                    logger.warning(f"Error getting expected time: {error}")
+                    campaign_data['Elapsed\n-----\nExpected\nTime'] = "[red]Error"
+                    updated_table = create_table(table_data)
+                    live.update(updated_table)
+                    continue 
+
+                time_str = f"{elapsed_time}\n-----\n{expected_time}"
+                table_data[experiment_name]['Elapsed\n-----\nExpected\nTime'] = time_str
+                updated_table = create_table(table_data)
+                live.update(updated_table)
+
+                last_timestamp, error = get_last_timestamp_from_ess_df(ess_df)
+                if error or last_timestamp is None:
+                    logger.warning(f"Error getting last timestamp: {error}")
+                    campaign_data['Last\nTimestamp'] = "[red]Error"
+                    updated_table = create_table(table_data)
+                    live.update(updated_table)
+                    continue
+
+                table_data[experiment_name]['Last\nTimestamp'] = last_timestamp.replace(" ", "\n")
+                updated_table = create_table(table_data)
+                live.update(updated_table)
+
+                last_n_statuses, status_emoji_dict = get_last_n_statuses_as_string_from_ess_df(ess_df, 100)
+                if last_n_statuses is None or status_emoji_dict is None:
+                    logger.warning(f"Error getting last n statuses: {error}")
+                    campaign_data['Last\n100\nStatuses'] = "[red]Error"
+                    updated_table = create_table(table_data)
+                    live.update(updated_table)
+                    continue
+
+                last_n_statuses_legend = ""
+                for status, emoji in status_emoji_dict.items():
+                    last_n_statuses_legend += f"{emoji}: {status}\n"
+                last_n_statuses_legend = last_n_statuses_legend.strip()
+                last_n_statuses = f"{last_n_statuses}\n\n{last_n_statuses_legend}"
+                table_data[experiment_name]['Last\n100\nStatuses'] = last_n_statuses
+                updated_table = create_table(table_data)
+                live.update(updated_table)
+
+                ip_output, ip_emoji_dict = get_ip_output_from_ess_df(ess_df)
+                if ip_output is None:
+                    logger.warning(f"Error getting IP output: {error}")
+                    campaign_data['Failed\nIPs'] = "[red]Error"
+                    updated_table = create_table(table_data)
+                    live.update(updated_table)
+                    continue
+                elif ip_output == "":
+                    campaign_data['Failed\nIPs'] = "-"
+                    updated_table = create_table(table_data)
+                    live.update(updated_table)
+                    continue
+
+                ip_output_legend = ""
+                for ip, emoji in ip_emoji_dict.items():
+                    ip_output_legend += f"{emoji}: {ip}\n"
+                ip_output_legend = ip_output_legend.strip()
+                ip_output = f"{ip_output}\n\n{ip_output_legend}"
+                table_data[experiment_name]['Failed\nIPs'] = ip_output
+                updated_table = create_table(table_data)
+                live.update(updated_table)
+
+                data_count, error = get_folder_count_for_experiment(campaign, MACHINE_CONFIG, "output/data")
+                if error or data_count is None:
+                    logger.warning(f"Error getting data count: {error}")
+                    campaign_data['Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount'] = "[red]Error"
+                    updated_table = create_table(table_data)
+                    live.update(updated_table)
+                    continue
+
+                summarised_data_count, error = get_folder_count_for_experiment(campaign, MACHINE_CONFIG, "output/summarised_data")
+                if error or summarised_data_count is None:
+                    logger.warning(f"Error getting summarised data count: {error}")
+                    campaign_data['Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount'] = "[red]Error"
+                    updated_table = create_table(table_data)
+                    live.update(updated_table)
+                    continue
+
+                datasets_count, error = get_folder_count_for_experiment(campaign, MACHINE_CONFIG, "output/datasets")
+                if error or datasets_count is None:
+                    logger.warning(f"Error getting datasets count: {error}")
+                    campaign_data['Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount'] = "[red]Error"
+                    updated_table = create_table(table_data)
+                    live.update(updated_table)
+                    continue
+
+                target_test_count, error = calculate_target_test_count_for_experiment(campaign)
+                if error or target_test_count is None:
+                    logger.warning(f"Error getting target test count: {error}")
+                    campaign_data['Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount'] = "[red]Error"
+                    updated_table = create_table(table_data)
+                    live.update(updated_table)
+                    continue
+
+                data_str = f"[red]{data_count}[/red]"
+                summ_data_str = f"[blue]{summarised_data_count}[/blue]"
+                datasets_str = f"[green]{datasets_count}[/green]"
+                target_test_str = f"[yellow]{target_test_count}[/yellow]"
+                data_str = f"{data_str}\n-----\n{summ_data_str}\n-----\n{datasets_str}\n-----\n{target_test_str}"
+                table_data[experiment_name]['Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount'] = data_str
+                updated_table = create_table(table_data)
+                live.update(updated_table)
+
+            os.system('clear')
+            console.print(updated_table)
+            timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+            config_name = os.path.basename(MACHINE_CONFIG['config_path'])
+            console.save_html(f"./output/monitor/{timestamp} {MACHINE_CONFIG['name']} {config_name}.html")
+    
+    return None
 
 if __name__ == "__main__":
-    main(sys.argv)
+    start_time = datetime.now()
+    error = main(sys.argv)
+    if error:
+        logger.error(error)
+    end_time = datetime.now()
+    time_taken = (end_time - start_time).total_seconds()
+    time_taken = round(time_taken, 2)
+    console.print(f"Ran in {time_taken} seconds.")
