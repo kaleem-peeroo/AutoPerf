@@ -4,5 +4,5 @@ while true
 do
     clear;
     ./monitor.sh;
-    sleep 120
+    sleep 300
 done
