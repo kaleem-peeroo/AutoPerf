@@ -269,8 +269,11 @@ def validate_dict_using_keys(given_keys: List = [], required_keys: List = []) ->
         return None
 
     if len(list_difference) > 0:
+        given_keys = "\n\t".join(given_keys)
+        list_difference = "\n\t".join(list_difference)
+        required_keys = "\n\t".join(required_keys)
         logger.error(
-            f"Mismatch in keys for \n\t{given_keys}: \n\t\t{list_difference}"
+            f"Mismatch in keys for \n\t{given_keys}\nand: \n\t{list_difference}\nrequired: \n\t{required_keys}"
         )
         return False
     
