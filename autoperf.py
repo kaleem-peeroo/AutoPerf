@@ -86,7 +86,7 @@ async def restart_tapo_plug_from_machine_name(machine_name: str = ""):
         return
 
     client = ApiClient(TAPO_USERNAME, TAPO_PASSWORD)
-    device = await client.p100(chosen_plug['IP'])
+    device = await client.p100(chosen_plug['ip'])
 
     logger.info(f"Turning off {machine_name}")
     await device.off()
@@ -98,7 +98,7 @@ async def restart_tapo_plug_from_machine_name(machine_name: str = ""):
     await device.on()
 
     with open('output/tapo_restart.log', 'a+') as f:
-        date_timestamp = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+        date_timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
         f.write(f"[{date_timestamp}] Restarted {chosen_plug['name']} with IP {chosen_plug['ip']}")
 
 def send_email(
