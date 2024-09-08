@@ -1,0 +1,64 @@
+[
+  {
+    "experiment_name": "5Pi Data Collection",
+    "combination_generation_type": "pcg",
+    "rcg_target_test_count": 0,
+    "quit_after_n_failed_tests": 10,
+    "noise_generation": {
+      "delay": {
+        "value": "0ms",
+        "variation": "0ms",
+        "correlation": "0%",
+        "distribution": "normal"
+      },
+      "packet_loss": "0%",
+      "packet_corruption": "0%",
+      "packet_duplication": "0%",
+      "bandwidth_rate": "1000gbit"
+    },
+    "qos_settings": {
+      "duration_secs": [600],
+      "datalen_bytes": [100, 512, 1000, 32000, 64000, 128000, 1000000],
+      "pub_count": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+      "sub_count": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+      "use_reliable": [true, false],
+      "use_multicast": [true, false],
+      "durability_level": [0, 3],
+      "latency_count": [100]
+    },
+    "slave_machines": [
+      {
+        "machine_name": "k2",
+        "participant_allocation": "pub",
+        "ip": "169.254.251.21",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k3",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.22",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k4",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.23",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k5",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.24",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      }
+    ]
+  }
+]
