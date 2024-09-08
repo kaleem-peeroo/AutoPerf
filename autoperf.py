@@ -1789,6 +1789,8 @@ def run_test(
     13. Return ESS.
     """
 
+    start_timestamp = datetime.datetime.now()
+
     new_ess_row = {}
     new_ess_row['comments'] = ""
 
@@ -1811,8 +1813,8 @@ def run_test(
         if ping_attempts == 0:
             return update_ess_df(
                 new_ess_df,
-                None,
-                None,
+                start_timestamp,
+                datetime.datetime.now(),
                 test_name,
                 0,
                 0,
@@ -1836,8 +1838,8 @@ def run_test(
         if ssh_attempts == 0:
             return update_ess_df(
                 new_ess_df,
-                None,
-                None,
+                start_timestamp,
+                datetime.datetime.now(),
                 test_name,
                 0,
                 0,
@@ -1935,8 +1937,8 @@ def run_test(
 
         return update_ess_df(
             new_ess_df,
-            None,
-            None,
+            start_timestamp,
+            datetime.datetime.now(),
             test_name,
             ping_count,
             ssh_check_count,
@@ -1969,8 +1971,8 @@ def run_test(
         )
         return update_ess_df(
             new_ess_df,
-            None,
-            None,
+            start_timestamp,
+            datetime.datetime.now(),
             test_name,
             ping_count,
             ssh_check_count,
@@ -1989,8 +1991,8 @@ def run_test(
         logger.error(f"Error distributing scripts to machines.")
         return update_ess_df(
             new_ess_df,
-            None,
-            None,
+            start_timestamp,
+            datetime.datetime.now(),
             test_name,
             ping_count,
             ssh_check_count,
@@ -2004,8 +2006,8 @@ def run_test(
         logger.error(f"No scripts allocated to machines.")
         return update_ess_df(
             new_ess_df,
-            None,
-            None,
+            start_timestamp,
+            datetime.datetime.now(),
             test_name,
             ping_count,
             ssh_check_count,
@@ -2051,8 +2053,8 @@ def run_test(
         if noise_gen_error:
             return update_ess_df(
                 new_ess_df,
-                None,
-                None,
+                start_timestamp,
+                datetime.datetime.now(),
                 test_name,
                 ping_count,
                 ssh_check_count,
@@ -2181,7 +2183,7 @@ def run_test(
         return update_ess_df(
             new_ess_df,
             start_timestamp,
-            datetime.datetime.now(),
+            end_timestamp,
             test_name,
             ping_count,
             ssh_check_count,
@@ -2205,7 +2207,7 @@ def run_test(
             return update_ess_df(
                 new_ess_df,
                 start_timestamp,
-                datetime.datetime.now(),
+                end_timestamp,
                 test_name,
                 ping_count,
                 ssh_check_count,
