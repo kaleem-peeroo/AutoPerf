@@ -4,13 +4,13 @@
     "ip": "100.103.95.99",
     "ssh_key_path": "/Users/kaleem/.ssh/id_rsa",
     "username": "acwh025",
-    "config_path": "configs/5pi_mcast_exploration_with_noise_run_1.json"
+    "config_path": "configs/5pi/participant_threshold.json"
   },
   {
     "name": "3pi",
-    "ip": "10.210.44.247",
+    "ip": "100.114.252.94",
     "ssh_key_path": "/Users/kaleem/.ssh/id_rsa",
     "username": "acwh025",
-    "config_path": "configs/3pi_devtest.json"
+    "config_path": "configs/3pi/participant_threshold.json"
   }
 ]
