@@ -408,7 +408,7 @@ def read_config(config_path: str = "") -> Tuple[ Optional[Dict], Optional[str] ]
             REQUIRED_EXPERIMENT_KEYS
         )
         if validate_dict_error:
-            return None, f"Error validating {experiment}."
+            return None, f"Error validating {experiment}\n\t{validate_dict_error}"
         if not is_experiment_config_valid:
             return None, f"Config invalid for {experiment['experiment_name']} in {config_path}."
 
