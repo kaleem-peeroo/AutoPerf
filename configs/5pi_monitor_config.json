@@ -4,6 +4,6 @@
     "ip": "100.103.95.99",
     "ssh_key_path": "/Users/kaleem/.ssh/id_rsa",
     "username": "acwh025",
-    "config_path": "configs/5pi_noise_variation_low_load.json"
+    "config_path": "configs/5pi/5pi_noise_variation_low_load.json"
   }
 ]
