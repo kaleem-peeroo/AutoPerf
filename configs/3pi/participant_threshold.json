@@ -2,8 +2,8 @@
   {
     "experiment_name": "3Pi Participant Threshold 512B 15 Count",
     "combination_generation_type": "pcg",
-    "resuming_test_name": "",
-    "quit_after_n_tests": 0,
+    "quit_after_n_failed_tests": 10,
+    "rcg_target_test_count": 0,
     "qos_settings": {
       "duration_secs": [600],
       "datalen_bytes": [100],
@@ -37,8 +37,8 @@
   {
     "experiment_name": "3Pi Participant Threshold 512B 20 Count",
     "combination_generation_type": "pcg",
-    "resuming_test_name": "",
-    "quit_after_n_tests": 0,
+    "rcg_target_test_count": 0,
+    "quit_after_n_failed_tests": 10,
     "qos_settings": {
       "duration_secs": [600],
       "datalen_bytes": [100],
@@ -72,8 +72,8 @@
   {
     "experiment_name": "3Pi Participant Threshold 512B 25 Count",
     "combination_generation_type": "pcg",
-    "resuming_test_name": "",
-    "quit_after_n_tests": 0,
+    "rcg_target_test_count": 0,
+    "quit_after_n_failed_tests": 10,
     "qos_settings": {
       "duration_secs": [600],
       "datalen_bytes": [100],
