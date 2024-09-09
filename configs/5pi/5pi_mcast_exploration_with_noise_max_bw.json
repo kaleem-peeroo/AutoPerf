@@ -1,6 +1,6 @@
 [
   {
-    "experiment_name": "1P3S Multicast Exploration No Noise Run 2",
+    "experiment_name": "1P3S Multicast Exploration No Noise Run 1",
     "combination_generation_type": "pcg",
     "rcg_target_test_count": 0,
     "quit_after_n_failed_tests": 10,
@@ -62,7 +62,7 @@
     ]
   },
   {
-    "experiment_name": "1P3S Multicast Exploration BW Avg Low Run 2",
+    "experiment_name": "1P3S Multicast Exploration BW Avg Low Run 1",
     "combination_generation_type": "pcg",
     "rcg_target_test_count": 0,
     "quit_after_n_failed_tests": 10,
@@ -124,7 +124,7 @@
     ]
   },
   {
-    "experiment_name": "1P3S Multicast Exploration BW Avg Medium Run 2",
+    "experiment_name": "1P3S Multicast Exploration BW Avg Medium Run 1",
     "combination_generation_type": "pcg",
     "rcg_target_test_count": 0,
     "quit_after_n_failed_tests": 10,
@@ -186,7 +186,7 @@
     ]
   },
   {
-    "experiment_name": "1P3S Multicast Exploration BW Avg High Run 2",
+    "experiment_name": "1P3S Multicast Exploration BW Avg High Run 1",
     "combination_generation_type": "pcg",
     "rcg_target_test_count": 0,
     "quit_after_n_failed_tests": 10,
