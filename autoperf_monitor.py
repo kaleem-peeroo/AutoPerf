@@ -30,7 +30,7 @@ DEBUG_MODE = False
 
 logging.basicConfig(
     level=logging.DEBUG,
-    filename="logs/autoperf_monitor_refactor.log",
+    filename="logs/autoperf_monitor.log",
     filemode="w",
     format='%(message)s'
 )
@@ -1922,7 +1922,6 @@ def main(sys_args: list[str] = []) -> Optional[str]:
                 updated_table = create_table(table_data)
                 live.update(updated_table)
 
-            os.system('clear')
             console.print(updated_table)
             timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
             config_name = os.path.basename(MACHINE_CONFIG['config_path'])
