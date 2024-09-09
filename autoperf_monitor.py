@@ -1325,7 +1325,7 @@ def get_ongoing_info_from_machine(
 def get_last_n_statuses_as_string_from_ess_df(
     ess_df: pd.DataFrame = pd.DataFrame(), 
     n: int = 0, 
-    line_break_point: int = 5
+    line_break_point: int = 10
 ) -> Tuple[Optional[str], Optional[Dict]]:
     """
     Get the last n statuses as a string of red or green circles from the ESS DataFrame.
@@ -1407,7 +1407,7 @@ def get_last_n_statuses_as_string_from_ess_df(
 
     return last_n_statuses_output, status_emoji_dict
 
-def get_ip_output_from_ess_df(ess_df, line_break_point: int = 5):
+def get_ip_output_from_ess_df(ess_df, line_break_point: int = 10):
     if ess_df is None:
         return "", {}
 
