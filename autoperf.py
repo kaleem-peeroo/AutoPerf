@@ -95,7 +95,7 @@ async def restart_tapo_plug_from_machine_name(machine_name: str = ""):
             f.write(
                 f"[{date_timestamp}] Failed to restart {chosen_plug['name']} with IP {chosen_plug['ip']}"
             )
-
+        return
 
     logger.info(f"Turning off {machine_name}")
     await device.off()
