@@ -158,7 +158,7 @@
     "rcg_target_test_count": 0,
     "quit_after_n_failed_tests": 10,
     "qos_settings": {
-      "duration_secs" [600],
+      "duration_secs": [600],
       "datalen_bytes": [100],
       "pub_count": [28],
       "sub_count": [28],
