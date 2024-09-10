@@ -1,14 +1,14 @@
 [
   {
-    "experiment_name": "3Pi Participant Threshold 512B 15 Count",
+    "experiment_name": "3Pi Participant Threshold 512B 100 Count",
     "combination_generation_type": "pcg",
     "quit_after_n_failed_tests": 10,
     "rcg_target_test_count": 0,
     "qos_settings": {
       "duration_secs": [600],
       "datalen_bytes": [100],
-      "pub_count": [15],
-      "sub_count": [15],
+      "pub_count": [100],
+      "sub_count": [100],
       "use_reliable": [true, false],
       "use_multicast": [true, false],
       "durability_level": [3],
@@ -35,15 +35,15 @@
     ]
   },
   {
-    "experiment_name": "3Pi Participant Threshold 512B 20 Count",
+    "experiment_name": "3Pi Participant Threshold 512B 75 Count",
     "combination_generation_type": "pcg",
     "rcg_target_test_count": 0,
     "quit_after_n_failed_tests": 10,
     "qos_settings": {
       "duration_secs": [600],
       "datalen_bytes": [100],
-      "pub_count": [20],
-      "sub_count": [20],
+      "pub_count": [75],
+      "sub_count": [75],
       "use_reliable": [true, false],
       "use_multicast": [true, false],
       "durability_level": [3],
@@ -70,15 +70,15 @@
     ]
   },
   {
-    "experiment_name": "3Pi Participant Threshold 512B 25 Count",
+    "experiment_name": "3Pi Participant Threshold 512B 50 Count",
     "combination_generation_type": "pcg",
     "rcg_target_test_count": 0,
     "quit_after_n_failed_tests": 10,
     "qos_settings": {
       "duration_secs": [600],
       "datalen_bytes": [100],
-      "pub_count": [25],
-      "sub_count": [25],
+      "pub_count": [50],
+      "sub_count": [50],
       "use_reliable": [true, false],
       "use_multicast": [true, false],
       "durability_level": [3],
