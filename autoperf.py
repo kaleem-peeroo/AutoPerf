@@ -393,8 +393,8 @@ def read_config(config_path: str = "") -> Tuple[ Optional[Dict], Optional[str] ]
     with open(config_path, 'r') as f:
         try:
             config = json.load(f)
-        except ValueError:
-            return None, f"Error parsing JSON for config file: {config_path}"
+        except ValueError as e:
+            return None, f"Error parsing JSON for config file: {config_path}: \n\t{e}"
 
     if not isinstance(config, list):
         return None, f"Config file does not contain a list: {config_path}"
