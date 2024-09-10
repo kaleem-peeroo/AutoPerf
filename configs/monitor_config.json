@@ -4,7 +4,7 @@
     "ip": "100.103.95.99",
     "ssh_key_path": "/Users/kaleem/.ssh/id_rsa",
     "username": "acwh025",
-    "config_path": "configs/5pi/participant_threshold.json"
+    "config_path": "configs/5pi/mcast_exploration.json"
   },
   {
     "name": "3pi",
