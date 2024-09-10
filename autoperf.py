@@ -86,7 +86,16 @@ async def restart_tapo_plug_from_machine_name(machine_name: str = ""):
         return
 
     client = ApiClient(TAPO_USERNAME, TAPO_PASSWORD)
-    device = await client.p100(chosen_plug['ip'])
+    try:
+        device = await client.p100(chosen_plug['ip'])
+    except Exception as e:
+        logger.error(f"Failed to get plug to restart for {chosen_plug}:\n\t{e}")
+        with open('output/tapo_restart.log', 'a+') as f:
+            date_timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+            f.write(
+                f"[{date_timestamp}] Failed to restart {chosen_plug['name']} with IP {chosen_plug['ip']}"
+            )
+
 
     logger.info(f"Turning off {machine_name}")
     await device.off()
