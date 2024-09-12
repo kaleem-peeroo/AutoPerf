@@ -2967,6 +2967,44 @@ def get_ip_output_from_ess_df(
 
     return ip_output, ip_emoji_dict, None
 
+def get_unreachable_machine_ip_from_ess_df(
+    ess_df: pd.DataFrame = pd.DataFrame()
+) -> Tuple[Optional[str], Optional[str]]:
+    if len(ess_df.index) == 0:
+        return None, "ESS is empty."
+
+    ess_df['ip'] = ess_df['comments'].apply(extract_ip)
+    ess_df['end_status'] = ess_df['end_status'].apply(lambda x: x.lower())
+
+    unreachable_machines = ess_df[ess_df['end_status'].str.contains("fail")]['ip']
+    unreachable_machines = unreachable_machines.dropna()
+
+    if len(unreachable_machines) == 0:
+        return None, "No unreachable machines found."
+
+    unreachable_machines = unreachable_machines.unique()
+
+    return unreachable_machines[-1], None
+
+def get_machine_name_from_ip(
+    machine_name: str = "",
+    slave_machines: List[Dict] = []
+) -> Tuple[Optional[str], Optional[str]]:
+    if machine_name == "":
+        return None, "No machine name passed."
+
+    if 'nan' in str(machine_name).lower():
+        return None, "Machine name is nan."
+
+    if len(slave_machines) == 0:
+        return None, "No slave machines passed."
+
+    for machine in slave_machines:
+        if machine['ip'] == machine_name:
+            return machine['machine_name'], None
+
+    return None, "Machine name not found."
+
 def main(sys_args: list[str] = []) -> Optional[None]:
     if len(sys_args) < 2:
         logger.error(
@@ -3047,17 +3085,38 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 logger.error(f"Error getting ess: {ess_error}")
                 continue
 
-            must_wait_for_self_reboot, must_self_reboot_error = get_must_wait_for_self_reboot(ess_df)
+            must_wait_for_self_reboot, must_self_reboot_error = get_must_wait_for_self_reboot(
+                ess_df
+            )
             if must_self_reboot_error:
                 logger.warning(
                     f"Couldn't check if self-reboot needed: {must_self_reboot_error}"
                 )
 
             if must_wait_for_self_reboot:
-                logger.info("Restarting all plugs...")
-                for machine in EXPERIMENT['slave_machines']:
-                    machine_name = machine['machine_name']
-                    asyncio.run(restart_tapo_plug_from_machine_name(machine_name))
+                machine_ip, error = get_unreachable_machine_ip_from_ess_df(ess_df)
+                if error:
+                    logger.warning(f"Error getting unreachable machine IP: {error}")
+                    logger.info("Restarting all plugs instead...")
+                    for machine in EXPERIMENT['slave_machines']:
+                        machine_name = machine['machine_name']
+                        asyncio.run(restart_tapo_plug_from_machine_name(machine_name))
+
+                machine_name, error = get_machine_name_from_ip(
+                    machine_ip,
+                    EXPERIMENT['slave_machines']
+                )
+                if error:
+                    logger.error(f"Error getting machine IP: {error}")
+                    logger.info("Restarting all plugs instead...")
+                    for machine in EXPERIMENT['slave_machines']:
+                        machine_name = machine['machine_name']
+                        asyncio.run(restart_tapo_plug_from_machine_name(machine_name))
+
+                logger.info(
+                    f"Restarting {machine_name}..."
+                )
+                asyncio.run(restart_tapo_plug_from_machine_name(machine_name))
 
             if is_pcg:
                 test_config = COMBINATIONS[test_index]
