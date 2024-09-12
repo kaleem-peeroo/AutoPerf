@@ -1937,4 +1937,5 @@ if __name__ == "__main__":
     end_time = datetime.now()
     time_taken = (end_time - start_time).total_seconds()
     time_taken = round(time_taken, 2)
-    console.print(f"Ran in {time_taken} seconds.")
+    now_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    console.print(f"[{now_timestamp}] Ran in {time_taken} seconds.")
