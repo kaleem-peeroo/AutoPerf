@@ -18,7 +18,7 @@
     },
     "qos_settings": {
       "duration_secs": [600],
-      "datalen_bytes": [32, 64, 512, 1028, 128000],
+      "datalen_bytes": [512, 1000],
       "pub_count": [1, 5, 10, 15, 20],
       "sub_count": [1, 5, 10, 15, 20],
       "use_reliable": [true, false],
@@ -80,7 +80,7 @@
     },
     "qos_settings": {
       "duration_secs": [600],
-      "datalen_bytes": [32, 64, 512, 1028, 128000],
+      "datalen_bytes": [512, 1000],
       "pub_count": [1, 5, 10, 15, 20],
       "sub_count": [1, 5, 10, 15, 20],
       "use_reliable": [true, false],
