@@ -23,7 +23,7 @@
       "sub_count": [10],
       "use_reliable": [true, false],
       "use_multicast": [true, false],
-      "durability_level": [0],
+      "durability_level": [3],
       "latency_count": [100]
     },
     "slave_machines": [
@@ -69,7 +69,7 @@
       "sub_count": [10],
       "use_reliable": [true, false],
       "use_multicast": [true, false],
-      "durability_level": [0],
+      "durability_level": [3],
       "latency_count": [100]
     },
     "slave_machines": [
@@ -115,7 +115,7 @@
       "sub_count": [10],
       "use_reliable": [true, false],
       "use_multicast": [true, false],
-      "durability_level": [0],
+      "durability_level": [3],
       "latency_count": [100]
     },
     "slave_machines": [
@@ -161,7 +161,7 @@
       "sub_count": [10],
       "use_reliable": [true, false],
       "use_multicast": [true, false],
-      "durability_level": [0],
+      "durability_level": [3],
       "latency_count": [100]
     },
     "slave_machines": [
@@ -207,7 +207,7 @@
       "sub_count": [10],
       "use_reliable": [true, false],
       "use_multicast": [true, false],
-      "durability_level": [0],
+      "durability_level": [3],
       "latency_count": [100]
     },
     "slave_machines": [
