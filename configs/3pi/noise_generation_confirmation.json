@@ -228,6 +228,5 @@
         "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
       }
     ]
-  },
-
+  }
 ]
