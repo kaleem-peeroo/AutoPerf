@@ -1,0 +1,207 @@
+[
+  {
+    "experiment_name": "1P3S Multicast Exploration 15",
+    "combination_generation_type": "pcg",
+    "rcg_target_test_count": 0,
+    "quit_after_n_failed_tests": 10,
+    "noise_generation": {},
+    "qos_settings": {
+      "duration_secs": [600],
+      "datalen_bytes": [512],
+      "pub_count": [15],
+      "sub_count": [15],
+      "use_reliable": [true],
+      "use_multicast": [true, false],
+      "durability_level": [0],
+      "latency_count": [100]
+    },
+    "slave_machines": [
+      {
+        "machine_name": "k2",
+        "participant_allocation": "pub",
+        "ip": "169.254.251.21",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k3",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.22",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k4",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.23",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k5",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.24",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      }
+    ]
+  },
+  {
+    "experiment_name": "2P2S Multicast Exploration",
+    "combination_generation_type": "pcg",
+    "rcg_target_test_count": 0,
+    "quit_after_n_failed_tests": 10,
+    "noise_generation": {},
+    "qos_settings": {
+      "duration_secs": [600],
+      "datalen_bytes": [512],
+      "pub_count": [1, 5, 10, 15, 20],
+      "sub_count": [1, 5, 10, 15, 20],
+      "use_reliable": [true],
+      "use_multicast": [true, false],
+      "durability_level": [0],
+      "latency_count": [100]
+    },
+    "slave_machines": [
+      {
+        "machine_name": "k2",
+        "participant_allocation": "pub",
+        "ip": "169.254.251.21",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k3",
+        "participant_allocation": "pub",
+        "ip": "169.254.251.22",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k4",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.23",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k5",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.24",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      }
+    ]
+  },
+  {
+    "experiment_name": "1P3S Multicast Exploration 20",
+    "combination_generation_type": "pcg",
+    "rcg_target_test_count": 0,
+    "quit_after_n_failed_tests": 10,
+    "noise_generation": {},
+    "qos_settings": {
+      "duration_secs": [600],
+      "datalen_bytes": [512],
+      "pub_count": [20],
+      "sub_count": [20],
+      "use_reliable": [true],
+      "use_multicast": [true, false],
+      "durability_level": [0],
+      "latency_count": [100]
+    },
+    "slave_machines": [
+      {
+        "machine_name": "k2",
+        "participant_allocation": "pub",
+        "ip": "169.254.251.21",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k3",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.22",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k4",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.23",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k5",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.24",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      }
+    ]
+  },
+  {
+    "experiment_name": "2P2S Multicast Exploration",
+    "combination_generation_type": "pcg",
+    "rcg_target_test_count": 0,
+    "quit_after_n_failed_tests": 10,
+    "noise_generation": {},
+    "qos_settings": {
+      "duration_secs": [600],
+      "datalen_bytes": [512],
+      "pub_count": [1, 5, 10, 15, 20],
+      "sub_count": [1, 5, 10, 15, 20],
+      "use_reliable": [true],
+      "use_multicast": [true, false],
+      "durability_level": [0],
+      "latency_count": [100]
+    },
+    "slave_machines": [
+      {
+        "machine_name": "k2",
+        "participant_allocation": "pub",
+        "ip": "169.254.251.21",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k3",
+        "participant_allocation": "pub",
+        "ip": "169.254.251.22",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k4",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.23",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "k5",
+        "participant_allocation": "sub",
+        "ip": "169.254.251.24",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      }
+    ]
+  }
+
+]
