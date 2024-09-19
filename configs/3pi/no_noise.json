@@ -1,0 +1,48 @@
+[
+  {
+    "experiment_name": "3Pi Noise Generation Confirmation 1Gbit",
+    "combination_generation_type": "pcg",
+    "quit_after_n_failed_tests": 10,
+    "rcg_target_test_count": 0,
+    "noise_generation": {
+      "delay": {
+        "value": "0ms",
+        "variation": "0ms",
+        "correlation": "0%",
+        "distribution": "normal"
+      },
+      "packet_loss": "0%",
+      "packet_corruption": "0%",
+      "packet_duplication": "0%",
+      "bandwidth_rate": "1gbit"
+    },
+    "qos_settings": {
+      "duration_secs": [600],
+      "datalen_bytes": [512],
+      "pub_count": [10],
+      "sub_count": [10],
+      "use_reliable": [true, false],
+      "use_multicast": [true, false],
+      "durability_level": [3],
+      "latency_count": [100]
+    },
+    "slave_machines": [
+      {
+        "machine_name": "p1",
+        "participant_allocation": "pub",
+        "ip": "169.254.248.55",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      },
+      {
+        "machine_name": "p2",
+        "participant_allocation": "sub",
+        "ip": "169.254.201.141",
+        "ssh_key_path": "~/.ssh/id_rsa",
+        "username": "acwh025",
+        "perftest_exec_path": "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+      }
+    ]
+  }
+]
