@@ -801,7 +801,7 @@ def get_qos_dict_from_test_name(test_name: str = "") -> Optional[Dict]:
             else:
                 use_multicast = False
 
-            qos_dict['use_multicast'] = use_reliable
+            qos_dict['use_multicast'] = use_multicast
 
         elif section.lower().endswith('b'):
             value = section.lower().replace("b", "")
