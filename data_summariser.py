@@ -100,6 +100,9 @@ def parse_sub_files(
 
         subs_df = subs_df.astype(float, errors="ignore")
 
+    if subs_df.empty:
+        return None, "Subscriber data is empty"
+
     return subs_df, None
 
 def parse_pub_file(
@@ -216,15 +219,15 @@ def summarise_test(
         return test_summ_path, f"No subscriber files found in {test_dir}"
 
     lat_df, error = parse_pub_file(pub_file)
-    if error:
+    if lat_df is None or error:
         return test_summ_path, f"Error parsing publisher file: {error}"
 
     subs_df, error = parse_sub_files(sub_files)
-    if error:
+    if subs_df is None or error:
         return test_summ_path, f"Error parsing subscriber files: {error}"
 
     test_df = pd.concat([lat_df, subs_df], axis=1)
-
+    
     # Calculate average and total for subs
     sub_cols = [col for col in test_df.columns if 'sub' in col.lower()]
     sub_cols_without_sub = ["_".join(col.split("_")[2:]) for col in sub_cols]
