@@ -1,13 +1,17 @@
 import paramiko
 import os
+import time
 
 from rich.pretty import pprint
 from rich.console import Console
+from rich.progress import track
+from rich.markdown import Markdown
 
 from constants import *
 
 console = Console(record=True)
 
+SKIP_DOWNLOADED = True
 MACHINES = [
     {
         "name": "3pi",
@@ -25,6 +29,91 @@ MACHINES = [
     }
 ]
 
+def check_remote_file_exists(sftp, remote_file_path):
+    try:
+        sftp.stat(remote_file_path)
+        return True
+    except FileNotFoundError:
+        return False
+    except Exception as e:
+        raise e
+
+def remove_zi_files(sftp, remote_data_path):
+    # Look for files that start with zi in the remote_data_path and delete them
+    remote_data_files = sftp.listdir(remote_data_path)
+    zi_files = [file for file in remote_data_files if file.startswith("zi")]
+    console.print(f"Found {len(zi_files)} files to delete.")
+    for index, file in enumerate(zi_files):
+        count_string = f"[{index + 1}/{len(zi_files)}]"
+        sftp.remove(f"{remote_data_path}/{file}")
+        console.print(f"{count_string} {file} deleted.", style="bold green")
+
+def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir):
+    if output_type == "data":
+        remote_data_path = f"{ap_path}/output/data"
+    elif output_type == "summarised_data":
+        remote_data_path = f"{ap_path}/output/summarised_data"
+    else:
+        raise ValueError(f"Invalid output type: {output_type}")
+
+    data_dirs = sftp.listdir(remote_data_path)
+    data_dirs = [data_dir for data_dir in data_dirs if not data_dir.endswith(".zip")]
+    for index, data_dir in enumerate(data_dirs):
+        count_string = f"[{index + 1}/{len(data_dirs)}]"
+        with console.status(f"{count_string} Downloading {data_dir}...") as status:
+            remote_data_zip = f"{remote_data_path}/{data_dir}.zip"
+
+            # If the zip doesn't exist, create it
+            if not check_remote_file_exists(sftp, remote_data_zip):
+                console.print(f"{data_dir}.zip does NOT exist. Creating...")
+                ssh.exec_command(
+                    f"cd {remote_data_path} && zip -r {data_dir}.zip {data_dir}"
+                ) 
+                time.sleep(1)
+                console.print(f"{data_dir}.zip created.", style="bold green")
+
+            os.makedirs(f"{local_download_output_dir}/{output_type}", exist_ok=True)
+
+            # console.print(
+            #     "Downloading {}\n\t{}\n\t{}".format(
+            #         data_dir, 
+            #         f"remote: {remote_data_zip}",
+            #         f"local: {local_download_output_dir}/{output_type}/{data_dir}.zip"
+            #     )
+            # )
+
+            try:
+                if SKIP_DOWNLOADED:
+                    if os.path.exists(
+                        f"{local_download_output_dir}/{output_type}/{data_dir}.zip"
+                    ):
+                        console.print(
+                            "{} {} already exists locally. Skipping...".format(
+                                count_string, 
+                                f"{data_dir}.zip"
+                            ),
+                            style="bold green"
+                        )
+                        continue
+
+                sftp.get(
+                    remote_data_zip, 
+                    f"{local_download_output_dir}/{output_type}/{data_dir}.zip"
+                )
+                console.print(
+                    f"{count_string} {data_dir}.zip downloaded.", 
+                    style="bold green"
+                )
+            except Exception as e:
+                console.print(
+                    f"Couldn't download {data_dir}:\n\t{e}",
+                    style="bold red"
+                )
+                continue
+
+    remove_zi_files(sftp, remote_data_path)
+    remove_zi_files(sftp, os.path.dirname(remote_data_path))
+    
 def main() -> None:
     for MACHINE in MACHINES:
         console.print(
@@ -42,65 +131,32 @@ def main() -> None:
             key_filename=MACHINE["ssh_key_path"]
         )
         sftp = ssh.open_sftp()
-        remote_output_path = f"{MACHINE['ap_path']}/output"
+        ap_path = MACHINE["ap_path"]
 
-        # If the compressed output exists, remove it     
-        with console.status(
-            "[1/5] Checking if compressed output exists..."
-        ):
-            stdin, stdout, stderr = ssh.exec_command(
-                f"if [ -f {remote_output_path}.tar.gz ]; then echo 1; else echo 0; fi"
+        console.print(Markdown(f"# /data"))
+        zip_and_download(ssh, sftp, "data", ap_path, local_download_output_dir)
+        console.print(Markdown(f"# /summarised_data"))
+        zip_and_download(ssh, sftp, "summarised_data", ap_path, local_download_output_dir)
+
+        remote_ds_dir = f"{ap_path}/output/datasets"
+
+        if not check_remote_file_exists(sftp, f"{remote_ds_dir}.zip"):
+            console.print(f"{remote_ds_dir}.zip does NOT exist. Creating...")
+            ssh.exec_command(
+                f"cd {ap_path}/output && zip -r datasets.zip datasets"
             )
-            stderr = stderr.read().decode()
-            if stderr != "": 
-                console.print(
-                    f"Error checking if {remote_output_path}.tar.gz exists: {stderr}",
-                    style="bold red"
-                )
-                continue
 
-        # Compress the output directory
-        with console.status("[2/5] Compressing output directory..."):
-            stdin, stdout, stderr = ssh.exec_command(
-                f"cd {MACHINE['ap_path']} && tar -czvf output.tar.gz output"
-            )
-            stderr = stderr.read().decode()
-            if stderr != "":
-                console.print(
-                    f"Error compressing {remote_output_path}: {stderr}",
-                    style="bold red"
-                )
-                continue
-
-        # Download the compressed output directory
-        with console.status("[3/5] Downloading compressed output directory..."):
+        try:
             sftp.get(
-                f"{remote_output_path}.tar.gz",
-                f"{local_download_output_dir}/output.tar.gz"
+                f"{remote_ds_dir}.zip",
+                f"{local_download_output_dir}/datasets.zip"
             )
-
-        # Remove the compressed output directory
-        with console.status("[4/5] Removing compressed output directory..."):
-            stdin, stdout, stderr = ssh.exec_command(
-                f"rm {remote_output_path}.tar.gz"
+            console.print(f"datasets.zip downloaded.", style="bold green")
+        except Exception as e:
+            console.print(
+                f"Couldn't download datasets.zip:\n\t{e}",
+                style="bold red"
             )
-            stderr = stderr.read().decode()
-            if stderr != "":
-                console.print(
-                    f"Error removing {remote_output_path}.tar.gz: {stderr}",
-                    style="bold red"
-                )
-                continue
-
-        # Extract the compressed output directory
-        with console.status("[5/5] Extracting compressed output directory..."):
-            os.system(
-                f"tar -xzvf {local_download_output_dir}/output.tar.gz -C {local_download_output_dir} > /dev/null 2>&1"
-            )
-
-        # Remove the compressed output directory
-        with console.status("Removing compressed output directory..."):
-            os.remove(f"{local_download_output_dir}/output.tar.gz")
 
         sftp.close()
         ssh.close()
