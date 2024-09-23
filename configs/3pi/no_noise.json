@@ -1,6 +1,6 @@
 [
   {
-    "experiment_name": "3Pi Noise Generation Confirmation 7Mbit",
+    "experiment_name": "3Pi Noise Generation Confirmation 6Mbit",
     "combination_generation_type": "pcg",
     "quit_after_n_failed_tests": 10,
     "rcg_target_test_count": 0,
@@ -14,7 +14,7 @@
       "packet_loss": "0%",
       "packet_corruption": "0%",
       "packet_duplication": "0%",
-      "bandwidth_rate": "7mbit"
+      "bandwidth_rate": "6mbit"
     },
     "qos_settings": {
       "duration_secs": [600],
