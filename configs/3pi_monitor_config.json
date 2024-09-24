@@ -4,6 +4,6 @@
     "ip": "100.114.252.94",
     "ssh_key_path": "/Users/kaleem/.ssh/id_rsa",
     "username": "acwh025",
-    "config_path": "configs/3pi/no_noise.json"
+    "config_path": "configs/3pi/3pi_data_collection.json"
   }
 ]
