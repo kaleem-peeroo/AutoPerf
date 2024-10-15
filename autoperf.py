@@ -587,9 +587,9 @@ def get_ess_df(ess_filepath: str = "") -> Tuple[Optional[pd.DataFrame], Optional
     ess_exists = os.path.exists(ess_filepath)
     if ess_exists:
         try:
-            ess_df = pd.read_csv(ess_filepath)
+            ess_df = pd.read_parquet(ess_filepath, engine='fastparquet')
         except Exception as e:
-            return None, f"Couldn't ready {ess_filepath}: \n\t{e}"
+            return None, f"Couldn't read {ess_filepath}: \n\t{e}"
     else:
         ess_df = pd.DataFrame(columns=[
             "start_timestamp",
@@ -2826,7 +2826,7 @@ def get_ess_df_from_experiment(experiment_config: Dict = {}) -> Tuple[Optional[p
         return None, dirname_error
 
     EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
-    ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.csv")
+    ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.parquet")
 
     ess_df, ess_error = get_ess_df(ESS_PATH)
     if ess_error:
@@ -3053,7 +3053,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             continue 
 
         EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
-        ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.csv")
+        ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.parquet")
         ess_df, ess_error = get_ess_df(ESS_PATH)
         if ess_error:
             logger.error(f"Error getting ess: {ess_error}")
@@ -3143,7 +3143,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 EXPERIMENT['noise_generation']
             )
 
-            ess_df.to_csv(ESS_PATH, index = False)
+            ess_df.to_parquet(ESS_PATH, index = False)
 
             if run_test_error:
                 logger.error(f"Error running test {test_name}: {run_test_error}")
