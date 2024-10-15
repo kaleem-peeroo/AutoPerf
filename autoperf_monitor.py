@@ -1407,7 +1407,11 @@ def get_last_n_statuses_as_string_from_ess_df(
 
     return last_n_statuses_output, status_emoji_dict
 
-def get_ip_output_from_ess_df(ess_df, line_break_point: int = 10):
+def get_ip_output_from_ess_df(
+    ess_df, 
+    n: int = 100, 
+    line_break_point: int = 10
+):
     if ess_df is None:
         return "", {}
 
@@ -1432,7 +1436,7 @@ def get_ip_output_from_ess_df(ess_df, line_break_point: int = 10):
     # if comment has fail and IP then swap the IP with the emoji
 
     ip_output = ""
-    for index, row in ess_df.iterrows():
+    for index, row in ess_df.tail(n).iterrows():
         end_status = row['end_status']
         ip = str(row['ip'])
         ip = "xxx." + ip.split(".")[-1]
@@ -1859,7 +1863,7 @@ def main(sys_args: list[str] = []) -> Optional[str]:
                 updated_table = create_table(table_data)
                 live.update(updated_table)
 
-                ip_output, ip_emoji_dict = get_ip_output_from_ess_df(ess_df)
+                ip_output, ip_emoji_dict = get_ip_output_from_ess_df(ess_df, n = 100)
                 if ip_output is None:
                     logger.warning(f"Error getting IP output: {error}")
                     campaign_data['Failed\nIPs'] = "[red]Error"
