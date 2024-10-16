@@ -11,7 +11,8 @@ REQUIRED_EXPERIMENT_KEYS = [
     'slave_machines',
     'rcg_target_test_count',
     'quit_after_n_failed_tests',
-    'noise_generation'
+    'noise_generation',
+    "retry_failed_tests_n_times"
 ]
 
 REQUIRED_QOS_KEYS = [
