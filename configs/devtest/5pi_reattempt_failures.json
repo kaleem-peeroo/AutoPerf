@@ -7,10 +7,10 @@
   "qos_settings": {
     "duration_secs": [60],
     "datalen_bytes": [100],
-    "pub_count": [1, 2, 3, 4, 5],
-    "sub_count": [1, 2, 3, 4, 5],
-    "use_reliable": [true, false],
-    "use_multicast": [true, false],
+    "pub_count": [1, 2, 3],
+    "sub_count": [1, 2, 3],
+    "use_reliable": [true],
+    "use_multicast": [true],
     "durability_level": [0],
     "latency_count": [100]
   },
