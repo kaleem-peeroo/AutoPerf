@@ -1738,6 +1738,17 @@ def run_test(
 
     Params:
         - test_config (Dict): Test config.
+            - Example:
+                {
+                    'datalen_bytes': 100,
+                    'durability_level': 0,
+                    'duration_secs': 60,
+                    'latency_count': 100,
+                    'pub_count': 1,
+                    'sub_count': 1,
+                    'use_multicast': True,
+                    'use_reliable': True
+                }
         - machine_configs (List): List of machine configs.
         - ess_df (pd.DataFrame): ESS dataframe.
         - experiment_dirpath (str): Experiment directory path.
@@ -3005,6 +3016,15 @@ def get_machine_name_from_ip(
 
     return None, "Machine name not found."
 
+def get_failed_test_names(ess_df: pd.DataFrame):
+    # TODO: Validate parameters
+    if ess_df is None:
+        return None, "No ess df passed."
+
+    failed_rows = ess_df[ess_df['end_status'] != 'success']
+
+    return failed_rows['test_name'].to_list(), None
+
 def main(sys_args: list[str] = []) -> Optional[None]:
     if len(sys_args) < 2:
         logger.error(
@@ -3168,9 +3188,21 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 Skipping post test data processing...""")
             continue
 
-        # TODO: Retry failed tests here
-        """
-        for failed_test in failed_tests:
+        logger.info("Re attempting failed tests")
+        logger.debug("Getting failed test names")
+        failed_test_names, error = get_failed_test_names(ess_df)
+        if error:
+            logger.error(f"Failed to get which tests failed from ESS DF: {error}")
+            continue
+
+        logger.debug("Getting configs for failed test names")
+        failed_test_configs = []
+        for test_name in failed_test_names:
+            test_config = get_qos_dict_from_test_name(test_name)
+            failed_test_configs.append(test_config)
+
+        logger.debug("Running failed tests")
+        for failed_test in failed_test_configs:
             retry_counter = 3
             test_status = "failed"
 
@@ -3192,7 +3224,6 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
                 test_status = "success"
                 retry_counter -= 1
-        """
             
         # Do a check on all tests to make sure expected number of pub and sub files are the same
         test_dirpaths = [os.path.join(EXPERIMENT_DIRPATH, _) for _ in os.listdir(EXPERIMENT_DIRPATH)]
@@ -3209,21 +3240,21 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 )
 
         # Summarise tests
-        summarise_tests(EXPERIMENT_DIRPATH) 
-        if summarise_tests is None:
-            logger.error(
-                f"Error summarising tests for {EXPERIMENT['experiment_name']}"
-            )
-            continue
-
-        truncation_percentages = [0, 10, 25, 50]
-        for truncation_percent in truncation_percentages:
-            trunc_ds_path = generate_dataset(EXPERIMENT_DIRPATH, truncation_percent)
-            if trunc_ds_path is None:
-                logger.error(
-                    f"Error generating dataset for {EXPERIMENT['experiment_name']} with {truncation_percent}% truncation."
-                )
-                continue
+        # summarise_tests(EXPERIMENT_DIRPATH) 
+        # if summarise_tests is None:
+        #     logger.error(
+        #         f"Error summarising tests for {EXPERIMENT['experiment_name']}"
+        #     )
+        #     continue
+        #
+        # truncation_percentages = [0, 10, 25, 50]
+        # for truncation_percent in truncation_percentages:
+        #     trunc_ds_path = generate_dataset(EXPERIMENT_DIRPATH, truncation_percent)
+        #     if trunc_ds_path is None:
+        #         logger.error(
+        #             f"Error generating dataset for {EXPERIMENT['experiment_name']} with {truncation_percent}% truncation."
+        #         )
+        #         continue
 
             # logger.info(f"Generated dataset with {truncation_percent}% truncation:\n\t{trunc_ds_path}")
 
