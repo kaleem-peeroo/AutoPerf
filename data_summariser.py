@@ -105,6 +105,19 @@ def parse_sub_files(
 
     return subs_df, None
 
+def get_colname(coltype: str = "", colnames: list[str] = []) -> Tuple[str, Optional[str]]:
+    if coltype == "":
+        return "", "Col name type not specified"
+
+    if len(colnames) == 0:
+        return "", "Col names not specified"
+
+    for colname in colnames:
+        if coltype in colname.lower():
+            return colname, None
+
+    return "", f"Couldn't find {coltype} colname"
+
 def parse_pub_file(
     pub_file: str = ""
 ) -> Tuple[
@@ -157,6 +170,34 @@ def parse_pub_file(
     except pd.errors.EmptyDataError:
         return None, f"EmptyDataError for {pub_file}."
     
+    min_colname, error = get_colname('min', lat_df.columns)
+    if error:
+        console.print(
+            f"Error getting min colname for {pub_file}: {error}",
+            style="bold red"
+        )
+
+    max_colname, error = get_colname('max', lat_df.columns)
+    if error:
+        console.print(
+            f"Error getting max colname for {pub_file}: {error}",
+            style="bold red"
+        )
+
+    avg_colname, error = get_colname('ave', lat_df.columns)
+    if error:
+        console.print(
+            f"Error getting ave colname for {pub_file}: {error}",
+            style="bold red"
+        )
+
+    first_row = lat_df.iloc[0]
+    first_min = first_row[min_colname]
+    first_max = first_row[max_colname]
+    first_avg = first_row[avg_colname]
+    
+    first_latency_values = list(set([first_min, first_max, first_avg]))
+
     # ? Pick out the latency column ONLY
     latency_col = None
     for col in lat_df.columns:
@@ -168,9 +209,17 @@ def parse_pub_file(
         return None, f"Couldn't find latency column for {pub_file}."
 
     lat_df = lat_df[latency_col]
+
+    # ? Add the first latency values to the dataframe
+    lat_df = pd.concat([
+        pd.Series(first_latency_values),
+        lat_df
+    ], axis=0)
+    lat_df = lat_df.reset_index(drop=True)
     lat_df = lat_df.rename("latency_us")
     lat_df = lat_df.dropna()
-
+    lat_df = lat_df.astype(int, errors="ignore")
+    
     return lat_df, None
 
 def summarise_test(
