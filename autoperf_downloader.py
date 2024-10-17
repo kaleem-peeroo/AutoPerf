@@ -96,12 +96,25 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
                         )
                         continue
 
+                remote_hash = get_remote_hash(ssh, remote_data_zip)
                 sftp.get(
                     remote_data_zip, 
                     f"{local_download_output_dir}/{output_type}/{data_dir}.zip"
                 )
+                local_hash = os.popen(
+                    f"sha1sum {local_download_output_dir}/{output_type}/{data_dir}.zip | awk '{{print $1}}'"
+                ).read().strip()
+
+                if remote_hash != local_hash:
+                    console.print(
+                        f"Hashes don't match for {data_dir}.zip. Deleting...",
+                        style="bold red"
+                    )
+                    os.remove(f"{local_download_output_dir}/{output_type}/{data_dir}.zip")
+                    continue
+
                 console.print(
-                    f"{count_string} {data_dir}.zip downloaded.", 
+                    f"{count_string} {data_dir}.zip ({remote_filesize}) downloaded.", 
                     style="bold green"
                 )
             except Exception as e:
