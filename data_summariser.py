@@ -293,7 +293,8 @@ def summarise_test(
     return test_summ_path, None
 
 def summarise_tests(
-    data_path: str = ""
+    data_path: str = "",
+    status: Console.status = None
 ) -> Tuple[
     str, 
     Optional[str]
@@ -318,12 +319,11 @@ def summarise_tests(
     
     for test_dir_count, test_dir in enumerate(test_dirs):
         count_string = f"[{test_dir_count + 1}/{len(test_dirs)}]"
-        console.print(
+        status.update(
             "{} Summarising {}".format(
                 count_string, 
                 test_dir
-            ),
-            style="bold white"
+            )
         )
         test_summ_path, error = summarise_test(test_dir, SUMM_PATH)
         if error:
@@ -333,11 +333,17 @@ def summarise_tests(
             )
             continue
 
+        console.print(
+            f"{count_string} Summarised {os.path.basename(test_dir)}.",
+            style="bold green"
+        )
+
     return SUMM_PATH, None
 
 def generate_dataset(
     summ_path: str = "",
-    truncation_percent: float = 0
+    truncation_percent: float = 0,
+    status: Console.status = None
 ) -> Tuple[
     str,
     Optional[str]
@@ -356,20 +362,19 @@ def generate_dataset(
     truncation_integer = int(truncation_percent * 100)
 
     ds_path = summ_path.replace("summarised_data", "datasets")
-    ds_filename = f"_{truncation_integer}_percent_dataset.csv"
+    ds_filename = f"_{truncation_integer}_percent_dataset.parquet"
     ds_path = ds_path + ds_filename
     os.makedirs(os.path.dirname(ds_path), exist_ok=True)
 
     dataset_df = pd.DataFrame()
     for test_csv_count, test_csv in enumerate(test_files):
         count_string = f"[{test_csv_count + 1}/{len(test_files)}]"
-        console.print(
+        status.update(
             "{} Generating {} dataset from {}".format(
                 count_string, 
                 f"{truncation_integer}%",
-                test_csv
-            ),
-            style="bold white"
+                os.path.basename(test_csv)
+            )
         )
 
         new_dataset_row = {}
@@ -439,35 +444,49 @@ def generate_dataset(
             ignore_index = True
         )
 
-    dataset_df.to_csv(ds_path, index=False)
+    dataset_df.to_parquet(ds_path, index=False)
+    console.print(
+        f"Generated {truncation_integer}% dataset at {ds_path}.",
+        style="bold green"
+    )
 
     return ds_path, None
 
 def main(sys_args: list[str]) -> None:
-    if len(sys_args) < 2:
-        console.print(
-            "Filepath not specified. Usage:{}".format(
-                "\n\tpython data_summariser.py <path_to_test_folders>"
-            ),
-            style="bold red"
-        )
-        return
+    with console.status("Running...") as status:
+        if len(sys_args) < 2:
+            console.print(
+                "Filepath not specified. Usage:{}".format(
+                    "\n\tpython data_summariser.py <path_to_test_folders>"
+                ),
+                style="bold red"
+            )
+            return
 
-    DATA_PATH = sys_args[1]
-    if not os.path.exists(DATA_PATH):
-        console.print(
-            f"Path does not exist: {DATA_PATH}",
-            style="bold red"
-        )
-        return
+        DATA_PATH = sys_args[1]
+        if not os.path.exists(DATA_PATH):
+            console.print(
+                f"Path does not exist: {DATA_PATH}",
+                style="bold red"
+            )
+            return
 
-    SUMM_PATH, error = summarise_tests(DATA_PATH)
-    if error:
-        console.print(
-            "Error summarising tests: {}".format(error),
-            style="bold red"
-        )
-        return
+        status.update("Summarising tests...")
+        SUMM_PATH, error = summarise_tests(DATA_PATH, status)
+        if error:
+            console.print(
+                "Error summarising tests: {}".format(error),
+                style="bold red"
+            )
+            return
+
+        DS_PATH, error = generate_dataset(SUMM_PATH, 0, status)
+        if error:
+            console.print(
+                f"Error generating dataset: {error}",
+                style="bold red"
+            )
+            return
 
     # DS_PATH, error = generate_dataset(SUMM_PATH, 0.1)
     # if error:
