@@ -469,29 +469,29 @@ def main(sys_args: list[str]) -> None:
         )
         return
 
-    DS_PATH, error = generate_dataset(SUMM_PATH, 0.1)
-    if error:
-        console.print(
-            f"Error generating dataset: {error}",
-            style="bold red"
-        )
-        return
-
-    DS_PATH, error = generate_dataset(SUMM_PATH, 0.25)
-    if error:
-        console.print(
-            f"Error generating dataset: {error}",
-            style="bold red"
-        )
-        return
-
-    DS_PATH, error = generate_dataset(SUMM_PATH, 0.5)
-    if error:
-        console.print(
-            f"Error generating dataset: {error}",
-            style="bold red"
-        )
-        return
+    # DS_PATH, error = generate_dataset(SUMM_PATH, 0.1)
+    # if error:
+    #     console.print(
+    #         f"Error generating dataset: {error}",
+    #         style="bold red"
+    #     )
+    #     return
+    #
+    # DS_PATH, error = generate_dataset(SUMM_PATH, 0.25)
+    # if error:
+    #     console.print(
+    #         f"Error generating dataset: {error}",
+    #         style="bold red"
+    #     )
+    #     return
+    #
+    # DS_PATH, error = generate_dataset(SUMM_PATH, 0.5)
+    # if error:
+    #     console.print(
+    #         f"Error generating dataset: {error}",
+    #         style="bold red"
+    #     )
+    #     return
 
 
 
