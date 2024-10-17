@@ -109,21 +109,26 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
             #     )
             # )
 
+            remote_hash = get_remote_hash(ssh, remote_data_zip)
+
             try:
                 if SKIP_DOWNLOADED:
                     if os.path.exists(
                         f"{local_download_output_dir}/{output_type}/{data_dir}.zip"
                     ):
-                        console.print(
-                            "{} {} already exists locally. Skipping...".format(
-                                count_string, 
-                                f"{data_dir}.zip"
-                            ),
-                            style="bold green"
-                        )
-                        continue
+                        local_hash = os.popen(
+                            f"sha1sum {local_download_output_dir}/{output_type}/{data_dir}.zip | awk '{{print $1}}'"
+                        ).read().strip()
 
-                remote_hash = get_remote_hash(ssh, remote_data_zip)
+                        if remote_hash == local_hash:
+                            console.print(
+                                "{} {} already exists locally. Skipping...".format(
+                                    count_string, 
+                                    f"{data_dir}.zip"
+                                ),
+                                style="bold green"
+                            )
+                            continue
 
                 sftp.get(
                     remote_data_zip, 
