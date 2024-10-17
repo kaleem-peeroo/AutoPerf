@@ -1675,7 +1675,7 @@ def get_ess_df(
     exp_dirname, error = get_valid_dirname(exp_name)
     if error:
         return None, f"Couldn't get experiment dirname for {exp_name}: {error}"
-    exp_ess_filename = f"{exp_dirname}.csv"
+    exp_ess_filename = f"{exp_dirname}.parquet"
 
     full_exp_dirname = os.path.join("/home/acwh025/AutoPerf/output/ess/", exp_ess_filename)
 
@@ -1701,7 +1701,7 @@ def get_ess_df(
     sftp.close()
     connection.close()
 
-    ess_df = pd.read_csv(f"./output/monitor/ess/{exp_ess_filename}")
+    ess_df = pd.read_parquet(f"./output/monitor/ess/{exp_ess_filename}")
     return ess_df, None
 
 def get_elapsed_time_from_ess(
