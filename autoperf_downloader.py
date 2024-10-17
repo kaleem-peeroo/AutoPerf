@@ -48,6 +48,22 @@ def remove_zi_files(sftp, remote_data_path):
         sftp.remove(f"{remote_data_path}/{file}")
         console.print(f"{count_string} {file} deleted.", style="bold green")
 
+def get_remote_hash(ssh, remote_file_path):
+    stdin, stdout, stderr = ssh.exec_command(f"sha1sum {remote_file_path} | awk '{{print $1}}'")
+    return stdout.read().decode().strip()
+
+def format_bytes(bytes):
+    # Return the number of bytes in a human-readable format
+    if bytes == 0:
+        return "0B"
+    suffixes = ["B", "KB", "MB", "GB", "TB"]
+    i = 0
+    while bytes >= 1024 and i < len(suffixes) - 1:
+        bytes /= 1024
+        i += 1
+
+    return f"{int(bytes)}{suffixes[i]}"
+
 def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir):
     if output_type == "data":
         remote_data_path = f"{ap_path}/output/data"
@@ -60,7 +76,11 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
     data_dirs = [data_dir for data_dir in data_dirs if not data_dir.endswith(".zip")]
     for index, data_dir in enumerate(data_dirs):
         count_string = f"[{index + 1}/{len(data_dirs)}]"
-        with console.status(f"{count_string} Downloading {data_dir}...") as status:
+
+        remote_filesize_bytes = sftp.stat(f"{remote_data_path}/{data_dir}").st_size
+        remote_filesize = format_bytes(remote_filesize_bytes)
+
+        with console.status(f"{count_string} Downloading {data_dir} ({remote_filesize})...") as status:
             remote_data_zip = f"{remote_data_path}/{data_dir}.zip"
 
             # If the zip doesn't exist, create it
