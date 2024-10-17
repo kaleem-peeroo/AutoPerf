@@ -65,11 +65,18 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
 
             # If the zip doesn't exist, create it
             if not check_remote_file_exists(sftp, remote_data_zip):
-                console.print(f"{data_dir}.zip does NOT exist. Creating...")
-                ssh.exec_command(
+                status.update(f"{data_dir}.zip ({remote_filesize}) does NOT exist. Creating...")
+                stdin, stdout, stderr = ssh.exec_command(
                     f"cd {remote_data_path} && zip -r {data_dir}.zip {data_dir}"
                 ) 
-                time.sleep(1)
+                exit_status = stdout.channel.recv_exit_status()
+                if exit_status != 0:
+                    console.print(
+                        f"Couldn't create {data_dir}.zip:\n\t{stderr.read().decode()}",
+                        style="bold red"
+                    )
+                    continue
+
                 console.print(f"{data_dir}.zip created.", style="bold green")
 
             os.makedirs(f"{local_download_output_dir}/{output_type}", exist_ok=True)
@@ -97,10 +104,12 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
                         continue
 
                 remote_hash = get_remote_hash(ssh, remote_data_zip)
+
                 sftp.get(
                     remote_data_zip, 
                     f"{local_download_output_dir}/{output_type}/{data_dir}.zip"
                 )
+
                 local_hash = os.popen(
                     f"sha1sum {local_download_output_dir}/{output_type}/{data_dir}.zip | awk '{{print $1}}'"
                 ).read().strip()
