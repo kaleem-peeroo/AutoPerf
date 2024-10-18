@@ -14,6 +14,7 @@ import shutil
 import socket
 import smtplib
 import asyncio
+import toml
 
 from tapo import ApiClient
 from pprint import pprint
@@ -399,11 +400,20 @@ def read_config(config_path: str = "") -> Tuple[ Optional[Dict], Optional[str] ]
     if not os.path.exists(config_path):
         return None, f"{config_path} doesn't exist as a path."
 
-    with open(config_path, 'r') as f:
-        try:
-            config = json.load(f)
-        except ValueError as e:
-            return None, f"Error parsing JSON for config file: {config_path}: \n\t{e}"
+    if config_path.endswith(".json"):
+        with open(config_path, 'r') as f:
+            try:
+                config = json.load(f)
+            except ValueError as e:
+                return None, f"Error parsing JSON for config file: {config_path}: \n\t{e}"
+
+    elif config_path.endswith(".toml"):
+        with open(config_path, "r") as f:
+            config = toml.load(f)
+            config = config['experiments']
+
+    else:
+        return None, f"Couldn't process the config file. Unknown file extension: {config_path}"
 
     if not isinstance(config, list):
         return None, f"Config file does not contain a list: {config_path}"
@@ -3054,10 +3064,11 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
     for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
         EXPERIMENT_NAME = EXPERIMENT['experiment_name']
+        experiment_counter_string = f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}]"
 
         # logger.debug(f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}...")
         logger.info(
-            f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}..."
+            f"{experiment_counter_string} Running {EXPERIMENT['experiment_name']}..."
         )
 
         EXPERIMENT_DIRPATH, dirname_error = get_dirname_from_experiment(EXPERIMENT)
@@ -3195,6 +3206,8 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             logger.error(f"Failed to get which tests failed from ESS DF: {error}")
             continue
 
+        logger.debug(f"Found {len(failed_test_names)} failed tests.")
+
         logger.debug("Getting configs for failed test names")
         failed_test_configs = []
         for test_name in failed_test_names:
@@ -3218,7 +3231,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 if run_test_error:
                     logger.error(f"Error running test {test_name}: {run_test_error}")
                     logger.info(
-                        f"[{EXPERIMENT_NAME}] {counter_string} [{test_name}] failed."
+                        f"[{EXPERIMENT_NAME}] [{test_name}] failed."
                     )
                     continue
 
