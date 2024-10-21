@@ -301,7 +301,16 @@ def read_config(config_path: str = ""):
 
     with open(config_path, 'r') as f:
         try:
-            config = json.load(f)
+            if config_path.endswith(".toml"):
+                config = toml.load(f)
+                config = config['machines']
+            elif config_path.endswith(".json"):
+                config = json.load(f)
+            else:
+                logger.error(
+                    f"Config file is not a .toml or .json file: {config_path}"
+                )
+                return None
         except ValueError as e:
             logger.error(
                 f"Error parsing JSON for config file: {config_path}: \n\t{e}"
