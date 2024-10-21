@@ -304,8 +304,10 @@ def read_config(config_path: str = ""):
             if config_path.endswith(".toml"):
                 config = toml.load(f)
                 config = config['machines']
+
             elif config_path.endswith(".json"):
                 config = json.load(f)
+
             else:
                 logger.error(
                     f"Config file is not a .toml or .json file: {config_path}"
