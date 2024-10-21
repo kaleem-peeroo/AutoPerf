@@ -4,6 +4,8 @@ combination_generation_type = ""
 quit_after_n_failed_tests = 0
 rcg_target_test_count = 0
 retry_failed_tests_n_times = 0 
+noise_generation = {}
+custom_test_list = []
 
   [experiments.qos_settings]
   durations_secs = []
