@@ -13,6 +13,9 @@ from autoperf import get_qos_dict_from_test_name
 
 console = Console()
 warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
+
+error_df = []
 
 def parse_sub_files(
     sub_files: list[str] = []
@@ -20,6 +23,7 @@ def parse_sub_files(
     Optional[pd.DataFrame | pd.Series],
     Optional[str]
 ]:
+    global error_df
     if len(sub_files) == 0:
         return None, "No subscriber files found"
 
@@ -40,8 +44,15 @@ def parse_sub_files(
         
         if start_index == 0:
             console.print(
-                f"Couldn't get start_index for header row from {sub_file}.",
+                f"Couldn't get start_index for header row from {os.path.basename(sub_file)}.",
                 style="bold red"
+            )
+            error_df.append(
+                {
+                    "filepath": sub_file,
+                    "filename": os.path.basename(sub_file),
+                    "error": "Couldn't get start_index for header row"
+                }
             )
             continue
 
@@ -59,10 +70,10 @@ def parse_sub_files(
             
         if end_index == 0:
             console.print(
-                f"Couldn't get end_index for summary row from {sub_file}.",
-                style="bold red"
+                f"Couldn't get end_index for summary row from {os.path.basename(sub_file)}. Defaulting to end of file.",
+                style="bold white"
             )
-            continue
+            end_index = line_count - 1
 
         nrows = end_index - start_index
         nrows = 0 if nrows < 0 else nrows
@@ -76,8 +87,15 @@ def parse_sub_files(
             )
         except pd.errors.ParserError as e:
             console.log(
-                f"Error when getting data from {sub_file}:{e}",
+                f"Error when getting data from {os.path.basename(sub_file)}:{e}",
                 style="bold red"
+            )
+            error_df.append(
+                {
+                    "filepath": sub_file,
+                    "filename": os.path.basename(sub_file),
+                    "error": e
+                }
             )
             continue
         
@@ -89,18 +107,30 @@ def parse_sub_files(
             for desired_metric in desired_metrics:
                 if desired_metric in col.lower() and "avg" not in col.lower():
                     col_name = col.strip().lower().replace(" ", "_")
+
                     if "samples/s" in col_name:
                         col_name = "samples_per_sec"
                     elif "%" in col_name:
                         col_name = "lost_samples_percent"
+
                     subs_df[f"{sub_name}_{col_name}"] = df[col]
-
-        # ? Remove rows with strings in them
-        subs_df = subs_df[subs_df.applymap(lambda x: not isinstance(x, str)).all(1)]
-
-        subs_df = subs_df.astype(float, errors="ignore")
+                    subs_df[
+                        f"{sub_name}_{col_name}"
+                    ] = subs_df[
+                        f"{sub_name}_{col_name}"
+                    ].astype(
+                        float, 
+                        errors="ignore"
+                    )
 
     if subs_df.empty:
+        error_df.append(
+            {
+                "filepath": sub_file,
+                "filename": os.path.basename(sub_file),
+                "error": "Subscriber data is empty"
+            }
+        )
         return None, "Subscriber data is empty"
 
     return subs_df, None
@@ -124,6 +154,7 @@ def parse_pub_file(
     Optional[pd.Series],
     Optional[str]
 ]:
+    global error_df
     if pub_file == "":
         return None, "Publisher file not specified"
 
@@ -142,7 +173,7 @@ def parse_pub_file(
             break
 
     if start_index == 0:
-        return None, f"Couldn't find start index for header row for {pub_file}."
+        return None, f"Couldn't find start index for header row for {os.path.basename(pub_file)}."
 
     # ? Find out where to stop parsing the file from (ignore the summary stats at the end)
     with open(pub_file, "r") as pub_file_obj:
@@ -158,7 +189,11 @@ def parse_pub_file(
             break
     
     if end_index == 0:
-        return None, f"Couldn't find end index for summary row for {pub_file}."
+        console.print(
+            f"Couldn't get end_index for summary row from {os.path.basename(pub_file)}. Defaulting to end of file.",
+            style="bold white"
+        )
+        end_index = line_count - 1
 
     try:
         lat_df = pd.read_csv(
@@ -168,7 +203,14 @@ def parse_pub_file(
             on_bad_lines="skip"
         )
     except pd.errors.EmptyDataError:
-        return None, f"EmptyDataError for {pub_file}."
+        error_df.append(
+            {
+                "filepath": pub_file,
+                "filename": os.path.basename(pub_file),
+                "error": "EmptyDataError"
+            }
+        )
+        return None, f"EmptyDataError for {os.path.basename(pub_file)}."
     
     min_colname, error = get_colname('min', lat_df.columns)
     if error:
@@ -206,7 +248,14 @@ def parse_pub_file(
             break
 
     if latency_col is None:
-        return None, f"Couldn't find latency column for {pub_file}."
+        error_df.append(
+            {
+                "filepath": pub_file,
+                "filename": os.path.basename(pub_file),
+                "error": "Couldn't find latency column"
+            }
+        )
+        return None, f"Couldn't find latency column for {os.path.basename(pub_file)}."
 
     lat_df = lat_df[latency_col]
 
@@ -222,6 +271,19 @@ def parse_pub_file(
     
     return lat_df, None
 
+def remove_strings(
+    df: pd.DataFrame = pd.DataFrame()
+) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
+
+    # TODO: Validate parameters
+    
+    for col in df.columns:
+        if df[col].dtype == "object":
+            df.loc[:, col] = df[col].str.replace('[^0-9]', '')
+            df.loc[:, col] = pd.to_numeric(df[col], errors='coerce')
+
+    return df, None
+
 def summarise_test(
     test_dir: str = "",
     summ_path: str = ""
@@ -229,6 +291,7 @@ def summarise_test(
     str,
     Optional[str]
 ]:
+    global error_df
     if test_dir == "":
         return "", "Test directory not specified"
 
@@ -262,13 +325,34 @@ def summarise_test(
     sub_files = [os.path.join(test_dir, f) for f in sub_files]
 
     if not os.path.exists(pub_file):
-        return test_summ_path, f"Publisher file not found: {pub_file}"
+        error_df.append(
+            {
+                "filepath": pub_file,
+                "filename": os.path.basename(pub_file),
+                "error": "Publisher file not found"
+            }
+        )
+        return test_summ_path, f"Publisher file not found: {os.path.basename(pub_file)}"
 
     if len(sub_files) == 0:
-        return test_summ_path, f"No subscriber files found in {test_dir}"
+        error_df.append(
+            {
+                "filepath": test_dir,
+                "filename": os.path.basename(test_dir),
+                "error": "No subscriber files found"
+            }
+        )
+        return test_summ_path, f"No subscriber files found in {os.path.basename(test_dir)}"
 
     lat_df, error = parse_pub_file(pub_file)
     if lat_df is None or error:
+        error_df.append(
+            {
+                "filepath": pub_file,
+                "filename": os.path.basename(pub_file),
+                "error": error
+            }
+        )
         return test_summ_path, f"Error parsing publisher file: {error}"
 
     subs_df, error = parse_sub_files(sub_files)
@@ -281,9 +365,21 @@ def summarise_test(
     sub_cols = [col for col in test_df.columns if 'sub' in col.lower()]
     sub_cols_without_sub = ["_".join(col.split("_")[2:]) for col in sub_cols]
     sub_metrics = list(set(sub_cols_without_sub))
+
     for sub_metric in sub_metrics:
         sub_metric_cols = [col for col in sub_cols if sub_metric in col]
         sub_metric_df = test_df[sub_metric_cols]
+
+        sub_metric_df, error = remove_strings(sub_metric_df)
+        if error:
+            error_df.append(
+                {
+                    "filepath": test_dir,
+                    "filename": os.path.basename(test_dir),
+                    "error": error
+                }
+            )
+            continue
 
         test_df['avg_' + sub_metric + "_per_sub"] = sub_metric_df.mean(axis=1)
         test_df['total_' + sub_metric + "_over_subs"] = sub_metric_df.sum(axis=1)
@@ -299,6 +395,7 @@ def summarise_tests(
     str, 
     Optional[str]
 ]:
+    global error_df
     if data_path == "":
         return "", "Data path not specified"
 
@@ -328,8 +425,15 @@ def summarise_tests(
         test_summ_path, error = summarise_test(test_dir, SUMM_PATH)
         if error:
             console.print(
-                f"Error summarising test {test_dir}: {error}",
+                f"Error summarising test {os.path.basename(test_dir)}: {error}",
                 style="bold red"
+            )
+            error_df.append(
+                {
+                    "filepath": test_dir,
+                    "filename": os.path.basename(test_dir),
+                    "error": error
+                }
             )
             continue
 
@@ -419,7 +523,9 @@ def generate_dataset(
             column_df = pd.DataFrame(column_values)
             
             for PERCENTILE in PERCENTILES:
-                new_dataset_row[f"{column}_{PERCENTILE}%"] = column_df.quantile(PERCENTILE / 100).values[0]
+                new_dataset_row[
+                    f"{column}_{PERCENTILE}%"
+                ] = column_df.quantile(PERCENTILE / 100).values[0]
 
             for STAT in DISTRIBUTION_STATS:
                 if STAT == "mean":
@@ -453,6 +559,7 @@ def generate_dataset(
     return ds_path, None
 
 def main(sys_args: list[str]) -> None:
+    global error_df
     with console.status("Running...") as status:
         if len(sys_args) < 2:
             console.print(
@@ -480,13 +587,13 @@ def main(sys_args: list[str]) -> None:
             )
             return
 
-        DS_PATH, error = generate_dataset(SUMM_PATH, 0, status)
-        if error:
-            console.print(
-                f"Error generating dataset: {error}",
-                style="bold red"
-            )
-            return
+        # DS_PATH, error = generate_dataset(SUMM_PATH, 0, status)
+        # if error:
+        #     console.print(
+        #         f"Error generating dataset: {error}",
+        #         style="bold red"
+        #     )
+        #     return
 
     # DS_PATH, error = generate_dataset(SUMM_PATH, 0.1)
     # if error:
@@ -511,6 +618,12 @@ def main(sys_args: list[str]) -> None:
     #         style="bold red"
     #     )
     #     return
+
+    error_df = pd.DataFrame(error_df)
+    error_df.to_csv(
+        "./output/data_summariser_errors.csv",
+        index=False
+    )
 
 
 
