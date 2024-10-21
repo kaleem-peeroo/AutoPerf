@@ -3231,7 +3231,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 if run_test_error:
                     logger.error(f"Error running test {test_name}: {run_test_error}")
                     logger.info(
-                        f"[{EXPERIMENT_NAME}] [{test_name}] failed."
+                        f"[{3 - retry_counter}/3] [{EXPERIMENT_NAME}] [{test_name}] failed."
                     )
                     continue
 
