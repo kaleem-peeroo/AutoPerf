@@ -1,39 +1,34 @@
-[[experiments]]
-experiment_name = "devtest custom test lists"
-combination_generation_type = "pcg"
+[[campaigns]]
+campaign_name = "devtest custom test lists 3"
+combination_generation_type = "rcg"
 quit_after_n_failed_tests = 0
-rcg_target_test_count = 0
+rcg_target_test_count = 2
 retry_failed_tests_n_times = 0 
-custom_test_list = [
-  "60SEC_512B_1PUB_1SUB_REL_MC_0DUR_100LC",
-  "60SEC_512B_1PUB_2SUB_REL_MC_1DUR_100LC",
-  "60SEC_512B_2PUB_1SUB_BE_MC_2DUR_100LC",
-  "60SEC_100B_1PUB_1SUB_REL_UC_3DUR_100LC",
-]
+custom_test_list = []
 
-  [experiments.noise_generation]
+  [campaigns.noise_generation]
   packet_loss = ""
   packet_corruption = ""
   packet_duplication = ""
   bandwidth_rate = "1000mbit"
 
-  [experiments.noise_generation.delay]
+  [campaigns.noise_generation.delay]
   value = "0ms"
   variation = "0ms"
   correlation = "0%"
   distribution = "normal"
 
-  [experiments.qos_settings]
-  duration_secs = []
-  datalen_bytes = []
-  pub_count = []
-  sub_count = []
-  use_reliable = []
-  use_multicast = []
-  durability_level = []
-  latency_count = []
+  [campaigns.qos_settings]
+  duration_secs = [10]
+  datalen_bytes = [100, 200]
+  pub_count = [1]
+  sub_count = [1]
+  use_reliable = [false]
+  use_multicast = [true]
+  durability_level = [0]
+  latency_count = [100]
 
-  [[experiments.slave_machines]]
+  [[campaigns.slave_machines]]
   machine_name = "p1"
   participant_allocation = "pub"
   ip = "169.254.248.55"
@@ -41,7 +36,7 @@ custom_test_list = [
   username = "acwh025"
   perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
 
-  [[experiments.slave_machines]]
+  [[campaigns.slave_machines]]
   machine_name = "p2" 
   participant_allocation = "sub"
   ip = "169.254.201.141"
