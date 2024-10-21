@@ -4,6 +4,7 @@
         "combination_generation_type": "pcg",
         "quit_after_n_failed_tests": 10,
         "rcg_target_test_count": 0,
+        "retry_failed_tests_n_times": 3,
         "noise_generation": {
           "delay": {
             "value": "0ms",
@@ -49,6 +50,7 @@
         "experiment_name": "3Pi Data Collection 6Mbps",
         "combination_generation_type": "pcg",
         "quit_after_n_failed_tests": 10,
+        "retry_failed_tests_n_times": 3,
         "rcg_target_test_count": 0,
         "noise_generation": {
           "delay": {
