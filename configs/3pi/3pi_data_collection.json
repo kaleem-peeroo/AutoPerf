@@ -5,6 +5,7 @@
         "quit_after_n_failed_tests": 10,
         "rcg_target_test_count": 0,
         "retry_failed_tests_n_times": 3,
+        "custom_test_list": [],
         "noise_generation": {
           "delay": {
             "value": "0ms",
@@ -52,6 +53,7 @@
         "quit_after_n_failed_tests": 10,
         "retry_failed_tests_n_times": 3,
         "rcg_target_test_count": 0,
+        "custom_test_list": [],
         "noise_generation": {
           "delay": {
             "value": "0ms",
