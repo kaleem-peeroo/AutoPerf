@@ -2266,7 +2266,9 @@ def run_test(
     # 13. Return ESS
     return new_ess_df, None
 
-def generate_test_config_from_qos(qos: Optional[Dict] = None) -> Optional[Dict]:
+def generate_test_config_from_qos(
+    qos: Optional[Dict] = None
+) -> Tuple[ Optional[Dict], Optional[str] ]:
     """
     Generate a test config from the given qos settings.
 
@@ -2277,37 +2279,23 @@ def generate_test_config_from_qos(qos: Optional[Dict] = None) -> Optional[Dict]:
         - Dict: Test config if valid, None otherwise.
     """
     if qos is None:
-        logger.error(
-            f"No QoS passed."
-        )
-        return None
+        return None, f"No QoS passed."
 
     keys = qos.keys()
     if len(keys) == 0:
-        logger.error(
-            f"No options found for qos"
-        )
-        return None
+        return None, f"No options found for qos"
 
     for key in keys:
         if key not in REQUIRED_QOS_KEYS:
-            logger.error(
-                f"Found an unexpected QoS setting: {key}"
-            )
-            return None
+            return None, f"Found an unexpected QoS setting: {key}"
 
     values = qos.values()
     if len(values) == 0:
-        logger.error(
-            f"No values found for qos"
-        )
-        return None
+        return None, f"No values found for qos"
+
     for value in values:
         if len(value) == 0:
-            logger.error(
-                f"One of the settings has no values."
-            )
-            return None
+            return None, f"One of the settings has no values."
 
     test_config = {}
     for qos_setting, qos_values in qos.items():
@@ -2316,8 +2304,7 @@ def generate_test_config_from_qos(qos: Optional[Dict] = None) -> Optional[Dict]:
             continue
 
         if len(qos_values) > 2:
-            logger.error(f"Can't have more than 2 values for RCG qos setting: {qos_setting}")
-            return None
+            return None, f"Can't have more than 2 values for RCG qos setting: {qos_setting}"
 
         all_items_are_ints = all(isinstance(qos_value, int) for qos_value in qos_values)
 
@@ -2332,7 +2319,7 @@ def generate_test_config_from_qos(qos: Optional[Dict] = None) -> Optional[Dict]:
         else:
             test_config[qos_setting] = random.choice(qos_values)
         
-    return test_config
+    return test_config, None
 
 def get_csv_file_count_from_dir(dirpath: str = "") -> Optional[int]:
     # TODO: Implement unit tests for this function
@@ -3157,17 +3144,12 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             )
             continue
 
-        TEST_GET_TYPE, error = get_test_gen_type(CAMPAIGN_CONF)
+        TEST_GEN_TYPE, error = get_test_gen_type(CAMPAIGN_CONF)
         if error:
-            logger.error(f"{campaign_prefix} Error getting test gen type: {error}")
+            logger.error(
+                f"{campaign_prefix} Error getting test gen type: {error}"
+            )
             continue 
-
-        if len(custom_test_list) > 0:
-            TEST_GEN_TYPE = "custom_test_list"
-        elif is_pcg:
-            TEST_GEN_TYPE = "pcg"
-        else:
-            TEST_GEN_TYPE = "rcg"
 
         CAMPAIGN_DIRNAME = os.path.basename(CAMPAIGN_DIRPATH)
         ESS_PATH = os.path.join(ESS_DIR, f"{CAMPAIGN_DIRNAME}.parquet")
@@ -3223,9 +3205,9 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 test_config = COMBINATIONS[test_index]
 
             elif TEST_GEN_TYPE == "rcg":
-                test_config = generate_test_config_from_qos(CAMPAIGN_CONF['qos_settings'])
-                if test_config is None:
-                    logger.error(f"{campaign_prefix} Error generating RCG config")
+                test_config, error = generate_test_config_from_qos(CAMPAIGN_CONF['qos_settings'])
+                if error:
+                    logger.error(f"{campaign_prefix} Error generating RCG config: {error}")
                     continue
 
             elif TEST_GEN_TYPE == "custom_test_list":
@@ -3235,7 +3217,9 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 logger.error(f"Unknown test gen type: {TEST_GEN_TYPE}")
                 continue
 
-            test_name, test_name_error = get_test_name_from_combination_dict(test_config)
+            test_name, test_name_error = get_test_name_from_combination_dict(
+                test_config
+            )
             if test_name_error:
                 logger.error(f"Error getting test name: {test_name_error}")
                 continue
@@ -3371,9 +3355,4 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
 if __name__ == "__main__":
     main(sys.argv)
-
-    # if pytest.main(["-q", "./pytests/test_autoperf.py", "--exitfirst"]) == 0:
-        # main(sys.argv)
-    # else:
-        # logger.error("Tests failed.")
-        # sys.exit(1)
+    
