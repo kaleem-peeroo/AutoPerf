@@ -410,7 +410,7 @@ def read_config(config_path: str = "") -> Tuple[ Optional[Dict], Optional[str] ]
     elif config_path.endswith(".toml"):
         with open(config_path, "r") as f:
             config = toml.load(f)
-            config = config['experiments']
+            config = config['campaigns']
 
     else:
         return None, f"Couldn't process the config file. Unknown file extension: {config_path}"
@@ -418,78 +418,78 @@ def read_config(config_path: str = "") -> Tuple[ Optional[Dict], Optional[str] ]
     if not isinstance(config, list):
         return None, f"Config file does not contain a list: {config_path}"
 
-    for experiment in config:
-        if not isinstance(experiment, dict):
-            return None, f"{experiment} is NOT a dictionary."
+    for campaign in config:
+        if not isinstance(campaign, dict):
+            return None, f"{campaign} is NOT a dictionary."
     
-        is_experiment_config_valid, validate_dict_error = validate_dict_using_keys(
-            list(experiment.keys()),
-            REQUIRED_EXPERIMENT_KEYS
+        is_campaign_config_valid, validate_dict_error = validate_dict_using_keys(
+            list(campaign.keys()),
+            REQUIRED_CAMPAIGN_KEYS
         )
         if validate_dict_error:
-            return None, f"Error validating {experiment['experiment_name']}\n\t{validate_dict_error}"
-        if not is_experiment_config_valid:
-            return None, f"Config invalid for {experiment['experiment_name']} in {config_path}."
+            return None, f"Error validating {campaign['campaign_name']}\n\t{validate_dict_error}"
+        if not is_campaign_config_valid:
+            return None, f"Config invalid for {campaign['campaign_name']} in {config_path}."
 
-        qos_settings = experiment['qos_settings']
+        qos_settings = campaign['qos_settings']
         is_qos_config_valid, validate_dict_error = validate_dict_using_keys(
             list(qos_settings.keys()),
             REQUIRED_QOS_KEYS
         )
         if validate_dict_error:
-            return None, f"Error validating {experiment['experiment_name']}: {validate_dict_error}."
+            return None, f"Error validating {campaign['campaign_name']}: {validate_dict_error}."
         if not is_qos_config_valid:
-            return None, f"Config invalid for {experiment}."
+            return None, f"Config invalid for {campaign}."
 
-        slave_machine_settings = experiment['slave_machines']
+        slave_machine_settings = campaign['slave_machines']
         for machine_setting in slave_machine_settings:
             is_slave_machine_config_valid, validate_dict_error = validate_dict_using_keys(
                 list(machine_setting.keys()),
                 REQUIRED_SLAVE_MACHINE_KEYS
             )
             if validate_dict_error:
-                return None, f"Error validating slave machine {machine_setting['machine_name']} for {experiment['experiment_name']}."
+                return None, f"Error validating slave machine {machine_setting['machine_name']} for {campaign['campaign_name']}."
             if not is_slave_machine_config_valid:
-                return None, f"Config invalid for slave machine {machine_setting['machine_name']} for {experiment['experiment_name']}."
+                return None, f"Config invalid for slave machine {machine_setting['machine_name']} for {campaign['campaign_name']}."
 
-        noise_gen_settings = experiment['noise_generation']
+        noise_gen_settings = campaign['noise_generation']
         if noise_gen_settings != {}:
             is_noise_gen_config_valid, validate_dict_error = validate_dict_using_keys(
                 list(noise_gen_settings.keys()),
                 REQUIRED_NOISE_GENERATION_KEYS
             )
             if validate_dict_error:
-                return None, f"Error validating noise generation for {experiment['experiment_name']}: {validate_dict_error}"
+                return None, f"Error validating noise generation for {campaign['campaign_name']}: {validate_dict_error}"
             if not is_noise_gen_config_valid:
-                return None, f"Config invalid for noise generation for {experiment['experiment_name']}."
+                return None, f"Config invalid for noise generation for {campaign['campaign_name']}."
 
     return config, None
 
-def get_if_pcg(experiment: Optional[Dict] = None) -> Tuple[ Optional[bool], Optional[str] ]:
+def get_if_pcg(campaign: Optional[Dict] = None) -> Tuple[ Optional[bool], Optional[str] ]:
     """
-    Check if the experiment is PCG or RCG by checking the combination_generation_type.
+    Check if the campaign is PCG or RCG by checking the combination_generation_type.
 
     Params:
-        - experiment (Dict): Experiment config.
+        - campaign (Dict): campaign config.
 
     Returns:
         - bool: True if PCG, False if RCG, None otherwise.
         - error
     """
-    if experiment is None:
-        return False, f"No experiment given."
+    if campaign is None:
+        return False, f"No campaign given."
 
-    if 'combination_generation_type' not in experiment.keys():
-        return False, f"combination_generation_type option not found in experiment config."
+    if 'combination_generation_type' not in campaign.keys():
+        return False, f"combination_generation_type option not found in campaign config."
 
-    if experiment['combination_generation_type'] == "":
+    if campaign['combination_generation_type'] == "":
         return False, "combination_generation_type is empty."
 
-    combination_generation_type = experiment['combination_generation_type']
+    combination_generation_type = campaign['combination_generation_type']
     if combination_generation_type not in ['pcg', 'rcg']:
         return False, f"Invalid value for combination generation type: {combination_generation_type}.\n\tExpected either PCG or RCG."
     
-    return experiment['combination_generation_type'] == 'pcg', None
+    return campaign['combination_generation_type'] == 'pcg', None
 
 def get_valid_dirname(dir_name: str = "") -> Tuple[ Optional[str], Optional[str]]:
     """
@@ -517,27 +517,27 @@ def get_valid_dirname(dir_name: str = "") -> Tuple[ Optional[str], Optional[str]
 
     return dir_name, None
 
-def get_dirname_from_experiment(experiment: Optional[Dict] = None) -> Tuple[ Optional[str], Optional[str] ]:
+def get_campaign_dirpath(campaign: Optional[Dict] = None) -> Tuple[ Optional[str], Optional[str] ]:
     """
-    Get a valid dirname from the experiment config by appending the experiment name to the data directory.
+    Get a valid directory path from the campaign config by appending the campaign name to the data directory.
 
     Params:
-        - experiment (Dict): Experiment config.
+        - campaign (Dict): campaign config.
 
     Returns:
         - str: Valid dirname if valid, None otherwise.
         - error
     """
-    if experiment is None:
-        return None, f"No experiment config passed."
+    if campaign is None:
+        return None, f"No campaign config passed."
 
-    experiment_dirname, dirname_error = get_valid_dirname(experiment['experiment_name'])
+    campaign_dirname, dirname_error = get_valid_dirname(campaign['campaign_name'])
     if dirname_error:
-        return None, f"Couldn't get a valid dirname for {experiment_name}"
+        return None, f"Couldn't get a valid dirname for {campaign_name}"
 
-    experiment_dirname = os.path.join(DATA_DIR, experiment_dirname)
+    campaign_dirname = os.path.join(DATA_DIR, campaign_dirname)
 
-    return experiment_dirname, None
+    return campaign_dirname, None
 
 def generate_combinations_from_qos(qos: Dict = {}) -> Tuple[Optional[List], Optional[str]]:
     """
@@ -1740,7 +1740,7 @@ def run_test(
     test_config: Dict = {}, 
     machine_configs: List = [],
     ess_df: pd.DataFrame = pd.DataFrame(),
-    experiment_dirpath: str = "",
+    campaign_dirpath: str = "",
     noise_gen_config: Dict = {}
 ) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
     """
@@ -1761,7 +1761,7 @@ def run_test(
                 }
         - machine_configs (List): List of machine configs.
         - ess_df (pd.DataFrame): ESS dataframe.
-        - experiment_dirpath (str): Experiment directory path.
+        - campaign_dirpath (str): campaign directory path.
         - nosie_gen_config (Dict): Config for noise generation.
 
     Returns:
@@ -1786,8 +1786,8 @@ def run_test(
     if not isinstance(machine_configs, List):
         return None, f"Machine config is not a list."
 
-    if experiment_dirpath == "":
-        return None, f"No experiment dirpath passed."
+    if campaign_dirpath == "":
+        return None, f"No campaign dirpath passed."
 
     if noise_gen_config is None:
         return None, f"No noise generation config passed."
@@ -1797,7 +1797,7 @@ def run_test(
 
     new_ess_df = ess_df
 
-    EXPERIMENT_NAME = os.path.basename(experiment_dirpath)
+    CAMPAIGN_NAME = os.path.basename(campaign_dirpath)
 
     test_name, test_error = get_test_name_from_combination_dict(test_config)
     if test_error:
@@ -1912,7 +1912,7 @@ def run_test(
         #     ), f"failed initial ssh check on {machine_ip}: {ssh_check_error}"
 
     logger.info(
-        f"[{EXPERIMENT_NAME}] [{test_name}] Restarting all machines..."
+        f"[{CAMPAIGN_NAME}] [{test_name}] Restarting all machines..."
     )
 
     # 2. Restart machines.
@@ -1932,7 +1932,7 @@ def run_test(
                 )
         
         logger.info(
-            f"[{EXPERIMENT_NAME}] [{test_name}] All machines have restarted. Waiting 15 seconds..."
+            f"[{CAMPAIGN_NAME}] [{test_name}] All machines have restarted. Waiting 15 seconds..."
         )
         
         time.sleep(15)
@@ -1980,7 +1980,7 @@ def run_test(
         
     else:
         logger.info(
-            f"[{EXPERIMENT_NAME}] [{test_name}] All machines are available."
+            f"[{CAMPAIGN_NAME}] [{test_name}] All machines are available."
         )
 
     if DEBUG_MODE:
@@ -2049,7 +2049,7 @@ def run_test(
 
     # 7. Delete any artifact csv files.
     logger.info(
-        f"[{EXPERIMENT_NAME}] [{test_name}] Deleting .csv files before test..."
+        f"[{CAMPAIGN_NAME}] [{test_name}] Deleting .csv files before test..."
     )
 
     with Manager() as manager:
@@ -2074,7 +2074,7 @@ def run_test(
                 process.join()
 
     logger.info(
-        f"[{EXPERIMENT_NAME}] [{test_name}] .csv files deleted"
+        f"[{CAMPAIGN_NAME}] [{test_name}] .csv files deleted"
     )
 
     # 8. Generate noise genertion scripts if needed and add to existing scripts. 
@@ -2171,7 +2171,7 @@ def run_test(
     end_timestamp = datetime.datetime.now()
 
     # 10. Check for and download results.
-    local_results_dir = os.path.join(experiment_dirpath, test_name)
+    local_results_dir = os.path.join(campaign_dirpath, test_name)
     with Manager() as manager:
         machine_statuses = manager.dict()
 
@@ -2207,7 +2207,7 @@ def run_test(
     expected_csv_file_count = get_expected_csv_file_count_from_test_name(test_name)
     actual_csv_file_count = get_csv_file_count_from_dir(local_results_dir)
 
-    test_identifier_string = f"[{EXPERIMENT_NAME}] [{test_name}]"
+    test_identifier_string = f"[{CAMPAIGN_NAME}] [{test_name}]"
     file_count_string = f"{actual_csv_file_count}/{expected_csv_file_count}"
     logger.debug(f"{test_identifier_string} {file_count_string} downloaded files found.")
 
@@ -2634,14 +2634,14 @@ def summarise_tests(dirpath: str = "") -> Optional[str]:
             )
             return None
                                                                                                     
-    experiment_name = os.path.basename(dirpath)
+    campaign_name = os.path.basename(dirpath)
 
     if output_dir_type == "5pi":
-        summaries_dirpath = os.path.join(SUMMARISED_DIR, "5pi", experiment_name)
+        summaries_dirpath = os.path.join(SUMMARISED_DIR, "5pi", campaign_name)
     elif output_dir_type == "3pi":
-        summaries_dirpath = os.path.join(SUMMARISED_DIR, "3pi", experiment_name)
+        summaries_dirpath = os.path.join(SUMMARISED_DIR, "3pi", campaign_name)
     else:
-        summaries_dirpath = os.path.join(SUMMARISED_DIR, experiment_name)
+        summaries_dirpath = os.path.join(SUMMARISED_DIR, campaign_name)
 
     if os.path.exists(summaries_dirpath):
         summaries_dirpath_files = os.listdir(summaries_dirpath)
@@ -2742,8 +2742,8 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
         )
         return None
 
-    experiment_name = os.path.basename(dirpath)
-    summaries_dirpath = os.path.join(SUMMARISED_DIR, experiment_name)
+    campaign_name = os.path.basename(dirpath)
+    summaries_dirpath = os.path.join(SUMMARISED_DIR, campaign_name)
     if not os.path.exists(summaries_dirpath):
         logger.error(
             f"Summarised dirpath {summaries_dirpath} does NOT exist."
@@ -2758,12 +2758,12 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
         )
     
     logger.info(
-        f"[{experiment_name}] Generating dataset from {len(test_csvs)} tests with {truncation_percent}% truncation..."
+        f"[{campaign_name}] Generating dataset from {len(test_csvs)} tests with {truncation_percent}% truncation..."
     )
 
-    experiment_name = os.path.basename(dirpath)
+    campaign_name = os.path.basename(dirpath)
     current_timestamp = datetime.datetime.today().strftime('%Y-%m-%d_%H-%M-%S')
-    filename = f"{current_timestamp}_{experiment_name}_dataset_{truncation_percent}_percent_truncation.csv"
+    filename = f"{current_timestamp}_{campaign_name}_dataset_{truncation_percent}_percent_truncation.csv"
     filename = os.path.join("output/datasets", filename)
 
     dataset_df = pd.DataFrame()
@@ -2836,20 +2836,20 @@ def generate_dataset(dirpath: str = "", truncation_percent: int = 0) -> Optional
     dataset_df.to_csv(filename, index=False)
 
     logger.info(
-        f"[{experiment_name}] Generated dataset: {filename}"
+        f"[{campaign_name}] Generated dataset: {filename}"
     )
     return filename
 
-def get_ess_df_from_experiment(experiment_config: Dict = {}) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
-    if experiment_config == {}:
-        return None, "No experiment config passed to get_ess_df_from_experiment()"
+def get_ess_df_from_campaign(campaign_config: Dict = {}) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
+    if campaign_config == {}:
+        return None, "No campaign config passed to get_ess_df_from_campaign()"
 
-    EXPERIMENT_DIRPATH, dirname_error = get_dirname_from_experiment(experiment_config)
+    CAMPAIGN_DIRPATH, dirname_error = get_campaign_dirpath(campaign_config)
     if dirname_error:
         return None, dirname_error
 
-    EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
-    ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.parquet")
+    CAMPAIGN_DIRNAME = os.path.basename(CAMPAIGN_DIRPATH)
+    ESS_PATH = os.path.join(ESS_DIR, f"{CAMPAIGN_DIRNAME}.parquet")
 
     ess_df, ess_error = get_ess_df(ESS_PATH)
     if ess_error:
@@ -2857,10 +2857,10 @@ def get_ess_df_from_experiment(experiment_config: Dict = {}) -> Tuple[Optional[p
 
     return ess_df, None
 
-def get_test_gen_type(experiment_config):
+def get_test_gen_type(campaign_config):
     # TODO: Validate parameters
-    custom_test_list = experiment_config['custom_test_list']
-    comb_gen_type = experiment_config['combination_generation_type']
+    custom_test_list = campaign_config['custom_test_list']
+    comb_gen_type = campaign_config['combination_generation_type']
     
     if len(custom_test_list) > 0:
         return "custom_test_list", None
@@ -2871,46 +2871,46 @@ def get_test_gen_type(experiment_config):
     else:
         return None, "Couldn't get test generation type."
 
-def get_expected_test_count_from_experiment(experiment_config: Dict = {}) -> Tuple[Optional[int], Optional[str]]:
-    if experiment_config == {}:
-        return None, "No experiment config passed."
+def get_expected_test_count_from_campaign(campaign_config: Dict = {}) -> Tuple[Optional[int], Optional[str]]:
+    if campaign_config == {}:
+        return None, "No campaign config passed."
 
-    test_gen_type, error = get_test_gen_type(experiment_config)
+    test_gen_type, error = get_test_gen_type(campaign_config)
     if error:
         return None, error
 
     if test_gen_type == "pcg":
-        experiment_combinations, error = generate_combinations_from_qos(
-            experiment_config['qos_settings']
+        campaign_combinations, error = generate_combinations_from_qos(
+            campaign_config['qos_settings']
         )
         if error:
             return None, error
           
-        expected_test_count = len(experiment_combinations)
+        expected_test_count = len(campaign_combinations)
 
     elif test_gen_type == "rcg":
-        expected_test_count = experiment_config['rcg_target_test_count']
+        expected_test_count = campaign_config['rcg_target_test_count']
 
     elif test_gen_type == "custom_test_list":
         expected_test_count = len(
-            experiment_config['custom_test_list']
+            campaign_config['custom_test_list']
         )
 
     return expected_test_count, None
 
-def check_if_ess_rows_match_expected_test_count(experiment_config: Dict = {}) -> Tuple[Optional[bool], Optional[str]]:
-    if experiment_config == {}:
-        return None, "No experiment config passed."
+def check_if_ess_rows_match_expected_test_count(campaign_config: Dict = {}) -> Tuple[Optional[bool], Optional[str]]:
+    if campaign_config == {}:
+        return None, "No campaign config passed."
 
-    ess_df, ess_df_error = get_ess_df_from_experiment(experiment_config)
+    ess_df, ess_df_error = get_ess_df_from_campaign(campaign_config)
     if ess_df_error:
         return None, ess_df_error
 
     ess_row_count = len(ess_df.index)
 
-    expected_test_count, expected_test_count_error = get_expected_test_count_from_experiment(experiment_config)
-    if expected_test_count_error:
-        return None, expected_test_count_error
+    expected_test_count, error = get_expected_test_count_from_campaign(campaign_config)
+    if error:
+        return None, error
 
     if ess_row_count != expected_test_count:
         return False, None
@@ -3066,6 +3066,50 @@ def get_failed_test_names(ess_df: pd.DataFrame):
 def get_custom_test_list(exp_conf) -> Tuple[Optional[list[str]], Optional[str]]:
     return exp_conf['custom_test_list'], None
 
+def make_output_dirs():
+    os.makedirs("output", exist_ok=True)
+    os.makedirs(ESS_DIR, exist_ok=True)
+    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(SUMMARISED_DIR, exist_ok=True)
+    os.makedirs(DATASET_DIR, exist_ok=True)
+
+def check_for_self_reboot(
+    ess_df: pd.DataFrame = pd.DataFrame(), 
+    campaign_conf: Dict = {}
+) -> Optional[str]:
+
+    must_wait_for_self_reboot, error = get_must_wait_for_self_reboot(
+        ess_df
+    )
+    if error:
+        logger.warning(f"Couldn't check if self-reboot needed: {error}")
+
+    if must_wait_for_self_reboot:
+        machine_ip, error = get_unreachable_machine_ip_from_ess_df(ess_df)
+        if error:
+            logger.warning(f"Error getting unreachable machine IP: {error}")
+            logger.info("Restarting all plugs instead...")
+            for machine in campaign_conf['slave_machines']:
+                machine_name = machine['machine_name']
+                asyncio.run(restart_tapo_plug_from_machine_name(machine_name))
+
+        machine_name, error = get_machine_name_from_ip(
+            machine_ip,
+            campaign_conf['slave_machines']
+        )
+        if error:
+            logger.error(f"Error getting machine IP: {error}")
+
+            logger.info("Restarting all plugs instead...")
+            for machine in campaign_conf['slave_machines']:
+                machine_name = machine['machine_name']
+                asyncio.run(restart_tapo_plug_from_machine_name(machine_name))
+
+        logger.info(f"Restarting {machine_name}...")
+        asyncio.run(restart_tapo_plug_from_machine_name(machine_name))
+
+    return None
+
 def main(sys_args: list[str] = []) -> Optional[None]:
     if len(sys_args) < 2:
         logger.error(
@@ -3073,53 +3117,49 @@ def main(sys_args: list[str] = []) -> Optional[None]:
         )
         return 
 
-    # Make all the output folders:
-    # - /ess
-    # - /data
-    # - /summarised_data
-    # - /datasets
-
-    os.makedirs("output", exist_ok=True)
-    os.makedirs(ESS_DIR, exist_ok=True)
-    os.makedirs(DATA_DIR, exist_ok=True)
-    os.makedirs(SUMMARISED_DIR, exist_ok=True)
-    os.makedirs(DATASET_DIR, exist_ok=True)
-
+    make_output_dirs()
+    
     CONFIG_PATH = sys_args[1]
-    logger.info(f"Reading config: {CONFIG_PATH}", )
-    CONFIG, config_error = read_config(CONFIG_PATH)
-    if config_error:
-        logger.error(f"Error reading config: {config_error}")
+
+    logger.info(f"Reading AP config: {CONFIG_PATH}", )
+
+    CONFIG, error = read_config(CONFIG_PATH)
+    if error:
+        logger.error(f"Error reading config: {error}")
         return
-    logger.info(f"Config read: {CONFIG_PATH}", )
 
-    for EXPERIMENT_INDEX, EXPERIMENT in enumerate(CONFIG):
-        EXPERIMENT_NAME = EXPERIMENT['experiment_name']
-        experiment_counter_string = f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}]"
+    logger.info(f"Found {len(CONFIG)} campaigns.")
 
-        # logger.debug(f"[{EXPERIMENT_INDEX + 1}/{len(CONFIG)}] Running {EXPERIMENT['experiment_name']}...")
+    for CAMPAIGN_INDEX, CAMPAIGN_CONF in enumerate(CONFIG):
+        CAMPAIGN_NAME = CAMPAIGN_CONF['campaign_name']
+        campaign_count_string = f"[{CAMPAIGN_INDEX + 1}/{len(CONFIG)}]"
+        campaign_name_string = f"[{CAMPAIGN_NAME}]"
+        campaign_prefix = f"{campaign_count_string} {campaign_name_string}\n\t"
+
         logger.info(
-            f"{experiment_counter_string} Running {EXPERIMENT['experiment_name']}..."
+            f"{campaign_prefix} Starting..."
         )
 
-        EXPERIMENT_DIRPATH, dirname_error = get_dirname_from_experiment(EXPERIMENT)
-        if dirname_error:
-            logger.error(f"Error getting experiment dirname: {dirname_error}")
+        CAMPAIGN_DIRPATH, error = get_campaign_dirpath(CAMPAIGN_CONF)
+        if error:
+            logger.error(f"Error getting campaign dirpath: {error}")
             continue
-        os.makedirs(EXPERIMENT_DIRPATH, exist_ok=True)
-        logger.info(f"Created {EXPERIMENT_DIRPATH}", )
 
-        custom_test_list, error = get_custom_test_list(EXPERIMENT)
+        os.makedirs(CAMPAIGN_DIRPATH, exist_ok=True)
+        logger.info(
+            f"{campaign_prefix} Created {CAMPAIGN_DIRPATH}"
+        )
+
+        custom_test_list, error = get_custom_test_list(CAMPAIGN_CONF)
         if error:
             logger.error(
-                f"Couldn't get custom test list for {EXPERIMENT['experiment_name']}: {error}"
+                f"{campaign_prefix} Couldn't get custom test list for {CAMPAIGN_NAME}: {error}"
             )
             continue
 
-        TEST_GET_TYPE, error = get_test_gen_type(EXPERIMENT)
-        # is_pcg, if_pcg_error = get_if_pcg(EXPERIMENT)
+        TEST_GET_TYPE, error = get_test_gen_type(CAMPAIGN_CONF)
         if error:
-            logger.error(f"Error getting test gen type: {error}")
+            logger.error(f"{campaign_prefix} Error getting test gen type: {error}")
             continue 
 
         if len(custom_test_list) > 0:
@@ -3129,24 +3169,25 @@ def main(sys_args: list[str] = []) -> Optional[None]:
         else:
             TEST_GEN_TYPE = "rcg"
 
-        EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
-        ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.parquet")
+        CAMPAIGN_DIRNAME = os.path.basename(CAMPAIGN_DIRPATH)
+        ESS_PATH = os.path.join(ESS_DIR, f"{CAMPAIGN_DIRNAME}.parquet")
         ess_df, ess_error = get_ess_df(ESS_PATH)
         if ess_error:
-            logger.error(f"Error getting ess: {ess_error}")
+            logger.error(f"{campaign_prefix} Error getting ess: {ess_error}")
             continue
 
         if TEST_GEN_TYPE == "pcg":
-            COMBINATIONS, combinations_error = generate_combinations_from_qos(
-                EXPERIMENT['qos_settings']
+            COMBINATIONS, error = generate_combinations_from_qos(
+                CAMPAIGN_CONF['qos_settings']
             )
-            if combinations_error:
-                logger.error(f"Error generating combinations: {combinations_error}")
+            if error:
+                logger.error(f"{campaign_prefix} Error generating combinations: {error}")
                 continue
+
             target_test_count = len(COMBINATIONS)
 
         elif TEST_GEN_TYPE == "rcg":
-            target_test_count = EXPERIMENT['rcg_target_test_count']
+            target_test_count = CAMPAIGN_CONF['rcg_target_test_count']
 
         elif TEST_GEN_TYPE == "custom_test_list":
             target_test_count = len(custom_test_list)
@@ -3170,46 +3211,21 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 logger.error(f"Error getting ess: {ess_error}")
                 continue
 
-            must_wait_for_self_reboot, must_self_reboot_error = get_must_wait_for_self_reboot(
-                ess_df
+            error = check_for_self_reboot(
+                ess_df,
+                CAMPAIGN_CONF
             )
-            if must_self_reboot_error:
-                logger.warning(
-                    f"Couldn't check if self-reboot needed: {must_self_reboot_error}"
-                )
-
-            if must_wait_for_self_reboot:
-                machine_ip, error = get_unreachable_machine_ip_from_ess_df(ess_df)
-                if error:
-                    logger.warning(f"Error getting unreachable machine IP: {error}")
-                    logger.info("Restarting all plugs instead...")
-                    for machine in EXPERIMENT['slave_machines']:
-                        machine_name = machine['machine_name']
-                        asyncio.run(restart_tapo_plug_from_machine_name(machine_name))
-
-                machine_name, error = get_machine_name_from_ip(
-                    machine_ip,
-                    EXPERIMENT['slave_machines']
-                )
-                if error:
-                    logger.error(f"Error getting machine IP: {error}")
-                    logger.info("Restarting all plugs instead...")
-                    for machine in EXPERIMENT['slave_machines']:
-                        machine_name = machine['machine_name']
-                        asyncio.run(restart_tapo_plug_from_machine_name(machine_name))
-
-                logger.info(
-                    f"Restarting {machine_name}..."
-                )
-                asyncio.run(restart_tapo_plug_from_machine_name(machine_name))
-
+            if error:
+                logger.error(f"{campaign_prefix} Error checking for self reboot: {error}")
+                continue
+            
             if TEST_GEN_TYPE == "pcg":
                 test_config = COMBINATIONS[test_index]
 
             elif TEST_GEN_TYPE == "rcg":
-                test_config = generate_test_config_from_qos(EXPERIMENT['qos_settings'])
+                test_config = generate_test_config_from_qos(CAMPAIGN_CONF['qos_settings'])
                 if test_config is None:
-                    logger.error("Error generating RCG config")
+                    logger.error(f"{campaign_prefix} Error generating RCG config")
                     continue
 
             elif TEST_GEN_TYPE == "custom_test_list":
@@ -3230,10 +3246,10 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
             ess_df, run_test_error = run_test(
                 test_config,
-                EXPERIMENT['slave_machines'],
+                CAMPAIGN_CONF['slave_machines'],
                 ess_df,
-                EXPERIMENT_DIRPATH,
-                EXPERIMENT['noise_generation']
+                CAMPAIGN_DIRPATH,
+                CAMPAIGN_CONF['noise_generation']
             )
 
             ess_df.to_parquet(ESS_PATH, index = False)
@@ -3241,23 +3257,31 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             if run_test_error:
                 logger.error(f"Error running test {test_name}: {run_test_error}")
                 logger.info(
-                    f"[{EXPERIMENT_NAME}] {counter_string} [{test_name}] failed."
+                    f"[{CAMPAIGN_NAME}] {counter_string} [{test_name}] failed."
                 )
                 continue
         
-        do_ess_rows_match_test_count, func_error = check_if_ess_rows_match_expected_test_count(
-            EXPERIMENT
+        do_ess_rows_match_test_count, error = check_if_ess_rows_match_expected_test_count(
+            CAMPAIGN_CONF
         )
-        if func_error:
+        if error:
             logger.error(f"""
-                {func_error}
-                Error checking if ESS row count matches expected test count for {EXPERIMENT_NAME}.
+                {error}
+                Error checking if ESS row count matches expected test count for {CAMPAIGN_NAME}.
                 Skipping post test data processing...""")
             continue
 
         if not do_ess_rows_match_test_count:
+            ess_row_count = len(ess_df.index)
+            expected_row_count, error = get_expected_test_count_from_campaign(CAMPAIGN_CONF)
+            if error:
+                logger.error(f"Error getting expected test count: {error}")
+                continue
+
             logger.warning(f"""
-                ESS rows don't match expected test count for {EXPERIMENT_NAME}. 
+                ESS rows don't match expected test count for {CAMPAIGN_NAME}. 
+                ESS Count:  {ess_row_count}
+                Expected:   {expected_row_count}
                 Skipping post test data processing...""")
             continue
 
@@ -3284,16 +3308,16 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             while retry_counter > 0 and test_status != "success":
                 ess_df, run_test_error = run_test(
                     failed_test,
-                    EXPERIMENT['slave_machines'],
+                    CAMPAIGN_CONF['slave_machines'],
                     ess_df,
-                    EXPERIMENT_DIRPATH,
-                    EXPERIMENT['noise_generation']
+                    CAMPAIGN_DIRPATH,
+                    CAMPAIGN_CONF['noise_generation']
                 )
 
                 if run_test_error:
                     logger.error(f"Error running test {test_name}: {run_test_error}")
                     logger.info(
-                        f"[{3 - retry_counter}/3] [{EXPERIMENT_NAME}] [{test_name}] failed."
+                        f"[{3 - retry_counter}/3] [{CAMPAIGN_NAME}] [{test_name}] failed."
                     )
                     continue
 
@@ -3301,7 +3325,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 retry_counter -= 1
             
         # Do a check on all tests to make sure expected number of pub and sub files are the same
-        test_dirpaths = [os.path.join(EXPERIMENT_DIRPATH, _) for _ in os.listdir(EXPERIMENT_DIRPATH)]
+        test_dirpaths = [os.path.join(CAMPAIGN_DIRPATH, _) for _ in os.listdir(CAMPAIGN_DIRPATH)]
         test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
         test_dirpaths = [_ for _ in test_dirpaths if "data" not in _.lower()]
         for test_dirpath in test_dirpaths:
@@ -3315,34 +3339,34 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 )
 
         # Summarise tests
-        # summarise_tests(EXPERIMENT_DIRPATH) 
+        # summarise_tests(CAMPAIGN_DIRPATH) 
         # if summarise_tests is None:
         #     logger.error(
-        #         f"Error summarising tests for {EXPERIMENT['experiment_name']}"
+        #         f"Error summarising tests for {CAMPAIGN['campaign_name']}"
         #     )
         #     continue
         #
         # truncation_percentages = [0, 10, 25, 50]
         # for truncation_percent in truncation_percentages:
-        #     trunc_ds_path = generate_dataset(EXPERIMENT_DIRPATH, truncation_percent)
+        #     trunc_ds_path = generate_dataset(CAMPAIGN_DIRPATH, truncation_percent)
         #     if trunc_ds_path is None:
         #         logger.error(
-        #             f"Error generating dataset for {EXPERIMENT['experiment_name']} with {truncation_percent}% truncation."
+        #             f"Error generating dataset for {CAMPAIGN['campaign_name']} with {truncation_percent}% truncation."
         #         )
         #         continue
 
             # logger.info(f"Generated dataset with {truncation_percent}% truncation:\n\t{trunc_ds_path}")
 
-        # Compress results at end of experiment
-        if os.path.exists(f"{EXPERIMENT_DIRPATH}.zip"):
+        # Compress results at end of campaign
+        if os.path.exists(f"{CAMPAIGN_DIRPATH}.zip"):
             logger.warning(f"A compressed version of the results already exists...")
 
         else:
-            logger.info(f"Compressing {EXPERIMENT_DIRPATH} to {EXPERIMENT_DIRPATH}.zip...")
+            logger.info(f"Compressing {CAMPAIGN_DIRPATH} to {CAMPAIGN_DIRPATH}.zip...")
             shutil.make_archive(
-                EXPERIMENT_DIRPATH,
+                CAMPAIGN_DIRPATH,
                 'zip',
-                EXPERIMENT_DIRPATH
+                CAMPAIGN_DIRPATH
             )
 
 if __name__ == "__main__":

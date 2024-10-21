@@ -4,8 +4,8 @@ SUMMARISED_DIR = 'output/summarised_data/'
 DATASET_DIR = 'output/datasets/'
 ESS_DIR = 'output/ess/'
 
-REQUIRED_EXPERIMENT_KEYS = [
-    'experiment_name',
+REQUIRED_CAMPAIGN_KEYS = [
+    'campaign_name',
     'combination_generation_type',
     'qos_settings',
     'slave_machines',
