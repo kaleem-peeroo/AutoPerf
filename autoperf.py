@@ -437,7 +437,7 @@ def read_config(config_path: str = "") -> Tuple[ Optional[Dict], Optional[str] ]
             REQUIRED_QOS_KEYS
         )
         if validate_dict_error:
-            return None, f"Error validating {experiment}."
+            return None, f"Error validating {experiment['experiment_name']}: {validate_dict_error}."
         if not is_qos_config_valid:
             return None, f"Config invalid for {experiment}."
 
@@ -459,7 +459,7 @@ def read_config(config_path: str = "") -> Tuple[ Optional[Dict], Optional[str] ]
                 REQUIRED_NOISE_GENERATION_KEYS
             )
             if validate_dict_error:
-                return None, f"Error validating noise generation for {experiment['experiment_name']}."
+                return None, f"Error validating noise generation for {experiment['experiment_name']}: {validate_dict_error}"
             if not is_noise_gen_config_valid:
                 return None, f"Config invalid for noise generation for {experiment['experiment_name']}."
 
@@ -2207,7 +2207,9 @@ def run_test(
     expected_csv_file_count = get_expected_csv_file_count_from_test_name(test_name)
     actual_csv_file_count = get_csv_file_count_from_dir(local_results_dir)
 
-    logger.debug(f"{actual_csv_file_count}/{expected_csv_file_count} downloaded files found.")
+    test_identifier_string = f"[{EXPERIMENT_NAME}] [{test_name}]"
+    file_count_string = f"{actual_csv_file_count}/{expected_csv_file_count}"
+    logger.debug(f"{test_identifier_string} {file_count_string} downloaded files found.")
 
     if expected_csv_file_count != actual_csv_file_count:
         return update_ess_df(
@@ -2855,18 +2857,44 @@ def get_ess_df_from_experiment(experiment_config: Dict = {}) -> Tuple[Optional[p
 
     return ess_df, None
 
+def get_test_gen_type(experiment_config):
+    # TODO: Validate parameters
+    custom_test_list = experiment_config['custom_test_list']
+    comb_gen_type = experiment_config['combination_generation_type']
+    
+    if len(custom_test_list) > 0:
+        return "custom_test_list", None
+    elif comb_gen_type.lower().strip() == "pcg":
+        return "pcg", None
+    elif comb_gen_type.lower().strip() == "rcg":
+        return "rcg", None
+    else:
+        return None, "Couldn't get test generation type."
+
 def get_expected_test_count_from_experiment(experiment_config: Dict = {}) -> Tuple[Optional[int], Optional[str]]:
     if experiment_config == {}:
         return None, "No experiment config passed."
 
-    if experiment_config['rcg_target_test_count'] == 0:
-        experiment_combinations, experiment_combinations_error = generate_combinations_from_qos(experiment_config['qos_settings'])
-        if experiment_combinations_error:
-            return None, experiment_combinations_error
+    test_gen_type, error = get_test_gen_type(experiment_config)
+    if error:
+        return None, error
+
+    if test_gen_type == "pcg":
+        experiment_combinations, error = generate_combinations_from_qos(
+            experiment_config['qos_settings']
+        )
+        if error:
+            return None, error
           
         expected_test_count = len(experiment_combinations)
-    else:
+
+    elif test_gen_type == "rcg":
         expected_test_count = experiment_config['rcg_target_test_count']
+
+    elif test_gen_type == "custom_test_list":
+        expected_test_count = len(
+            experiment_config['custom_test_list']
+        )
 
     return expected_test_count, None
 
@@ -3035,6 +3063,9 @@ def get_failed_test_names(ess_df: pd.DataFrame):
 
     return failed_rows['test_name'].to_list(), None
 
+def get_custom_test_list(exp_conf) -> Tuple[Optional[list[str]], Optional[str]]:
+    return exp_conf['custom_test_list'], None
+
 def main(sys_args: list[str] = []) -> Optional[None]:
     if len(sys_args) < 2:
         logger.error(
@@ -3078,10 +3109,25 @@ def main(sys_args: list[str] = []) -> Optional[None]:
         os.makedirs(EXPERIMENT_DIRPATH, exist_ok=True)
         logger.info(f"Created {EXPERIMENT_DIRPATH}", )
 
+        custom_test_list, error = get_custom_test_list(EXPERIMENT)
+        if error:
+            logger.error(
+                f"Couldn't get custom test list for {EXPERIMENT['experiment_name']}: {error}"
+            )
+            continue
+
+        TEST_GEN_TYPE = None
         is_pcg, if_pcg_error = get_if_pcg(EXPERIMENT)
         if if_pcg_error:
             logger.error(f"Error check if PCG: {if_pcg_error}")
             continue 
+
+        if len(custom_test_list) > 0:
+            TEST_GEN_TYPE = "custom_test_list"
+        elif is_pcg:
+            TEST_GEN_TYPE = "pcg"
+        else:
+            TEST_GEN_TYPE = "rcg"
 
         EXPERIMENT_DIRNAME = os.path.basename(EXPERIMENT_DIRPATH)
         ESS_PATH = os.path.join(ESS_DIR, f"{EXPERIMENT_DIRNAME}.parquet")
@@ -3090,7 +3136,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             logger.error(f"Error getting ess: {ess_error}")
             continue
 
-        if is_pcg:
+        if TEST_GEN_TYPE == "pcg":
             COMBINATIONS, combinations_error = generate_combinations_from_qos(
                 EXPERIMENT['qos_settings']
             )
@@ -3098,8 +3144,16 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 logger.error(f"Error generating combinations: {combinations_error}")
                 continue
             target_test_count = len(COMBINATIONS)
-        else:
+
+        elif TEST_GEN_TYPE == "rcg":
             target_test_count = EXPERIMENT['rcg_target_test_count']
+
+        elif TEST_GEN_TYPE == "custom_test_list":
+            target_test_count = len(custom_test_list)
+            
+        else:
+            loger.error(f"Unknown test gen type: {TEST_GEN_TYPE}")
+            continue
 
         ESS_DF_ROW_COUNT = len(ess_df.index)
 
@@ -3149,13 +3203,21 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 )
                 asyncio.run(restart_tapo_plug_from_machine_name(machine_name))
 
-            if is_pcg:
+            if TEST_GEN_TYPE == "pcg":
                 test_config = COMBINATIONS[test_index]
-            else:
+
+            elif TEST_GEN_TYPE == "rcg":
                 test_config = generate_test_config_from_qos(EXPERIMENT['qos_settings'])
                 if test_config is None:
                     logger.error("Error generating RCG config")
                     continue
+
+            elif TEST_GEN_TYPE == "custom_test_list":
+                test_config = get_qos_dict_from_test_name(custom_test_list[test_index])
+
+            else:
+                logger.error(f"Unknown test gen type: {TEST_GEN_TYPE}")
+                continue
 
             test_name, test_name_error = get_test_name_from_combination_dict(test_config)
             if test_name_error:
