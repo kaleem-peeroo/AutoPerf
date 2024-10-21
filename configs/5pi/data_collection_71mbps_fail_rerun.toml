@@ -82,7 +82,12 @@ custom_test_list = [
   packet_corruption = "0%"
   packet_duplication = "0%"
   bandwidth_rate = "71mbit"
-  delay = {}
+
+    [experiments.noise_generation.delay]
+    value = "0ms"
+    variation = "0ms"
+    correlation = "0%"
+    distribution = "normal"
 
   [[experiments.slave_machines]]
   machine_name = "k2"
