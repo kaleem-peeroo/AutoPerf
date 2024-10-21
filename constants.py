@@ -12,7 +12,8 @@ REQUIRED_EXPERIMENT_KEYS = [
     'rcg_target_test_count',
     'quit_after_n_failed_tests',
     'noise_generation',
-    "retry_failed_tests_n_times"
+    "retry_failed_tests_n_times",
+    "custom_test_list"
 ]
 
 REQUIRED_QOS_KEYS = [
