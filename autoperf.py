@@ -1741,7 +1741,8 @@ def run_test(
     machine_configs: List = [],
     ess_df: pd.DataFrame = pd.DataFrame(),
     campaign_dirpath: str = "",
-    noise_gen_config: Dict = {}
+    noise_gen_config: Dict = {},
+    test_prefix: str = ""
 ) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
     """
     Run the test using the given test config, machine configs and ESS dataframe.
@@ -1795,6 +1796,9 @@ def run_test(
     if not isinstance(noise_gen_config, Dict):
         return None, f"Noise gen config is not a dict."
 
+    if test_prefix == "":
+        return None, "No test prefix string passed."
+
     new_ess_df = ess_df
 
     CAMPAIGN_NAME = os.path.basename(campaign_dirpath)
@@ -1832,7 +1836,7 @@ def run_test(
         ping_attempts = 3
         while ping_attempts > 0:
             logger.info(
-                f"[{4 - ping_attempts}/3] Pinging {machine_name}"
+                f"{test_prefix} [{4 - ping_attempts}/3] Pinging {machine_name}"
             )
             was_pinged, ping_error = check_connection(machine_config, "ping")    
             if was_pinged:
@@ -1857,7 +1861,7 @@ def run_test(
         ssh_attempts = 3
         while ssh_attempts > 0 and ping_attempts > 0:
             logger.info(
-                f"[{4 - ssh_attempts}/3] SSHing {machine_name}"
+                f"{test_prefix} [{4 - ssh_attempts}/3] SSHing {machine_name}"
             )
             was_sshed, ssh_error = check_connection(machine_config, "ssh")
             if was_sshed:
@@ -1879,47 +1883,15 @@ def run_test(
                 new_ess_row['comments'] + f"Failed to even ssh {machine_ip} after 3 attempts."
             ), f"failed initial ssh check on {machine_ip}"
 
-
-        # machine_ip = machine_config['ip']
-        # ping_response, ping_error = ping_machine(machine_ip)
-        # if ping_error:
-        #     return update_ess_df(
-        #         new_ess_df,
-        #         None,
-        #         None,
-        #         test_name,
-        #         0,
-        #         0,
-        #         f"ping_check_fail",
-        #         test_config,
-        #         {},
-        #         new_ess_row['comments'] + f"Failed to even ping {machine_ip} the first time."
-        #     ), f"failed initial ping check on {machine_ip}: {ping_error}"
-        #
-        # passed_ssh_check, ssh_check_error = check_ssh_connection_with_socket(machine_config)
-        # if ssh_check_error:
-        #     return update_ess_df(
-        #         new_ess_df,
-        #         None,
-        #         None,
-        #         test_name,
-        #         1,
-        #         0,
-        #         f"ssh_check_fail",
-        #         test_config,
-        #         {},
-        #         new_ess_row['comments'] + f"Failed to even ssh {machine_ip} the first time after pinging."
-        #     ), f"failed initial ssh check on {machine_ip}: {ssh_check_error}"
-
     logger.info(
-        f"[{CAMPAIGN_NAME}] [{test_name}] Restarting all machines..."
+        f"{test_prefix}Restarting all machines..."
     )
 
     # 2. Restart machines.
     if not SKIP_RESTART:
         for machine_config in machine_configs:
             logger.info(
-                f"\tRestarting {machine_config['machine_name']}..."
+                f"{test_prefix}Restarting {machine_config['machine_name']}..."
             )
             machine_ip = machine_config['ip']
             restart_command = f"ssh -i {machine_config['ssh_key_path']} {machine_config['username']}@{machine_ip} 'sudo reboot'"
@@ -1932,7 +1904,7 @@ def run_test(
                 )
         
         logger.info(
-            f"[{CAMPAIGN_NAME}] [{test_name}] All machines have restarted. Waiting 15 seconds..."
+            f"{test_prefix}All machines have restarted. Waiting 15 seconds..."
         )
         
         time.sleep(15)
@@ -1963,7 +1935,7 @@ def run_test(
             time.sleep(1)
     
     if ping_count == 5 and ssh_check_count == 5:
-        logger.warning(f"Machines failed connection checks.")
+        logger.warning(f"{test_prefix}Machines failed connection checks.")
 
         return update_ess_df(
             new_ess_df,
@@ -1980,7 +1952,7 @@ def run_test(
         
     else:
         logger.info(
-            f"[{CAMPAIGN_NAME}] [{test_name}] All machines are available."
+            f"{test_prefix}All machines are available."
         )
 
     if DEBUG_MODE:
@@ -1997,7 +1969,7 @@ def run_test(
 
     if scripts is None:
         logger.error(
-            f"Error generating scripts from: \n\t{qos_config}"
+            f"{test_prefix}Error generating scripts from: \n\t{qos_config}"
         )
         return update_ess_df(
             new_ess_df,
@@ -2018,7 +1990,7 @@ def run_test(
         machine_configs
     )
     if scripts_per_machine is None:
-        logger.error(f"Error distributing scripts to machines.")
+        logger.error(f"{test_prefix}Error distributing scripts to machines.")
         return update_ess_df(
             new_ess_df,
             start_timestamp,
@@ -2033,7 +2005,7 @@ def run_test(
         ), "failed script distribution"
 
     if len(scripts_per_machine) == 0:
-        logger.error(f"No scripts allocated to machines.")
+        logger.error(f"{test_prefix}No scripts allocated to machines.")
         return update_ess_df(
             new_ess_df,
             start_timestamp,
@@ -2049,7 +2021,7 @@ def run_test(
 
     # 7. Delete any artifact csv files.
     logger.info(
-        f"[{CAMPAIGN_NAME}] [{test_name}] Deleting .csv files before test..."
+        f"{test_prefix}Deleting .csv files before test..."
     )
 
     with Manager() as manager:
@@ -2074,7 +2046,7 @@ def run_test(
                 process.join()
 
     logger.info(
-        f"[{CAMPAIGN_NAME}] [{test_name}] .csv files deleted"
+        f"{test_prefix}.csv files deleted"
     )
 
     # 8. Generate noise genertion scripts if needed and add to existing scripts. 
@@ -2139,19 +2111,19 @@ def run_test(
             process.join(timeout_secs)
             if process.is_alive():
                 logger.error(
-                    f"Process for running scripts is still alive after {timeout_secs} seconds. Terminating..."
+                    f"{test_prefix}Process for running scripts is still alive after {timeout_secs} seconds. Terminating..."
                 )
                 process.terminate()
                 process.join()
 
         if has_failures_in_machine_statuses(machine_statuses):
             logger.error(
-                f"Errors running scripts on machines."
+                f"{test_prefix}Errors running scripts on machines."
             )
             for machine_ip, status in machine_statuses.items():
                 if status != "complete":
                     logger.error(
-                        f"{machine_ip}: {status}"
+                        f"{test_prefix}{machine_ip}: {status}"
                     )
 
             return update_ess_df(
@@ -2198,7 +2170,7 @@ def run_test(
             process.join(60)
             if process.is_alive():
                 logger.error(
-                    f"Process for downloading results is still alive after 60 seconds. Terminating..."
+                    f"{test_prefix}Process for downloading results is still alive after 60 seconds. Terminating..."
                 )
                 process.terminate()
                 process.join()
@@ -2207,9 +2179,8 @@ def run_test(
     expected_csv_file_count = get_expected_csv_file_count_from_test_name(test_name)
     actual_csv_file_count = get_csv_file_count_from_dir(local_results_dir)
 
-    test_identifier_string = f"[{CAMPAIGN_NAME}] [{test_name}]"
     file_count_string = f"{actual_csv_file_count}/{expected_csv_file_count}"
-    logger.debug(f"{test_identifier_string} {file_count_string} downloaded files found.")
+    logger.debug(f"{test_prefix}{file_count_string} downloaded files found.")
 
     if expected_csv_file_count != actual_csv_file_count:
         return update_ess_df(
@@ -2232,7 +2203,7 @@ def run_test(
     for result_file in result_files:
         filesize, filesize_error = get_file_size_from_filepath(result_file)
         if filesize_error:
-            logger.error(f"Error getting filesize: {filesize_error}")
+            logger.error(f"{test_prefix}Error getting filesize: {filesize_error}")
             continue
 
         if filesize <= 20:
@@ -3121,7 +3092,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
         CAMPAIGN_NAME = CAMPAIGN_CONF['campaign_name']
         campaign_count_string = f"[{CAMPAIGN_INDEX + 1}/{len(CONFIG)}]"
         campaign_name_string = f"[{CAMPAIGN_NAME}]"
-        campaign_prefix = f"{campaign_count_string} {campaign_name_string}\n\t"
+        campaign_prefix = f"\n\t{campaign_count_string} {campaign_name_string}\n\t"
 
         logger.info(
             f"{campaign_prefix} Starting..."
@@ -3214,35 +3185,36 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 test_config = get_qos_dict_from_test_name(custom_test_list[test_index])
 
             else:
-                logger.error(f"Unknown test gen type: {TEST_GEN_TYPE}")
+                logger.error(f"{campaign_prefix} Unknown test gen type: {TEST_GEN_TYPE}")
                 continue
 
-            test_name, test_name_error = get_test_name_from_combination_dict(
+            test_name, error = get_test_name_from_combination_dict(
                 test_config
             )
-            if test_name_error:
-                logger.error(f"Error getting test name: {test_name_error}")
+            if error:
+                logger.error(f"{campaign_prefix} Error getting test name: {error}")
                 continue
 
+            test_prefix = f"{counter_string} [{test_name}]\n\t"
+            test_prefix = f"{campaign_prefix}{test_prefix}"
+
             logger.info(
-                f"{counter_string} [{test_name}] Running test..."
+                f"{test_prefix} Running test..."
             )
 
-            ess_df, run_test_error = run_test(
+            ess_df, error = run_test(
                 test_config,
                 CAMPAIGN_CONF['slave_machines'],
                 ess_df,
                 CAMPAIGN_DIRPATH,
-                CAMPAIGN_CONF['noise_generation']
+                CAMPAIGN_CONF['noise_generation'],
+                test_prefix
             )
 
             ess_df.to_parquet(ESS_PATH, index = False)
 
-            if run_test_error:
-                logger.error(f"Error running test {test_name}: {run_test_error}")
-                logger.info(
-                    f"[{CAMPAIGN_NAME}] {counter_string} [{test_name}] failed."
-                )
+            if error:
+                logger.error(f"{test_prefix} Error running test {test_name}: {error}")
                 continue
         
         do_ess_rows_match_test_count, error = check_if_ess_rows_match_expected_test_count(
@@ -3269,22 +3241,22 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 Skipping post test data processing...""")
             continue
 
-        logger.info("Re attempting failed tests")
-        logger.debug("Getting failed test names")
+        logger.info(f"{campaign_prefix} Re attempting failed tests")
+        logger.debug(f"{campaign_prefix} Getting failed test names")
         failed_test_names, error = get_failed_test_names(ess_df)
         if error:
             logger.error(f"Failed to get which tests failed from ESS DF: {error}")
             continue
 
-        logger.debug(f"Found {len(failed_test_names)} failed tests.")
+        logger.debug(f"{campaign_prefix} Found {len(failed_test_names)} failed tests.")
+        logger.debug(f"{campaign_prefix} Getting configs for failed test names")
 
-        logger.debug("Getting configs for failed test names")
         failed_test_configs = []
         for test_name in failed_test_names:
             test_config = get_qos_dict_from_test_name(test_name)
             failed_test_configs.append(test_config)
 
-        logger.debug("Running failed tests")
+        logger.debug(f"{campaign_prefix} Running failed tests")
         for failed_test in failed_test_configs:
             retry_counter = 3
             test_status = "failed"
@@ -3308,20 +3280,6 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 test_status = "success"
                 retry_counter -= 1
             
-        # Do a check on all tests to make sure expected number of pub and sub files are the same
-        test_dirpaths = [os.path.join(CAMPAIGN_DIRPATH, _) for _ in os.listdir(CAMPAIGN_DIRPATH)]
-        test_dirpaths = [_ for _ in test_dirpaths if os.path.isdir(_)]
-        test_dirpaths = [_ for _ in test_dirpaths if "data" not in _.lower()]
-        for test_dirpath in test_dirpaths:
-            test_name = os.path.basename(test_dirpath)
-            expected_csv_file_count = get_expected_csv_file_count_from_test_name(test_name)
-            actual_csv_file_count = get_csv_file_count_from_dir(test_dirpath)
-
-            if expected_csv_file_count != actual_csv_file_count:
-                logger.warning(
-                    f"{test_name} has {actual_csv_file_count} .csv files instead of {expected_csv_file_count}"
-                )
-
         # Summarise tests
         # summarise_tests(CAMPAIGN_DIRPATH) 
         # if summarise_tests is None:
