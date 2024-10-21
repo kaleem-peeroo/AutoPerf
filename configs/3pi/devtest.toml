@@ -5,14 +5,26 @@ quit_after_n_failed_tests = 0
 rcg_target_test_count = 0
 retry_failed_tests_n_times = 0 
 custom_test_list = [
-  "600SEC_512B_1PUB_1SUB_REL_MC_0DUR_100LC",
-  "600SEC_512B_1PUB_2SUB_REL_MC_1DUR_100LC",
-  "600SEC_512B_2PUB_1SUB_BE_MC_2DUR_100LC",
-  "600SEC_100B_1PUB_1SUB_REL_UC_3DUR_100LC",
+  "60SEC_512B_1PUB_1SUB_REL_MC_0DUR_100LC",
+  "60SEC_512B_1PUB_2SUB_REL_MC_1DUR_100LC",
+  "60SEC_512B_2PUB_1SUB_BE_MC_2DUR_100LC",
+  "60SEC_100B_1PUB_1SUB_REL_UC_3DUR_100LC",
 ]
 
+  [experiments.noise_generation]
+  packet_loss = ""
+  packet_corruption = ""
+  packet_duplication = ""
+  bandwidth_rate = "1000mbit"
+
+  [experiments.noise_generation.delay]
+  value = "0ms"
+  variation = "0ms"
+  correlation = "0%"
+  distribution = "normal"
+
   [experiments.qos_settings]
-  durations_secs = []
+  duration_secs = []
   datalen_bytes = []
   pub_count = []
   sub_count = []
