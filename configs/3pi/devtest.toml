@@ -1,5 +1,5 @@
 [[campaigns]]
-campaign_name = "devtest custom test lists 3"
+campaign_name = "devtest custom test lists 5"
 combination_generation_type = "rcg"
 quit_after_n_failed_tests = 0
 rcg_target_test_count = 2
