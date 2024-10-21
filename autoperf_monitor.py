@@ -8,6 +8,7 @@ import logging
 import json
 import paramiko
 import warnings
+import toml
 
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
@@ -1577,7 +1578,14 @@ def get_ap_config_from_machine(machine_config) -> Tuple[Optional[Dict], Optional
         return None, "Config path doesn't exist."
 
     try:
-        ap_config = json.load(open(config_path, 'r'))
+        if config_path.endswith(".json"):
+            ap_config = json.load(open(config_path, 'r'))
+        elif config_path.endswith(".toml"):
+            ap_config = toml.load(open(config_path, 'r'))
+            ap_config = ap_config['experiments']
+        else:
+            return None, "Config file doesn't end with .json or .toml."
+
     except json.JSONDecodeError as e:
         return None, f"Couldn't parse config file: {e}"
 
