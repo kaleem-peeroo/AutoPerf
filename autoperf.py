@@ -3116,10 +3116,10 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             )
             continue
 
-        TEST_GEN_TYPE = None
-        is_pcg, if_pcg_error = get_if_pcg(EXPERIMENT)
-        if if_pcg_error:
-            logger.error(f"Error check if PCG: {if_pcg_error}")
+        TEST_GET_TYPE, error = get_test_gen_type(EXPERIMENT)
+        # is_pcg, if_pcg_error = get_if_pcg(EXPERIMENT)
+        if error:
+            logger.error(f"Error getting test gen type: {error}")
             continue 
 
         if len(custom_test_list) > 0:
