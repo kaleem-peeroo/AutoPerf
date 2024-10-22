@@ -10,6 +10,8 @@ import paramiko
 import warnings
 import toml
 
+import autoperf as ap
+
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from pprint import pprint
@@ -20,6 +22,7 @@ from rich.live import Live
 from rich.spinner import Spinner
 from rich.logging import RichHandler
 from io import StringIO
+from Timer import Timer
 
 console = Console(record=True)
 
@@ -31,7 +34,7 @@ DEBUG_MODE = False
 
 logging.basicConfig(
     level=logging.DEBUG,
-    filename="logs/autoperf_monitor.log",
+    filename="logs/autoperf_monitor_refactor.log",
     filemode="w",
     format='%(message)s'
 )
@@ -1593,7 +1596,7 @@ def get_ap_config_from_machine(machine_config) -> Tuple[Optional[Dict], Optional
             ap_config = json.load(open(config_path, 'r'))
         elif config_path.endswith(".toml"):
             ap_config = toml.load(open(config_path, 'r'))
-            ap_config = ap_config['experiments']
+            ap_config = ap_config['campaigns']
         else:
             return None, "Config file doesn't end with .json or .toml."
 
@@ -1602,14 +1605,17 @@ def get_ap_config_from_machine(machine_config) -> Tuple[Optional[Dict], Optional
 
     return ap_config, None
 
-def create_table(table_data: Dict = {}) -> Table:
+def create_table(table_data: List[Dict] = []) -> Table:
     table = Table(show_lines=True)
-    table.add_column("Experiment Name")
+    table.add_column("Campaign\nName")
+    table.add_column(
+        "Row Count\n/\nExpected\nTest\nCount"
+    )
     table.add_column(
         "Elapsed\n-----\nExpected\nTime"
     )
     table.add_column(
-        "Last\nTimestamp"
+        "Elapsed\nTime\n/\nExpected\nTime"
     )
     table.add_column(
         "Last\n100\nStatuses"
@@ -1617,20 +1623,17 @@ def create_table(table_data: Dict = {}) -> Table:
     table.add_column(
         "Failed\nIPs"
     )
-    data_str = "[red]Data[/red]"
-    summ_data_str = "[blue]Summarised\nData[/blue]"
-    datasets_str = "[green]Datasets[/green]"
-    target_test_str = "[yellow]Target\nTest\nCount[/yellow]"
-    table.add_column(
-        f"{data_str}\n-----\n{summ_data_str}\n-----\n{datasets_str}\n-----\n{target_test_str}"
-    )
 
-    for key, value in table_data.items():
+    for row in table_data:
         table.add_row(
-            key,
-            *value.values()
+            row['campaign_name'],
+            row['row_count'],
+            row['elapsed_time_str'],
+            row['last_timestamp'],
+            row['last_n_statuses'],
+            row['failed_ips']
         )
-
+    
     return table
 
 def run_ssh_command_with_paramiko(
@@ -1678,7 +1681,9 @@ def get_ess_df(
     machine_config: Dict = {}, 
     campaign_config: Dict = {}
 ) -> Tuple[Optional[Dict], Optional[str]]:
-    logger.debug(f"Getting ESS from {machine_config['name']} ({machine_config['ip']}).")
+
+    console.print(f"Getting ESS from {machine_config['name']} ({machine_config['ip']}).")
+
     if machine_config == {}:
         return None, "No machine config passed."
 
@@ -1690,37 +1695,39 @@ def get_ess_df(
     ssh_key = machine_config['ssh_key_path']
     machine_name = machine_config['name']
 
-    exp_name = campaign_config['experiment_name']
-    exp_dirname, error = get_valid_dirname(exp_name)
+    camp_name = campaign_config['campaign_name']
+    camp_dirname, error = get_valid_dirname(camp_name)
     if error:
-        return None, f"Couldn't get experiment dirname for {exp_name}: {error}"
-    exp_ess_filename = f"{exp_dirname}.parquet"
+        return None, f"Couldn't get campaign dirname for {camp_name}: {error}"
+    camp_ess_filename = f"{camp_dirname}.parquet"
 
-    full_exp_dirname = os.path.join("/home/acwh025/AutoPerf/output/ess/", exp_ess_filename)
+    full_camp_dirname = os.path.join("/home/acwh025/AutoPerf/output/ess/", camp_ess_filename)
 
-    connection = paramiko.SSHClient()
-    connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    connection.connect(
-        ip,
-        username=username,
-        key_filename=ssh_key
-    )
-    sftp = connection.open_sftp()
-    logger.debug(
-        f"Downloading {exp_ess_filename} from {machine_name} ({ip})."
-    )
-    os.makedirs("./output/monitor/ess", exist_ok=True)
+    with console.status("Downloading ESS...") as status:
+        connection = paramiko.SSHClient()
+        connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        connection.connect(
+            ip,
+            username=username,
+            key_filename=ssh_key
+        )
+        sftp = connection.open_sftp()
+        logger.debug(
+            f"Downloading {camp_ess_filename} from {machine_name} ({ip})."
+        )
+        os.makedirs("./output/monitor/ess", exist_ok=True)
 
-    try:
-        sftp.stat(full_exp_dirname)
-    except IOError as e:
-        return None, f"{full_exp_dirname} doesn't exist on {machine_name} ({ip}): {e}"
+        try:
+            sftp.stat(full_camp_dirname)
+        except IOError as e:
+            return None, f"{full_camp_dirname} doesn't exist on {machine_name} ({ip}): {e}"
 
-    sftp.get(full_exp_dirname, f"./output/monitor/ess/{exp_ess_filename}")
-    sftp.close()
-    connection.close()
+        sftp.get(full_camp_dirname, f"./output/monitor/ess/{camp_ess_filename}")
+        sftp.close()
+        connection.close()
 
-    ess_df = pd.read_parquet(f"./output/monitor/ess/{exp_ess_filename}")
+    ess_df = pd.read_parquet(f"./output/monitor/ess/{camp_ess_filename}")
+
     return ess_df, None
 
 def get_elapsed_time_from_ess(
@@ -1771,6 +1778,139 @@ def get_expected_time_from_config(
 
     return total_time_str, None
 
+def get_backup_ess_df(campaign_config: Dict = {}) -> Tuple[Optional[Dict], Optional[str]]:
+    if campaign_config == {}:
+        return None, "No campaign config passed."
+
+    camp_name = campaign_config['campaign_name']
+    camp_dirname, error = get_valid_dirname(camp_name)
+    if error:
+        return None, f"Couldn't get campaign dirname for {camp_name}: {error}"
+
+    camp_ess_filename = f"{camp_dirname}.parquet"
+    backup_ess_filepath = os.path.join("./output/monitor/ess", camp_ess_filename)
+
+    if not os.path.exists(backup_ess_filepath):
+        return None, f"Backup ESS file doesn't exist: {ess_filepath}"
+
+    ess_df = pd.read_parquet(backup_ess_filepath)
+
+    return ess_df, None
+
+def get_total_elapsed_time_secs(ess_df: pd.DataFrame = pd.DataFrame()) -> Tuple[Optional[str], Optional[str]]:
+    if ess_df is None:
+        return None, "No ESS DataFrame passed."
+
+    if ess_df.empty:
+        return None, "ESS DataFrame is empty."
+
+    ess_df['start_timestamp'] = pd.to_datetime(ess_df['start_timestamp'])
+    ess_df['end_timestamp'] = pd.to_datetime(ess_df['end_timestamp'])
+    
+    # Calculate the duration for each row and add it all up in the end
+    ess_df['duration'] = ess_df['end_timestamp'] - ess_df['start_timestamp']
+    total_duration = ess_df['duration'].sum()
+    total_duration_secs = total_duration.total_seconds()
+
+    return total_duration_secs, None
+
+def get_expected_total_time_secs(campaign_config: Dict = {}) -> Tuple[Optional[str], Optional[str]]:
+    if campaign_config == {}:
+        return None, "No campaign config passed."
+
+    target_test_count, error = ap.get_expected_test_count_from_campaign(campaign_config)
+    if error:
+        return None, f"Couldn't calculate target test count: {error}"
+
+    test_gen_type, error = ap.get_test_gen_type(campaign_config)
+    if error:
+        return None, f"Couldn't get test gen type: {error}"
+
+    if test_gen_type == "pcg" or test_gen_type == "rcg":
+        duration_secs = max(campaign_config['qos_settings']['duration_secs'])
+        total_time_secs = target_test_count * duration_secs
+
+    elif test_gen_type == "custom_test_list":
+        custom_test_list = campaign_config['custom_test_list']
+        total_time_secs = 0
+        for testname in custom_test_list:
+            test_duration = testname.split("SEC_")[0]
+            test_duration = int(test_duration)
+            total_time_secs += test_duration
+
+    else:
+        return None, f"Invalid test gen type: {test_gen_type}"
+
+    return total_time_secs, None
+
+def get_last_timestamp(ess_df: pd.DataFrame = pd.DataFrame()) -> Tuple[Optional[str], Optional[str]]:
+    if ess_df is None:
+        return None, "No ESS DataFrame passed."
+
+    if ess_df.empty:
+        return None, "ESS DataFrame is empty."
+
+    last_timestamp = ess_df['end_timestamp'].max()
+    if last_timestamp is pd.NaT:
+        return None, "Last timestamp is NaT."
+
+    last_timestamp = last_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    return last_timestamp, None
+
+def get_time_since_last_test_secs(ess_df: pd.DataFrame = pd.DataFrame()) -> Tuple[Optional[str], Optional[str]]:
+    if ess_df is None:
+        return None, "No ESS DataFrame passed."
+
+    if ess_df.empty:
+        return None, "ESS DataFrame is empty."
+
+    last_timestamp = ess_df['end_timestamp'].max()
+    if last_timestamp is pd.NaT:
+        return None, "Last timestamp is NaT."
+
+    current_time = datetime.now()
+    time_since_last_test_secs = (current_time - last_timestamp).total_seconds()
+
+    return time_since_last_test_secs, None
+
+def get_last_100_statuses(ess_df: pd.DataFrame = pd.DataFrame()) -> Tuple[Optional[str], Optional[Dict], Optional[str]]:
+    if ess_df is None:
+        return None, None, "No ESS DataFrame passed."
+
+    if ess_df.empty:
+        return None, None, "ESS DataFrame is empty."
+
+    last_100_statuses, status_emoji_dict = get_last_n_statuses_as_string_from_ess_df(ess_df, 100)
+    if last_100_statuses is None:
+        return None, None, "Couldn't get last 100 statuses."
+
+    return last_100_statuses, status_emoji_dict, None
+
+def get_last_100_ips(
+    ess_df: pd.DataFrame = pd.DataFrame()
+) -> Tuple[Optional[str], Optional[Dict], Optional[str]]:
+    if ess_df is None:
+        return None, None, "No ESS DataFrame passed."
+
+    if ess_df.empty:
+        return None, None, "ESS DataFrame is empty."
+
+    last_100_ips, ip_emoji_dict = get_ip_output_from_ess_df(ess_df, 100)
+    if last_100_ips is None:
+        return None, None, "Couldn't get last 100 IPs."
+
+    return last_100_ips, ip_emoji_dict, None
+
+def convert_seconds_to_hms(total_seconds: int) -> str:
+    hours = total_seconds // 3600
+    hours = int(hours)
+    minutes = (total_seconds % 3600) // 60
+    minutes = int(minutes)
+    seconds = total_seconds % 60
+    seconds = int(seconds)
+
+    return f"{hours} hrs {minutes} mins {seconds} secs"
+
 def main(sys_args: list[str] = []) -> Optional[str]:
     if len(sys_args) < 2:
         return f"Config filepath not specified."
@@ -1783,182 +1923,168 @@ def main(sys_args: list[str] = []) -> Optional[str]:
     if CONFIG is None:
         return f"Couldn't read config of {CONFIG_PATH}."
 
-    table = create_empty_table()
-    loading_spinner = Spinner("dots", text="Loading...", style="green")
-
     for MACHINE_CONFIG in CONFIG:
-        logger.debug(f"Monitoring {MACHINE_CONFIG['name']} ({MACHINE_CONFIG['ip']}).")
-        table_data = {}
+        console.print(f"Monitoring {MACHINE_CONFIG['name']} ({MACHINE_CONFIG['ip']}).")
 
-        with Live(table, refresh_per_second=8) as live:
-            ap_config, error = get_ap_config_from_machine(MACHINE_CONFIG)
-            if error or ap_config is None:
-                logger.error(
-                    f"Couldn't get AutoPerf config from {MACHINE_CONFIG['name']} ({MACHINE_CONFIG['ip']}). {error}"
+        # Get the AP config
+        ap_conf, error = get_ap_config_from_machine(MACHINE_CONFIG)
+        if error or ap_conf is None:
+            logger.error(
+                f"Couldn't get AutoPerf config from {MACHINE_CONFIG['name']} ({MACHINE_CONFIG['ip']}). {error}"
+            )
+            continue
+
+        """
+        What do we need for each campaign?
+        - Campaign name
+        - Expected number of tests
+        - Expected Total Time
+        - ESS
+            - Last timestamp
+            - Time since last test
+            - Row Count
+            - Last 100 statuses
+            - Last 100 IPs
+            - Total elapsed time
+
+        How to format the data?
+        - Campaign Name
+        - Row Count / Expected number of tests
+        - Total elapsed time / Expected Total Time
+        - {Time since last test} since {Last timestamp}
+        - Last 100 statuses
+        - Last 100 IPs
+        """
+
+        all_data = []
+        for index, campaign_conf in enumerate(ap_conf):
+
+            campaign_name = campaign_conf['campaign_name']
+            
+            ess_df, error = get_ess_df(
+                MACHINE_CONFIG, 
+                campaign_conf
+            )
+            if error or ess_df is None:
+                console.print(
+                    f"Proceeding with previous ESS download because couldn't get ESS: {error}", 
+                    style="bold white"
+                )
+                ess_df, error = get_backup_ess_df(
+                    campaign_conf
+                )
+                if error or ess_df is None:
+                    console.print(
+                        f"Couldn't get backup ESS: {error}", 
+                        style="bold red"
+                    )
+                    continue
+            
+            row_count = len(
+                ess_df.index
+            )
+            expected_test_count, error = ap.get_expected_test_count_from_campaign(
+                campaign_conf
+            )
+            if error:
+                console.print(
+                    f"Couldn't get expected test count: {error}", 
+                    style="bold red"
                 )
                 continue
 
-            for index, campaign in enumerate(ap_config):
-                index_str = f"[{index + 1}/{len(ap_config)}]"
-                logger.debug(f"{index_str} Monitoring {campaign['experiment_name']}.")
+            total_elapsed_time_secs, error = get_total_elapsed_time_secs(
+                ess_df
+            )
+            if error:
+                console.print(
+                    f"Couldn't get total elapsed time: {error}", 
+                    style="bold white"
+                )
+                total_elapsed_time_secs = "-"
 
-                campaign_data = {
-                    "Elapsed\n-----\nExpected\nTime": loading_spinner,
-                    "Last\nTimestamp": loading_spinner,
-                    "Last\n100\nStatuses": loading_spinner,
-                    "Failed\nIPs": loading_spinner,
-                    "Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount": loading_spinner
-                }
+            total_elapsed_time = convert_seconds_to_hms(total_elapsed_time_secs)
 
-                experiment_name = campaign['experiment_name']
-                experiment_name = experiment_name.replace(" ", "\n")
-                table_data[experiment_name] = campaign_data
-                updated_table = create_table(table_data)
-                live.update(updated_table)
+            expected_total_time_secs, error = get_expected_total_time_secs(
+                campaign_conf
+            )
+            if error:
+                console.print(
+                    f"Couldn't get expected total time: {error}", 
+                    style="bold red"
+                )
+                expected_total_time_secs = "-"
 
-                ess_df, error = get_ess_df(MACHINE_CONFIG, campaign)
-                if error or ess_df is None:
-                    logger.warning(f"Error getting ESS: {error}")
-                    error_keys = [
-                        "Elapsed\n-----\nExpected\nTime",
-                        "Last\nTimestamp",
-                        "Last\n100\nStatuses",
-                        "Failed\nIPs",
-                        "Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount",
-                    ]
-                    for key in error_keys:
-                        campaign_data[key] = "[red]Error"
-                    updated_table = create_table(table_data)
-                    live.update(updated_table)
-                    continue
+            expected_total_time = convert_seconds_to_hms(expected_total_time_secs)
 
-                elapsed_time, error = get_elapsed_time_from_ess(ess_df)
-                if error or elapsed_time is None:
-                    logger.warning(f"Error getting elapsed time: {error}")
-                    campaign_data['Elapsed\n-----\nExpected\nTime'] = "[red]Error"
-                    updated_table = create_table(table_data)
-                    live.update(updated_table)
-                    continue
+            last_timestamp, error = get_last_timestamp(
+                ess_df
+            )
+            if error:
+                console.print(
+                    f"Couldn't get last timestamp: {error}", 
+                    style="bold white"
+                )
+                last_timestamp = "-"
 
-                expected_time, error = get_expected_time_from_config(campaign)
-                if error or expected_time is None:
-                    logger.warning(f"Error getting expected time: {error}")
-                    campaign_data['Elapsed\n-----\nExpected\nTime'] = "[red]Error"
-                    updated_table = create_table(table_data)
-                    live.update(updated_table)
-                    continue 
+            time_since_last_test_secs, error = get_time_since_last_test_secs(
+                ess_df
+            )
+            if error:
+                console.print(
+                    f"Couldn't get time since last test: {error}", 
+                    style="bold white"
+                )
+                time_since_last_test = "-"
 
-                time_str = f"{elapsed_time}\n-----\n{expected_time}"
-                table_data[experiment_name]['Elapsed\n-----\nExpected\nTime'] = time_str
-                updated_table = create_table(table_data)
-                live.update(updated_table)
+            time_since_last_test = convert_seconds_to_hms(time_since_last_test_secs)
 
-                last_timestamp, error = get_last_timestamp_from_ess_df(ess_df)
-                if error or last_timestamp is None:
-                    logger.warning(f"Error getting last timestamp: {error}")
-                    campaign_data['Last\nTimestamp'] = "[red]Error"
-                    updated_table = create_table(table_data)
-                    live.update(updated_table)
-                    continue
+            last_100_statuses, status_legend, error = get_last_100_statuses(
+                ess_df
+            )
+            if error:
+                console.print(
+                    f"Couldn't get last 100 statuses: {error}", 
+                    style="bold white"
+                )
+                last_100_statuses = "-"
 
-                table_data[experiment_name]['Last\nTimestamp'] = last_timestamp.replace(" ", "\n")
-                updated_table = create_table(table_data)
-                live.update(updated_table)
+            last_100_ips, ip_legend, error = get_last_100_ips(
+                ess_df
+            )
+            if error:
+                console.print(
+                    f"Couldn't get last 100 IPs: {error}", 
+                    style="bold white"
+                )
+                last_100_ips = "-"
 
-                last_n_statuses, status_emoji_dict = get_last_n_statuses_as_string_from_ess_df(ess_df, 100)
-                if last_n_statuses is None or status_emoji_dict is None:
-                    logger.warning(f"Error getting last n statuses: {error}")
-                    campaign_data['Last\n100\nStatuses'] = "[red]Error"
-                    updated_table = create_table(table_data)
-                    live.update(updated_table)
-                    continue
+            last_100_statuses_with_legend = f"{last_100_statuses}\n\n"
+            for status in status_legend.keys():
+                last_100_statuses_with_legend += f"{status_legend[status]} {status}\n"
 
-                last_n_statuses_legend = ""
-                for status, emoji in status_emoji_dict.items():
-                    last_n_statuses_legend += f"{emoji}: {status}\n"
-                last_n_statuses_legend = last_n_statuses_legend.strip()
-                last_n_statuses = f"{last_n_statuses}\n\n{last_n_statuses_legend}"
-                table_data[experiment_name]['Last\n100\nStatuses'] = last_n_statuses
-                updated_table = create_table(table_data)
-                live.update(updated_table)
 
-                ip_output, ip_emoji_dict = get_ip_output_from_ess_df(ess_df, n = 100)
-                if ip_output is None:
-                    logger.warning(f"Error getting IP output: {error}")
-                    campaign_data['Failed\nIPs'] = "[red]Error"
-                    updated_table = create_table(table_data)
-                    live.update(updated_table)
-                    continue
-                elif ip_output == "":
-                    campaign_data['Failed\nIPs'] = "-"
-                    updated_table = create_table(table_data)
-                    live.update(updated_table)
-                    continue
+            last_100_ips_with_legend = f"{last_100_ips}\n\n"
+            for ip in ip_legend.keys():
+                last_100_ips_with_legend += f"{ip_legend[ip]} {ip}\n"
 
-                ip_output_legend = ""
-                for ip, emoji in ip_emoji_dict.items():
-                    ip_output_legend += f"{emoji}: {ip}\n"
-                ip_output_legend = ip_output_legend.strip()
-                ip_output = f"{ip_output}\n\n{ip_output_legend}"
-                table_data[experiment_name]['Failed\nIPs'] = ip_output
-                updated_table = create_table(table_data)
-                live.update(updated_table)
+            all_data.append({
+                "campaign_name": campaign_name,
+                "row_count": f"{row_count}\n/\n{expected_test_count}",
+                "elapsed_time_str": f"{total_elapsed_time}\n/\n{expected_total_time}",
+                "last_timestamp": f"{time_since_last_test}\nsince\n{last_timestamp}",
+                "last_n_statuses": last_100_statuses_with_legend,
+                "failed_ips": last_100_ips_with_legend
+            })
 
-                data_count, error = get_folder_count_for_experiment(campaign, MACHINE_CONFIG, "output/data")
-                if error or data_count is None:
-                    logger.warning(f"Error getting data count: {error}")
-                    campaign_data['Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount'] = "[red]Error"
-                    updated_table = create_table(table_data)
-                    live.update(updated_table)
-                    continue
+        table = create_table(all_data)
 
-                summarised_data_count, error = get_folder_count_for_experiment(campaign, MACHINE_CONFIG, "output/summarised_data")
-                if error or summarised_data_count is None:
-                    logger.warning(f"Error getting summarised data count: {error}")
-                    campaign_data['Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount'] = "[red]Error"
-                    updated_table = create_table(table_data)
-                    live.update(updated_table)
-                    continue
-
-                datasets_count, error = get_folder_count_for_experiment(campaign, MACHINE_CONFIG, "output/datasets")
-                if error or datasets_count is None:
-                    logger.warning(f"Error getting datasets count: {error}")
-                    campaign_data['Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount'] = "[red]Error"
-                    updated_table = create_table(table_data)
-                    live.update(updated_table)
-                    continue
-
-                target_test_count, error = calculate_target_test_count_for_experiment(campaign)
-                if error or target_test_count is None:
-                    logger.warning(f"Error getting target test count: {error}")
-                    campaign_data['Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount'] = "[red]Error"
-                    updated_table = create_table(table_data)
-                    live.update(updated_table)
-                    continue
-
-                data_str = f"[red]{data_count}[/red]"
-                summ_data_str = f"[blue]{summarised_data_count}[/blue]"
-                datasets_str = f"[green]{datasets_count}[/green]"
-                target_test_str = f"[yellow]{target_test_count}[/yellow]"
-                data_str = f"{data_str}\n-----\n{summ_data_str}\n-----\n{datasets_str}\n-----\n{target_test_str}"
-                table_data[experiment_name]['Data\n-----\nSummarised\nData\n-----\nDatasets\n-----\nTarget\nTest\nCount'] = data_str
-                updated_table = create_table(table_data)
-                live.update(updated_table)
-
-            console.print(updated_table)
-            timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-            config_name = os.path.basename(MACHINE_CONFIG['config_path'])
-            console.save_html(f"./output/monitor/{timestamp} {MACHINE_CONFIG['name']} {config_name}.html")
-    
+        console.print(table)
+            
     return None
 
 if __name__ == "__main__":
-    start_time = datetime.now()
-    error = main(sys.argv)
-    if error:
-        logger.error(error)
-    end_time = datetime.now()
-    time_taken = (end_time - start_time).total_seconds()
-    time_taken = round(time_taken, 2)
-    now_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    console.print(f"[{now_timestamp}] Ran in {time_taken} seconds.")
+    with Timer():
+        error = main(sys.argv)
+        if error:
+            logger.error(error)
