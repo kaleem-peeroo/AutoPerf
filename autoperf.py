@@ -2107,14 +2107,19 @@ def run_test(
             processes.append(process)
             process.start()
 
-        for process in processes:
-            process.join(timeout_secs)
+        for index, process in enumerate(processes):
+            if index == 0:
+                process.join(timeout_secs)
+            else:
+                process.join(buffer_duration_secs)
+
             if process.is_alive():
                 logger.error(
                     f"{test_prefix}Process for running scripts is still alive after {timeout_secs} seconds. Terminating..."
                 )
                 process.terminate()
                 process.join()
+                process.close()
 
         if has_failures_in_machine_statuses(machine_statuses):
             logger.error(
