@@ -233,6 +233,16 @@ def parse_pub_file(
             style="bold red"
         )
 
+    if len(lat_df) == 0:
+        error_df.append(
+            {
+                "filepath": pub_file,
+                "filename": os.path.basename(pub_file),
+                "error": "Publisher data is empty"
+            }
+        )
+        return None, f"Publisher data is empty for {os.path.basename(pub_file)}."
+
     first_row = lat_df.iloc[0]
     first_min = first_row[min_colname]
     first_max = first_row[max_colname]
