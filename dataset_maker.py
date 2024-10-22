@@ -64,8 +64,8 @@ class APExperiment:
 class DatasetMaker:
     def __init__(self, path):
         self.path = path
-        self.dirname = os.path.basename(os.path.dirname(path))
-        self.output_dir = f"./output/datasets/{self.dirname}"
+        self.name = os.path.basename(path)
+        self.output_dir = f"./output/datasets/{self.name}"
 
     def make_dataset(self):
         files = os.listdir(self.path)
@@ -96,6 +96,15 @@ class DatasetMaker:
                 file_df["use_multicast"] = qos["use_multicast"]
                 file_df["durability_level"] = qos["durability_level"]
                 file_df["latency_count"] = qos["latency_count"]
+                file_df["config"] = "{}B_{}PUB_{}SUB_{}_{}_{}DUR_{}LC".format(
+                    qos["datalen_bytes"],
+                    qos["pub_count"],
+                    qos["sub_count"],
+                    "BE" if qos["use_reliable"] else "REL",
+                    "UC" if qos["use_multicast"] else "MC",
+                    qos["durability_level"],
+                    qos["latency_count"],
+                )
 
                 df = pd.concat([df, file_df])
 
