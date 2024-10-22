@@ -1,5 +1,5 @@
-[[experiments]]
-experiment_name = "71Mbps Fail Rerun"
+[[campaigns]]
+campaign_name = "71Mbps Fail Rerun"
 combination_generation_type = ""
 rcg_target_test_count = 0 
 quit_after_n_failed_tests = 10
@@ -67,7 +67,7 @@ custom_test_list = [
     "600SEC_1000B_20PUB_20SUB_REL_UC_2DUR_100LC"
 ]
 
-  [experiments.qos_settings]
+  [campaigns.qos_settings]
   duration_secs = [60]
   datalen_bytes = [100]
   pub_count = [5]
@@ -77,19 +77,19 @@ custom_test_list = [
   durability_level = [0]
   latency_count = [100]
 
-  [experiments.noise_generation]
+  [campaigns.noise_generation]
   packet_loss = "0%"
   packet_corruption = "0%"
   packet_duplication = "0%"
   bandwidth_rate = "71mbit"
 
-    [experiments.noise_generation.delay]
+    [campaigns.noise_generation.delay]
     value = "0ms"
     variation = "0ms"
     correlation = "0%"
     distribution = "normal"
 
-  [[experiments.slave_machines]]
+  [[campaigns.slave_machines]]
   machine_name = "k2"
   participant_allocation = "pub"
   ip = "169.254.251.21"
@@ -97,7 +97,7 @@ custom_test_list = [
   username = "acwh025"
   perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
 
-  [[experiments.slave_machines]]
+  [[campaigns.slave_machines]]
   machine_name = "k3" 
   participant_allocation = "pub"
   ip = "169.254.251.22"
@@ -105,7 +105,7 @@ custom_test_list = [
   username = "acwh025"
   perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
 
-  [[experiments.slave_machines]]
+  [[campaigns.slave_machines]]
   machine_name = "k4" 
   participant_allocation = "sub"
   ip = "169.254.251.23"
@@ -113,7 +113,7 @@ custom_test_list = [
   username = "acwh025"
   perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
 
-  [[experiments.slave_machines]]
+  [[campaigns.slave_machines]]
   machine_name = "k5" 
   participant_allocation = "sub"
   ip = "169.254.251.24"
