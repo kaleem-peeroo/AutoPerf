@@ -1960,6 +1960,7 @@ def main(sys_args: list[str] = []) -> Optional[str]:
         for index, campaign_conf in enumerate(ap_conf):
 
             campaign_name = campaign_conf['campaign_name']
+            campaign_name = campaign_name.replace(" ", "\n")
             
             ess_df, error = get_ess_df(
                 MACHINE_CONFIG, 
