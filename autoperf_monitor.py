@@ -1791,7 +1791,7 @@ def get_backup_ess_df(campaign_config: Dict = {}) -> Tuple[Optional[Dict], Optio
     backup_ess_filepath = os.path.join("./output/monitor/ess", camp_ess_filename)
 
     if not os.path.exists(backup_ess_filepath):
-        return None, f"Backup ESS file doesn't exist: {ess_filepath}"
+        return None, f"Backup ESS file doesn't exist: {backup_ess_filepath}"
 
     ess_df = pd.read_parquet(backup_ess_filepath)
 
@@ -1909,7 +1909,7 @@ def convert_seconds_to_hms(total_seconds: int) -> str:
     seconds = total_seconds % 60
     seconds = int(seconds)
 
-    return f"{hours} hrs {minutes} mins {seconds} secs"
+    return f"{hours} hrs\n{minutes} mins\n{seconds} secs"
 
 def main(sys_args: list[str] = []) -> Optional[str]:
     if len(sys_args) < 2:
@@ -2027,6 +2027,8 @@ def main(sys_args: list[str] = []) -> Optional[str]:
                 )
                 last_timestamp = "-"
 
+            last_timestamp = last_timestamp.replace(" ", "\n")
+
             time_since_last_test_secs, error = get_time_since_last_test_secs(
                 ess_df
             )
@@ -2070,9 +2072,9 @@ def main(sys_args: list[str] = []) -> Optional[str]:
 
             all_data.append({
                 "campaign_name": campaign_name,
-                "row_count": f"{row_count}\n/\n{expected_test_count}",
-                "elapsed_time_str": f"{total_elapsed_time}\n/\n{expected_total_time}",
-                "last_timestamp": f"{time_since_last_test}\nsince\n{last_timestamp}",
+                "row_count": f"{row_count}\n\n/\n\n{expected_test_count}",
+                "elapsed_time_str": f"{total_elapsed_time}\n\n/\n\n{expected_total_time}",
+                "last_timestamp": f"{time_since_last_test}\n\nsince\n\n{last_timestamp}",
                 "last_n_statuses": last_100_statuses_with_legend,
                 "failed_ips": last_100_ips_with_legend
             })
