@@ -1,10 +1,11 @@
 [
   {
-    "experiment_name": "5Pi Data Collection 71Mbps",
+    "campaign_name": "5Pi Data Collection 71Mbps",
     "combination_generation_type": "pcg",
     "rcg_target_test_count": 0,
     "quit_after_n_failed_tests": 10,
     "retry_failed_tests_n_times": 3,
+    "custom_test_list": [],
     "noise_generation": {
       "delay": {
         "value": "0ms",
@@ -63,11 +64,12 @@
     ]
   },
   {
-    "experiment_name": "5Pi Data Collection 24Mbps",
+    "campaign_name": "5Pi Data Collection 24Mbps",
     "combination_generation_type": "pcg",
     "rcg_target_test_count": 0,
     "quit_after_n_failed_tests": 10,
     "retry_failed_tests_n_times": 3,
+    "custom_test_list": [],
     "noise_generation": {
       "delay": {
         "value": "0ms",
