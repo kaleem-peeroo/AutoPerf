@@ -274,10 +274,11 @@ def parse_pub_file(
         pd.Series(first_latency_values),
         lat_df
     ], axis=0)
+
     lat_df = lat_df.reset_index(drop=True)
     lat_df = lat_df.rename("latency_us")
     lat_df = lat_df.dropna()
-    lat_df = lat_df.astype(int, errors="ignore")
+    lat_df = lat_df.astype(float, errors="ignore")
     
     return lat_df, None
 
