@@ -1706,16 +1706,22 @@ def get_ess_df(
     with console.status("Downloading ESS...") as status:
         connection = paramiko.SSHClient()
         connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        connection.connect(
-            ip,
-            username=username,
-            key_filename=ssh_key
-        )
-        sftp = connection.open_sftp()
-        logger.debug(
-            f"Downloading {camp_ess_filename} from {machine_name} ({ip})."
-        )
-        os.makedirs("./output/monitor/ess", exist_ok=True)
+        try:
+            connection.connect(
+                ip,
+                username=username,
+                key_filename=ssh_key,
+                timeout=5
+            )
+            sftp = connection.open_sftp()
+            logger.debug(
+                f"Downloading {camp_ess_filename} from {machine_name} ({ip})."
+            )
+            os.makedirs("./output/monitor/ess", exist_ok=True)
+        except TimeoutError as e:
+            return None, "Timed out while connecting to machine."
+        except Exception as e:
+            return None, f"Couldn't connect to {machine_name} ({ip}): {e}"
 
         try:
             sftp.stat(full_camp_dirname)
