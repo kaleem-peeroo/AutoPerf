@@ -2221,6 +2221,9 @@ def run_test(
             if result_file_df.empty:
                 message = f"{result_file} is empty."
                 comments = new_ess_row['comments'] + message
+            else:
+                message = None
+                comments = new_ess_row['comments']
 
         except Exception as e:
             message = f"Error reading {result_file}: {e}"
