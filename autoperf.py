@@ -1276,7 +1276,8 @@ def update_machine_status(machine_statuses: Dict = {}, machine_ip: str = "", new
 def run_script_on_machine(
         machine_config: Dict = {}, 
         machine_statuses: Dict = {}, 
-        timeout_secs: int = 0
+        timeout_secs: int = 0,
+        test_prefix: str = ""
     ) -> Optional[str]:
 
     """
@@ -1286,6 +1287,12 @@ def run_script_on_machine(
         - machine_config (Dict): Machine config.
         - machine_statuses (Dict): Machine statuses.
         - timeout_secs (int): Timeout in seconds.
+        - test_prefix (str): the campaign and test counter string for messages
+            - Looks like:
+                "
+                [x/y] [camp_name]
+                [a/b] [test_name]
+                "
 
     Returns:
         - None
@@ -1338,7 +1345,7 @@ def run_script_on_machine(
         return "error: machine statuses have failures"
 
     logger.info(
-        f"\t\tRunning script on {machine_config['machine_name']} ({machine_config['ip']})."
+        f"{test_prefix}Running script on {machine_config['machine_name']} ({machine_config['ip']})."
     )
 
     script_string = machine_config['script']
@@ -1368,16 +1375,17 @@ def run_script_on_machine(
 
         if DEBUG_MODE:
             logger.debug(
-                f"{username}@{machine_ip}"
+                f"{test_prefix}{username}@{machine_ip}"
             )
             logger.debug(
-                f"STDOUT:\n\t{stdout}"
+                f"{test_prefix}STDOUT:\n\t{stdout}"
             )
             logger.debug(
-                f"STDERR:\n\t{stderr}"
+                f"{test_prefix}STDERR:\n\t{stderr}"
             )
             logger.debug(
                 f"""
+                {test_prefix}
                 Script:
                 {script_string}
                 """
@@ -1385,18 +1393,18 @@ def run_script_on_machine(
 
         if return_code != 0:
             logger.error(
-                f"Error running script on {machine_config['machine_name']}."
+                f"{test_prefix}Error running script on {machine_config['machine_name']}."
             )
             logger.error(
-                f"Return code: \t{return_code}"
+                f"{test_prefix}Return code: \t{return_code}"
             )
             if stdout != "":
                 logger.error(
-                    f"stdout: \t{stdout}"
+                    f"{test_prefix}stdout: \t{stdout}"
                 )
             if stderr != "":
                 logger.error(
-                    f"stderr: \t{stderr}"
+                    f"{test_prefix}stderr: \t{stderr}"
                 )
 
             update_machine_status(
@@ -1406,7 +1414,7 @@ def run_script_on_machine(
             )
         else:
             logger.info(
-                f"\t\t\tScript on {machine_config['machine_name']} ran successfully."
+                f"{test_prefix}Script on {machine_config['machine_name']} ran successfully."
             )
             update_machine_status(
                 machine_statuses,
@@ -1421,16 +1429,16 @@ def run_script_on_machine(
         stderr = stderr.decode('utf-8').strip()
 
         logger.error(
-            f"Script on {machine_config['machine_name']} timed out."
+            f"{test_prefix}Script on {machine_config['machine_name']} timed out."
         )
         if stdout != "":
             logger.error(
-                f"stdout: \t\t{stdout}"
+                f"{test_prefix}stdout: \t\t{stdout}"
             )
 
         if stderr != "":
             logger.error(
-                f"stderr: \t\t{stderr}"
+                f"{test_prefix}stderr: \t\t{stderr}"
             )
 
         update_machine_status(
@@ -1797,7 +1805,7 @@ def run_test(
         return None, f"Noise gen config is not a dict."
 
     if test_prefix == "":
-        return None, "No test prefix string passed."
+        return ess_df, "No test prefix string passed."
 
     new_ess_df = ess_df
 
@@ -1805,7 +1813,7 @@ def run_test(
 
     test_name, test_error = get_test_name_from_combination_dict(test_config)
     if test_error:
-        return None, f"Couldn't get the name of the next test to run."
+        return new_ess_df, f"Couldn't get the name of the next test to run."
 
     """
     1. Check connections to machine (ping + ssh).
@@ -1884,14 +1892,14 @@ def run_test(
             ), f"failed initial ssh check on {machine_ip}"
 
     logger.info(
-        f"{test_prefix}Restarting all machines..."
+        f"{test_prefix} Restarting all machines..."
     )
 
     # 2. Restart machines.
     if not SKIP_RESTART:
         for machine_config in machine_configs:
             logger.info(
-                f"{test_prefix}Restarting {machine_config['machine_name']}..."
+                f"{test_prefix} Restarting {machine_config['machine_name']}..."
             )
             machine_ip = machine_config['ip']
             restart_command = f"ssh -i {machine_config['ssh_key_path']} {machine_config['username']}@{machine_ip} 'sudo reboot'"
@@ -1904,7 +1912,7 @@ def run_test(
                 )
         
         logger.info(
-            f"{test_prefix}All machines have restarted. Waiting 15 seconds..."
+            f"{test_prefix} All machines have restarted. Waiting 15 seconds..."
         )
         
         time.sleep(15)
@@ -1935,7 +1943,7 @@ def run_test(
             time.sleep(1)
     
     if ping_count == 5 and ssh_check_count == 5:
-        logger.warning(f"{test_prefix}Machines failed connection checks.")
+        logger.warning(f"{test_prefix} Machines failed connection checks.")
 
         return update_ess_df(
             new_ess_df,
@@ -1952,7 +1960,7 @@ def run_test(
         
     else:
         logger.info(
-            f"{test_prefix}All machines are available."
+            f"{test_prefix} All machines are available."
         )
 
     if DEBUG_MODE:
@@ -1969,7 +1977,7 @@ def run_test(
 
     if scripts is None:
         logger.error(
-            f"{test_prefix}Error generating scripts from: \n\t{qos_config}"
+            f"{test_prefix} Error generating scripts from: \n\t{qos_config}"
         )
         return update_ess_df(
             new_ess_df,
@@ -1990,7 +1998,7 @@ def run_test(
         machine_configs
     )
     if scripts_per_machine is None:
-        logger.error(f"{test_prefix}Error distributing scripts to machines.")
+        logger.error(f"{test_prefix} Error distributing scripts to machines.")
         return update_ess_df(
             new_ess_df,
             start_timestamp,
@@ -2005,7 +2013,7 @@ def run_test(
         ), "failed script distribution"
 
     if len(scripts_per_machine) == 0:
-        logger.error(f"{test_prefix}No scripts allocated to machines.")
+        logger.error(f"{test_prefix} No scripts allocated to machines.")
         return update_ess_df(
             new_ess_df,
             start_timestamp,
@@ -2021,7 +2029,7 @@ def run_test(
 
     # 7. Delete any artifact csv files.
     logger.info(
-        f"{test_prefix}Deleting .csv files before test..."
+        f"{test_prefix} Deleting .csv files before test..."
     )
 
     with Manager() as manager:
@@ -2101,7 +2109,8 @@ def run_test(
                 args=(
                     machine_config,
                     machine_statuses,
-                    timeout_secs
+                    timeout_secs,
+                    test_prefix
                 )
             )
             processes.append(process)
@@ -2115,7 +2124,7 @@ def run_test(
 
             if process.is_alive():
                 logger.error(
-                    f"{test_prefix}Process for running scripts is still alive after {timeout_secs} seconds. Terminating..."
+                    f"{test_prefix} Process for running scripts is still alive after {timeout_secs} seconds. Terminating..."
                 )
                 process.terminate()
                 process.join()
@@ -2123,7 +2132,7 @@ def run_test(
 
         if has_failures_in_machine_statuses(machine_statuses):
             logger.error(
-                f"{test_prefix}Errors running scripts on machines."
+                f"{test_prefix} Errors running scripts on machines."
             )
             for machine_ip, status in machine_statuses.items():
                 if status != "complete":
@@ -2175,7 +2184,7 @@ def run_test(
             process.join(60)
             if process.is_alive():
                 logger.error(
-                    f"{test_prefix}Process for downloading results is still alive after 60 seconds. Terminating..."
+                    f"{test_prefix} Process for downloading results is still alive after 60 seconds. Terminating..."
                 )
                 process.terminate()
                 process.join()
@@ -2208,7 +2217,7 @@ def run_test(
     for result_file in result_files:
         filesize, filesize_error = get_file_size_from_filepath(result_file)
         if filesize_error:
-            logger.error(f"{test_prefix}Error getting filesize: {filesize_error}")
+            logger.error(f"{test_prefix} Error getting filesize: {filesize_error}")
             continue
 
         if filesize <= 20:
@@ -3262,7 +3271,25 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             failed_test_configs.append(test_config)
 
         logger.debug(f"{campaign_prefix} Running failed tests")
-        for failed_test in failed_test_configs:
+        for failed_index, failed_test in enumerate(failed_test_configs):
+            counter_str = "[{}/{}]".format(
+                failed_index,
+                len(failed_test_configs)
+            )
+
+            fail_prefix = f"[FAILED RERUNS]"
+            test_name = failed_test_names[failed_index]
+            test_prefix = "{} [{}]".format(
+                counter_str,
+                test_name
+            )
+
+            test_prefix = "{}{}\n{}".format(
+                campaign_prefix,
+                fail_prefix,
+                test_prefix
+            )
+
             retry_counter = 3
             test_status = "failed"
 
@@ -3272,39 +3299,21 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     CAMPAIGN_CONF['slave_machines'],
                     ess_df,
                     CAMPAIGN_DIRPATH,
-                    CAMPAIGN_CONF['noise_generation']
+                    CAMPAIGN_CONF['noise_generation'],
+                    test_prefix
                 )
 
                 if run_test_error:
-                    logger.error(f"Error running test {test_name}: {run_test_error}")
+                    logger.error(f"{campaign_prefix}Error running test {test_name}: {run_test_error}")
                     logger.info(
-                        f"[{3 - retry_counter}/3] [{CAMPAIGN_NAME}] [{test_name}] failed."
+                        f"[{3 - retry_counter}/3] failed."
                     )
                     retry_counter -= 1
                     continue
 
                 test_status = "success"
                 retry_counter -= 1
-            
-        # Summarise tests
-        # summarise_tests(CAMPAIGN_DIRPATH) 
-        # if summarise_tests is None:
-        #     logger.error(
-        #         f"Error summarising tests for {CAMPAIGN['campaign_name']}"
-        #     )
-        #     continue
-        #
-        # truncation_percentages = [0, 10, 25, 50]
-        # for truncation_percent in truncation_percentages:
-        #     trunc_ds_path = generate_dataset(CAMPAIGN_DIRPATH, truncation_percent)
-        #     if trunc_ds_path is None:
-        #         logger.error(
-        #             f"Error generating dataset for {CAMPAIGN['campaign_name']} with {truncation_percent}% truncation."
-        #         )
-        #         continue
-
-            # logger.info(f"Generated dataset with {truncation_percent}% truncation:\n\t{trunc_ds_path}")
-
+        
         # Compress results at end of campaign
         if os.path.exists(f"{CAMPAIGN_DIRPATH}.zip"):
             logger.warning(f"A compressed version of the results already exists...")
