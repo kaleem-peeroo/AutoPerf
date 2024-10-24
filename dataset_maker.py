@@ -20,7 +20,7 @@ class APExperiment:
     def get_qos(self):
         self.qos = {}
 
-        split_filename = self.filename.replace(".csv", "").split("_")
+        split_filename = self.filename.replace(".parquet", "").split("_")
         for item in split_filename:
             item = item.lower()
 
@@ -69,12 +69,12 @@ class DatasetMaker:
 
     def make_dataset(self):
         files = os.listdir(self.path)
-        csv_files = [file for file in files if file.endswith(".csv")]
-        csv_files = [os.path.join(self.path, file) for file in csv_files]
+        parquet_files = [file for file in files if file.endswith(".parquet")]
+        parquet_files = [os.path.join(self.path, file) for file in parquet_files]
 
         df = pd.DataFrame()
-        for index, file in enumerate(csv_files):
-            file_count_str = f"[{index + 1}/{len(csv_files)}]"
+        for index, file in enumerate(parquet_files):
+            file_count_str = f"[{index + 1}/{len(parquet_files)}]"
 
             with console.status(
                 f"{file_count_str} Processing {file}..."
@@ -82,7 +82,7 @@ class DatasetMaker:
                 ap_experiment = APExperiment(file)
                 qos = ap_experiment.get_qos()
 
-                file_df = pd.read_csv(file)
+                file_df = pd.read_parquet(file)
 
                 df_obj = file_df.select_dtypes(["object"])
                 file_df[df_obj.columns] = df_obj.apply(lambda x: x.str.strip())
