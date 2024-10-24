@@ -2216,14 +2216,15 @@ def run_test(
         #     logger.error(f"{test_prefix} Error getting filesize: {filesize_error}")
         #     continue
 
-        is_result_file_empty = False
         try:
             result_file_df = pd.read_csv(result_file, nrows=10)
             if result_file_df.empty:
-                is_result_file_empty = True
+                message = f"{result_file} is empty."
+                comments = new_ess_row['comments'] + message
 
-        except pd.errors.EmptyDataError as e:
-            is_result_empty = True
+        except Exception as e:
+            message = f"Error reading {result_file}: {e}"
+            comments = new_ess_row['comments'] + message
 
         if is_result_file_empty:
             return update_ess_df(
@@ -2236,8 +2237,8 @@ def run_test(
                 f"empty_file_found",
                 qos_config,
                 scripts_per_machine,
-                new_ess_row['comments'] + f"{result_file} is empty."
-            ), f"{result_file} is empty."
+                comments
+            ), message
 
     # 12. Update ESS
     new_ess_df = update_ess_df(
