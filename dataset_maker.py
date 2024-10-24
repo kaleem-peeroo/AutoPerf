@@ -77,7 +77,7 @@ class DatasetMaker:
             file_count_str = f"[{index + 1}/{len(parquet_files)}]"
 
             with console.status(
-                f"{file_count_str} Processing {file}..."
+                f"{file_count_str} Processing {os.path.basename(file)}..."
             ) as status:
                 ap_experiment = APExperiment(file)
                 qos = ap_experiment.get_qos()
@@ -108,23 +108,11 @@ class DatasetMaker:
 
                 df = pd.concat([df, file_df])
 
-                console.print(
-                    f"{file_count_str} Processed {os.path.basename(file)}",
-                    style="bold green",
-                )
-
             if index % 50 == 0:
                 try:
                     df.to_parquet(f"{self.output_dir}_dataset.parquet", index=False)
                     print(f"Dataset periodically saved to {self.output_dir}_dataset.parquet")
                 except Exception as e:
-                    pprint(file_df['sub_0_lost_samples'])
-
-                    weird = (file_df.applymap(type) != file_df.iloc[0].apply(type)).any(axis=1)
-                    pprint(file_df[weird])
-                    # file_df[weird].to_csv(f"{self.output_dir}_weird.csv", index=False)
-                    # print(f"Dataset saved to {self.output_dir}_weird.csv")
-
                     pprint(e)
                     return
 
