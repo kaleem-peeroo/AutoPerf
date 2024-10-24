@@ -327,7 +327,7 @@ def summarise_test(
 
     test_summ_path = os.path.join(
         summ_path,
-        test_name + ".csv"
+        test_name + ".parquet"
     )
 
     csv_files = [f for f in os.listdir(test_dir) if f.endswith(".csv")] 
@@ -398,7 +398,7 @@ def summarise_test(
         test_df['avg_' + sub_metric + "_per_sub"] = sub_metric_df.mean(axis=1)
         test_df['total_' + sub_metric + "_over_subs"] = sub_metric_df.sum(axis=1)
 
-    test_df.to_csv(test_summ_path, index=False)
+    test_df.to_parquet(test_summ_path, index=False)
 
     return test_summ_path, None
 
@@ -459,7 +459,7 @@ def summarise_tests(
         )
 
     # Check if all tests were summarised and if not list out which ones were not summarised
-    summ_test_list = [os.path.basename(f).replace(".csv", "") for f in os.listdir(SUMM_PATH) if f.endswith(".csv")]
+    summ_test_list = [os.path.basename(f).replace(".parquet", "") for f in os.listdir(SUMM_PATH) if f.endswith(".parquet")]
 
     if len(test_list) != len(summ_test_list):
         unsummarised_test_list = list(set(test_list) - set(summ_test_list))
@@ -595,42 +595,43 @@ def generate_dataset(
 
 def main(sys_args: list[str]) -> None:
     global error_df
-    with console.status("Running...") as status:
-        if len(sys_args) < 2:
-            console.print(
-                "Filepath not specified. Usage:{}".format(
-                    "\n\tpython data_summariser.py <path_to_test_folders>"
-                ),
-                style="bold red"
-            )
-            return
+    with Timer():
+        with console.status("Running...") as status:
+            if len(sys_args) < 2:
+                console.print(
+                    "Filepath not specified. Usage:{}".format(
+                        "\n\tpython data_summariser.py <path_to_test_folders>"
+                    ),
+                    style="bold red"
+                )
+                return
 
-        DATA_PATH = sys_args[1]
-        if not os.path.exists(DATA_PATH):
-            console.print(
-                f"Path does not exist: {DATA_PATH}",
-                style="bold red"
-            )
-            return
+            DATA_PATH = sys_args[1]
+            if not os.path.exists(DATA_PATH):
+                console.print(
+                    f"Path does not exist: {DATA_PATH}",
+                    style="bold red"
+                )
+                return
 
-        status.update("Summarising tests...")
-        SUMM_PATH, error = summarise_tests(DATA_PATH, status)
-        if error:
-            console.print(
-                "Error summarising tests: {}".format(error),
-                style="bold red"
-            )
-            return
-        
-    error_df = pd.DataFrame(error_df)
-    error_df.to_csv(
-        "./output/summarised_data/data_summariser_errors.csv",
-        index=False
-    )
-    console.print(
-        "Errors saved to ./output/summarised_data/data_summariser_errors.csv",
-        style="bold red"
-    )
+            status.update("Summarising tests...")
+            SUMM_PATH, error = summarise_tests(DATA_PATH, status)
+            if error:
+                console.print(
+                    "Error summarising tests: {}".format(error),
+                    style="bold red"
+                )
+                return
+            
+        error_df = pd.DataFrame(error_df)
+        error_df.to_parquet(
+            "./output/summarised_data/data_summariser_errors.parquet",
+            index=False
+        )
+        console.print(
+            "Errors saved to ./output/summarised_data/data_summariser_errors.parquet",
+            style="bold red"
+        )
 
 if __name__ == "__main__":
     main(sys.argv)
