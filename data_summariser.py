@@ -197,10 +197,6 @@ def parse_pub_file(
             break
     
     if end_index == 0:
-        # console.print(
-        #     f"Couldn't get end_index for summary row from {os.path.basename(pub_file)}. Defaulting to end of file.",
-        #     style="bold white"
-        # )
         error_df.append(
             {
                 "filepath": pub_file,
@@ -240,14 +236,7 @@ def parse_pub_file(
             f"Error getting max colname for {pub_file}: {error}",
             style="bold red"
         )
-
-    avg_colname, error = get_colname('ave', lat_df.columns)
-    if error:
-        console.print(
-            f"Error getting ave colname for {pub_file}: {error}",
-            style="bold red"
-        )
-
+    
     if len(lat_df) == 0:
         error_df.append(
             {
@@ -261,9 +250,8 @@ def parse_pub_file(
     first_row = lat_df.iloc[0]
     first_min = first_row[min_colname]
     first_max = first_row[max_colname]
-    first_avg = first_row[avg_colname]
     
-    first_latency_values = list(set([first_min, first_max, first_avg]))
+    first_latency_values = list(set([first_min, first_max]))
 
     # ? Pick out the latency column ONLY
     latency_col = None
@@ -381,6 +369,8 @@ def summarise_test(
         )
         return test_summ_path, f"Error parsing publisher file: {error}"
 
+    console.print(f"lat_df: {len(lat_df)}")
+
     subs_df, error = parse_sub_files(sub_files)
     if subs_df is None or error:
         return test_summ_path, f"Error parsing subscriber files: {error}"
@@ -471,14 +461,9 @@ def summarise_tests(
         )
 
     # Check if all tests were summarised and if not list out which ones were not summarised
-    summ_test_list = os.listdir(SUMM_PATH)
+    summ_test_list = [os.path.basename(f).replace(".csv", "") for f in os.listdir(SUMM_PATH) if f.endswith(".csv")]
 
     if len(test_list) != len(summ_test_list):
-        console.print(
-            "Not all tests were summarised.",
-            style="bold yellow"
-        )
-
         unsummarised_test_list = list(set(test_list) - set(summ_test_list))
         for unsummarised_test in unsummarised_test_list:
             error_df.append(
@@ -488,6 +473,11 @@ def summarise_tests(
                     "error": "Test not summarised"
                 }
             )
+
+        console.print(
+            f"{len(unsummarised_test_list)} tests were not summarised.",
+            style="bold red"
+        )
                     
     return SUMM_PATH, None
 
@@ -638,6 +628,10 @@ def main(sys_args: list[str]) -> None:
     error_df.to_csv(
         "./output/summarised_data/data_summariser_errors.csv",
         index=False
+    )
+    console.print(
+        "Errors saved to ./output/summarised_data/data_summariser_errors.csv",
+        style="bold red"
     )
 
 if __name__ == "__main__":
