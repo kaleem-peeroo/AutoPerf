@@ -2215,12 +2215,14 @@ def run_test(
     result_files = [_ for _ in result_files if _.lower().endswith(".csv")]
 
     for result_file in result_files:
-        filesize, filesize_error = get_file_size_from_filepath(result_file)
-        if filesize_error:
-            logger.error(f"{test_prefix} Error getting filesize: {filesize_error}")
-            continue
+        # filesize, filesize_error = get_file_size_from_filepath(result_file)
+        # if filesize_error:
+        #     logger.error(f"{test_prefix} Error getting filesize: {filesize_error}")
+        #     continue
 
-        if filesize <= 20:
+        result_file_df = pd.read_csv(result_file, nrows=10)
+        if result_file_df.empty:
+        # if filesize <= 20:
             return update_ess_df(
                 new_ess_df,
                 start_timestamp,
@@ -2231,8 +2233,8 @@ def run_test(
                 f"empty_file_found",
                 qos_config,
                 scripts_per_machine,
-                new_ess_row['comments'] + f"{result_file} is {filesize} bytes."
-            ), f"{result_file} is {filesize} bytes."
+                new_ess_row['comments'] + f"{result_file} is empty."
+            ), f"{result_file} is empty."
 
     # 12. Update ESS
     new_ess_df = update_ess_df(
