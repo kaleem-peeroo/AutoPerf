@@ -623,13 +623,18 @@ def main(sys_args: list[str]) -> None:
                 )
                 return
             
+        errors_filename = os.path.basename(SUMM_PATH)
+        errors_filepath = os.path.join(
+            "./output/summarised_data/",
+            errors_filename + "_errors.parquet"
+        )
         error_df = pd.DataFrame(error_df)
         error_df.to_parquet(
-            "./output/summarised_data/data_summariser_errors.parquet",
+            errors_filepath,
             index=False
         )
         console.print(
-            "Errors saved to ./output/summarised_data/data_summariser_errors.parquet",
+            f"Errors saved to {errors_filepath}.",
             style="bold red"
         )
 
