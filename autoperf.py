@@ -2222,7 +2222,7 @@ def run_test(
             if result_file_df.empty:
                 is_result_file_empty = True
 
-        except pandas.errors.EmptyDataError as e:
+        except pd.errors.EmptyDataError as e:
             is_result_empty = True
 
         if is_result_file_empty:
