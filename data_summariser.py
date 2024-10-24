@@ -369,8 +369,6 @@ def summarise_test(
         )
         return test_summ_path, f"Error parsing publisher file: {error}"
 
-    console.print(f"lat_df: {len(lat_df)}")
-
     subs_df, error = parse_sub_files(sub_files)
     if subs_df is None or error:
         return test_summ_path, f"Error parsing subscriber files: {error}"
