@@ -1831,7 +1831,7 @@ def run_test(
     13. Return ESS.
     """
 
-    start_timestamp = datetime.datetime.now()
+    start_timestamp = pd.Timestamp.now()
 
     new_ess_row = {}
     new_ess_row['comments'] = ""
@@ -2154,7 +2154,7 @@ def run_test(
             ), "failed script execution"
 
     # End timestamp
-    end_timestamp = datetime.datetime.now()
+    end_timestamp = pd.Timestamp.now()
 
     # 10. Check for and download results.
     local_results_dir = os.path.join(campaign_dirpath, test_name)
