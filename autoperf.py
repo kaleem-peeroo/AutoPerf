@@ -1963,10 +1963,6 @@ def run_test(
             f"{test_prefix} All machines are available."
         )
 
-    if DEBUG_MODE:
-        ping_count = 0
-        ssh_check_count = 0
-
     # 4. Get QoS configuration.
     qos_config = test_config
 
