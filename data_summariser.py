@@ -10,6 +10,7 @@ from rich.progress import track
 
 from constants import *
 from autoperf import get_qos_dict_from_test_name
+from Timer import Timer
 
 console = Console()
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -69,9 +70,16 @@ def parse_sub_files(
                 break
             
         if end_index == 0:
-            console.print(
-                f"Couldn't get end_index for summary row from {os.path.basename(sub_file)}. Defaulting to end of file.",
-                style="bold white"
+            # console.print(
+            #     f"Couldn't get end_index for summary row from {os.path.basename(sub_file)}. Defaulting to end of file.",
+            #     style="bold white"
+            # )
+            error_df.append(
+                {
+                    "filepath": sub_file,
+                    "filename": os.path.basename(sub_file),
+                    "error": "Couldn't get end_index for summary row. File writing might have been interrupted."
+                }
             )
             end_index = line_count - 1
 
@@ -189,9 +197,16 @@ def parse_pub_file(
             break
     
     if end_index == 0:
-        console.print(
-            f"Couldn't get end_index for summary row from {os.path.basename(pub_file)}. Defaulting to end of file.",
-            style="bold white"
+        # console.print(
+        #     f"Couldn't get end_index for summary row from {os.path.basename(pub_file)}. Defaulting to end of file.",
+        #     style="bold white"
+        # )
+        error_df.append(
+            {
+                "filepath": pub_file,
+                "filename": os.path.basename(pub_file),
+                "error": "Couldn't get end_index for summary row. File writing might have been interrupted."
+            }
         )
         end_index = line_count - 1
 
@@ -424,6 +439,8 @@ def summarise_tests(
     os.makedirs(SUMM_PATH, exist_ok=True)
 
     test_dirs = [os.path.join(data_path, d) for d in os.listdir(data_path)]
+    test_dirs = [d for d in test_dirs if os.path.isdir(d)]
+    test_list = [os.path.basename(d) for d in test_dirs]
     
     for test_dir_count, test_dir in enumerate(test_dirs):
         count_string = f"[{test_dir_count + 1}/{len(test_dirs)}]"
@@ -453,6 +470,25 @@ def summarise_tests(
             style="bold green"
         )
 
+    # Check if all tests were summarised and if not list out which ones were not summarised
+    summ_test_list = os.listdir(SUMM_PATH)
+
+    if len(test_list) != len(summ_test_list):
+        console.print(
+            "Not all tests were summarised.",
+            style="bold yellow"
+        )
+
+        unsummarised_test_list = list(set(test_list) - set(summ_test_list))
+        for unsummarised_test in unsummarised_test_list:
+            error_df.append(
+                {
+                    "filepath": data_path,
+                    "filename": unsummarised_test,
+                    "error": "Test not summarised"
+                }
+            )
+                    
     return SUMM_PATH, None
 
 def generate_dataset(
@@ -597,46 +633,12 @@ def main(sys_args: list[str]) -> None:
                 style="bold red"
             )
             return
-
-        # DS_PATH, error = generate_dataset(SUMM_PATH, 0, status)
-        # if error:
-        #     console.print(
-        #         f"Error generating dataset: {error}",
-        #         style="bold red"
-        #     )
-        #     return
-
-    # DS_PATH, error = generate_dataset(SUMM_PATH, 0.1)
-    # if error:
-    #     console.print(
-    #         f"Error generating dataset: {error}",
-    #         style="bold red"
-    #     )
-    #     return
-    #
-    # DS_PATH, error = generate_dataset(SUMM_PATH, 0.25)
-    # if error:
-    #     console.print(
-    #         f"Error generating dataset: {error}",
-    #         style="bold red"
-    #     )
-    #     return
-    #
-    # DS_PATH, error = generate_dataset(SUMM_PATH, 0.5)
-    # if error:
-    #     console.print(
-    #         f"Error generating dataset: {error}",
-    #         style="bold red"
-    #     )
-    #     return
-
+        
     error_df = pd.DataFrame(error_df)
     error_df.to_csv(
-        "./output/data_summariser_errors.csv",
+        "./output/summarised_data/data_summariser_errors.csv",
         index=False
     )
-
-
 
 if __name__ == "__main__":
     main(sys.argv)
