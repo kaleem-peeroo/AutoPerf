@@ -3280,6 +3280,7 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     logger.info(
                         f"[{3 - retry_counter}/3] [{CAMPAIGN_NAME}] [{test_name}] failed."
                     )
+                    retry_counter -= 1
                     continue
 
                 test_status = "success"
