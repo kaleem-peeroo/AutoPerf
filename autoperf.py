@@ -2220,9 +2220,16 @@ def run_test(
         #     logger.error(f"{test_prefix} Error getting filesize: {filesize_error}")
         #     continue
 
-        result_file_df = pd.read_csv(result_file, nrows=10)
-        if result_file_df.empty:
-        # if filesize <= 20:
+        is_result_file_empty = False
+        try:
+            result_file_df = pd.read_csv(result_file, nrows=10)
+            if result_file_df.empty:
+                is_result_file_empty = True
+
+        except pandas.errors.EmptyDataError as e:
+            is_result_empty = True
+
+        if is_result_file_empty:
             return update_ess_df(
                 new_ess_df,
                 start_timestamp,
