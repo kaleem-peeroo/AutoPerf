@@ -1,0 +1,139 @@
+[[experiments]]
+experiment_name = "5Pi Data Collection 71Mbps Missing Reruns"
+combination_generation_type = "pcg"
+rcg_target_test_count = 0
+quit_after_n_failed_tests = 10
+retry_failed_tests_n_times = 3
+custom_test_list = [
+    "1000B_20PUB_15SUB_REL_UC_3DUR_100LC",
+    "1000B_20PUB_1SUB_BE_MC_3DUR_100LC",
+    "1000B_20PUB_20SUB_REL_UC_0DUR_100LC",
+    "1000B_20PUB_1SUB_BE_MC_0DUR_100LC",
+    "1000B_20PUB_15SUB_BE_MC_2DUR_100LC",
+    "1000B_20PUB_10SUB_REL_UC_2DUR_100LC",
+    "1000B_15PUB_20SUB_REL_MC_3DUR_100LC",
+    "1000B_20PUB_20SUB_REL_MC_1DUR_100LC",
+    "1000B_20PUB_10SUB_BE_UC_1DUR_100LC",
+    "1000B_20PUB_20SUB_BE_UC_0DUR_100LC",
+    "1000B_20PUB_5SUB_REL_MC_3DUR_100LC",
+    "1000B_20PUB_15SUB_BE_UC_0DUR_100LC",
+    "1000B_15PUB_20SUB_REL_MC_2DUR_100LC",
+    "1000B_20PUB_5SUB_BE_UC_3DUR_100LC",
+    "1000B_20PUB_5SUB_BE_MC_3DUR_100LC",
+    "1000B_15PUB_20SUB_REL_UC_1DUR_100LC",
+    "1000B_20PUB_20SUB_REL_MC_3DUR_100LC",
+    "1000B_20PUB_20SUB_BE_UC_1DUR_100LC",
+    "1000B_20PUB_10SUB_BE_UC_2DUR_100LC",
+    "1000B_20PUB_5SUB_REL_MC_1DUR_100LC",
+    "1000B_20PUB_10SUB_REL_MC_3DUR_100LC",
+    "1000B_20PUB_1SUB_BE_UC_2DUR_100LC",
+    "1000B_20PUB_15SUB_BE_UC_2DUR_100LC",
+    "1000B_20PUB_10SUB_BE_MC_2DUR_100LC",
+    "1000B_20PUB_1SUB_REL_UC_2DUR_100LC",
+    "1000B_20PUB_10SUB_BE_UC_3DUR_100LC",
+    "1000B_20PUB_1SUB_BE_MC_1DUR_100LC",
+    "1000B_20PUB_10SUB_BE_MC_0DUR_100LC",
+    "1000B_20PUB_1SUB_REL_UC_1DUR_100LC",
+    "1000B_20PUB_10SUB_REL_UC_3DUR_100LC",
+    "1000B_20PUB_20SUB_REL_MC_2DUR_100LC",
+    "1000B_20PUB_15SUB_BE_MC_1DUR_100LC",
+    "1000B_20PUB_15SUB_BE_MC_0DUR_100LC",
+    "1000B_20PUB_5SUB_BE_MC_1DUR_100LC",
+    "1000B_20PUB_15SUB_REL_UC_1DUR_100LC",
+    "1000B_15PUB_20SUB_REL_MC_0DUR_100LC",
+    "1000B_20PUB_20SUB_REL_UC_2DUR_100LC",
+    "1000B_20PUB_10SUB_REL_UC_1DUR_100LC",
+    "1000B_20PUB_5SUB_REL_UC_1DUR_100LC",
+    "1000B_20PUB_1SUB_REL_MC_1DUR_100LC",
+    "1000B_20PUB_15SUB_REL_UC_0DUR_100LC",
+    "512B_15PUB_5SUB_REL_MC_1DUR_100LC",
+    "1000B_20PUB_5SUB_REL_UC_3DUR_100LC",
+    "1000B_20PUB_20SUB_BE_MC_3DUR_100LC",
+    "1000B_20PUB_15SUB_REL_UC_2DUR_100LC",
+    "1000B_15PUB_20SUB_REL_UC_3DUR_100LC",
+    "1000B_20PUB_20SUB_REL_MC_0DUR_100LC",
+    "1000B_15PUB_20SUB_REL_UC_0DUR_100LC",
+    "1000B_20PUB_5SUB_BE_MC_2DUR_100LC",
+    "1000B_20PUB_1SUB_REL_MC_2DUR_100LC",
+    "1000B_20PUB_20SUB_REL_UC_3DUR_100LC",
+    "1000B_20PUB_15SUB_BE_UC_1DUR_100LC",
+    "1000B_20PUB_1SUB_BE_MC_2DUR_100LC",
+    "1000B_20PUB_1SUB_BE_UC_0DUR_100LC",
+    "1000B_20PUB_20SUB_BE_MC_1DUR_100LC",
+    "1000B_20PUB_15SUB_REL_MC_3DUR_100LC",
+    "1000B_20PUB_1SUB_BE_UC_3DUR_100LC",
+    "1000B_20PUB_10SUB_BE_MC_1DUR_100LC",
+    "1000B_20PUB_5SUB_REL_MC_0DUR_100LC",
+    "1000B_20PUB_15SUB_BE_UC_3DUR_100LC",
+    "1000B_20PUB_5SUB_BE_UC_0DUR_100LC",
+    "1000B_20PUB_15SUB_REL_MC_2DUR_100LC",
+    "1000B_20PUB_5SUB_REL_UC_2DUR_100LC",
+    "1000B_20PUB_20SUB_BE_MC_2DUR_100LC",
+    "1000B_20PUB_20SUB_BE_UC_3DUR_100LC",
+    "1000B_20PUB_20SUB_REL_UC_1DUR_100LC",
+    "1000B_15PUB_20SUB_REL_MC_1DUR_100LC",
+    "1000B_20PUB_1SUB_BE_UC_1DUR_100LC",
+    "1000B_20PUB_1SUB_REL_MC_3DUR_100LC",
+    "1000B_20PUB_1SUB_REL_UC_3DUR_100LC",
+    "1000B_20PUB_10SUB_REL_UC_0DUR_100LC",
+    "1000B_20PUB_15SUB_REL_MC_0DUR_100LC",
+    "1000B_20PUB_10SUB_BE_MC_3DUR_100LC",
+    "1000B_20PUB_10SUB_BE_UC_0DUR_100LC",
+    "1000B_15PUB_20SUB_REL_UC_2DUR_100LC",
+    "1000B_20PUB_5SUB_REL_UC_0DUR_100LC"
+]
+
+    [experiments.noise_generation]
+    packet_loss = "0%"
+    packet_corruption = "0%"
+    packet_duplication = "0%"
+    bandwidth_rate = "71mbit"
+
+        [experiments.noise_generation.delay]
+        value = "0ms"
+        variation = "0ms"
+        correlation = "0%"
+        distribution = "normal"
+
+    [experiments.qos_settings]
+    duration_secs = [600]
+    datalen_bytes = [512]
+    pub_count = [10]
+    sub_count = [15]
+    use_reliable = [true, false]
+    use_multicast = [true]
+    durability_level = [1, 2, 3]
+    latency_count = [100]
+
+    [[experiments.slave_machines]]
+    machine_name = "k2"
+    participant_allocation = "pub"
+    ip = "169.254.251.21"
+    ssh_key_path = "~/.ssh/id_rsa"
+    username = "acwh025"
+    perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+
+    [[experiments.slave_machines]]
+    machine_name = "k3"
+    participant_allocation = "pub"
+    ip = "169.254.251.22"
+    ssh_key_path = "~/.ssh/id_rsa"
+    username = "acwh025"
+    perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+
+    [[experiments.slave_machines]]
+    machine_name = "k4"
+    participant_allocation = "sub"
+    ip = "169.254.251.23"
+    ssh_key_path = "~/.ssh/id_rsa"
+    username = "acwh025"
+    perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+
+    [[experiments.slave_machines]]
+    machine_name = "k5"
+    participant_allocation = "sub"
+    ip = "169.254.251.24"
+    ssh_key_path = "~/.ssh/id_rsa"
+    username = "acwh025"
+    perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+
