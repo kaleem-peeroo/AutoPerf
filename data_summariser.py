@@ -279,9 +279,15 @@ def parse_pub_file(
     ], axis=0)
 
     lat_df = lat_df.reset_index(drop=True)
+
+    # Apply strip() to remove leading and trailing whitespaces
+    lat_df = lat_df.apply(lambda x: x.strip() if isinstance(x, str) else x)
+
+    # Set the type to float
+    lat_df = pd.to_numeric(lat_df, errors='coerce')
+
     lat_df = lat_df.rename("latency_us")
     lat_df = lat_df.dropna()
-    lat_df = lat_df.astype(float, errors="ignore")
     
     return lat_df, None
 
@@ -398,7 +404,17 @@ def summarise_test(
         test_df['avg_' + sub_metric + "_per_sub"] = sub_metric_df.mean(axis=1)
         test_df['total_' + sub_metric + "_over_subs"] = sub_metric_df.sum(axis=1)
 
-    test_df.to_parquet(test_summ_path, index=False)
+    try:
+        test_df.to_parquet(test_summ_path, index=False)
+    except Exception as e:
+        error_df.append(
+            {
+                "filepath": test_dir,
+                "filename": os.path.basename(test_dir),
+                "error": e
+            }
+        )
+        return test_summ_path, f"Error saving test summary: {e}"
 
     return test_summ_path, None
 
@@ -435,7 +451,7 @@ def summarise_tests(
         status.update(
             "{} Summarising {}".format(
                 count_string, 
-                test_dir
+                os.path.basename(test_dir)
             )
         )
         test_summ_path, error = summarise_test(test_dir, SUMM_PATH)
@@ -453,10 +469,10 @@ def summarise_tests(
             )
             continue
 
-        console.print(
-            f"{count_string} Summarised {os.path.basename(test_dir)}.",
-            style="bold green"
-        )
+        # console.print(
+        #     f"{count_string} Summarised {os.path.basename(test_dir)}.",
+        #     style="bold green"
+        # )
 
     # Check if all tests were summarised and if not list out which ones were not summarised
     summ_test_list = [os.path.basename(f).replace(".parquet", "") for f in os.listdir(SUMM_PATH) if f.endswith(".parquet")]
@@ -629,10 +645,22 @@ def main(sys_args: list[str]) -> None:
             errors_filename + "_errors.parquet"
         )
         error_df = pd.DataFrame(error_df)
-        error_df.to_parquet(
-            errors_filepath,
-            index=False
-        )
+        try:
+            error_df.to_parquet(
+                errors_filepath,
+                index=False
+            )
+        except Exception as e:
+            console.print(
+                f"Error saving errors to {errors_filepath}: {e}. Writing to .csv instead",
+                style="bold red"
+            )
+            error_df.to_csv(
+                errors_filepath.replace(".parquet", ".csv"),
+                index=False
+            )
+            errors_filepath = errors_filepath.replace(".parquet", ".csv")
+
         console.print(
             f"Errors saved to {errors_filepath}.",
             style="bold red"
