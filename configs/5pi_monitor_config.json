@@ -4,6 +4,6 @@
     "ip": "100.103.95.99",
     "ssh_key_path": "/Users/kaleem/.ssh/id_rsa",
     "username": "acwh025",
-    "config_path": "configs/5pi/5pi_data_collection.json"
+    "config_path": "configs/5pi/data_collection_missing_rerun.toml"
   }
 ]
