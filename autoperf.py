@@ -2229,19 +2229,18 @@ def run_test(
             message = f"Error reading {result_file}: {e}"
             comments = new_ess_row['comments'] + message
 
-        if is_result_file_empty:
-            return update_ess_df(
-                new_ess_df,
-                start_timestamp,
-                end_timestamp,
-                test_name,
-                ping_count,
-                ssh_check_count,
-                f"empty_file_found",
-                qos_config,
-                scripts_per_machine,
-                comments
-            ), message
+        return update_ess_df(
+            new_ess_df,
+            start_timestamp,
+            end_timestamp,
+            test_name,
+            ping_count,
+            ssh_check_count,
+            f"empty_file_found",
+            qos_config,
+            scripts_per_machine,
+            comments
+        ), message
 
     # 12. Update ESS
     new_ess_df = update_ess_df(
