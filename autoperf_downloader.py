@@ -80,7 +80,9 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
         remote_filesize_bytes = sftp.stat(f"{remote_data_path}/{data_dir}").st_size
         remote_filesize = format_bytes(remote_filesize_bytes)
 
-        with console.status(f"{count_string} Downloading {data_dir} ({remote_filesize})...") as status:
+        with console.status(
+            f"{count_string} Downloading {data_dir} ({remote_filesize})..."
+        ) as status:
             remote_data_zip = f"{remote_data_path}/{data_dir}.zip"
 
             # If the zip doesn't exist, create it
@@ -97,7 +99,7 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
                     )
                     continue
 
-                console.print(f"{data_dir}.zip created.", style="bold green")
+                # console.print(f"{data_dir}.zip created.", style="bold green")
 
             os.makedirs(f"{local_download_output_dir}/{output_type}", exist_ok=True)
 
@@ -121,13 +123,13 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
                         ).read().strip()
 
                         if remote_hash == local_hash:
-                            console.print(
-                                "{} {} already exists locally. Skipping...".format(
-                                    count_string, 
-                                    f"{data_dir}.zip"
-                                ),
-                                style="bold green"
-                            )
+                            # console.print(
+                            #     "{} {} already exists locally. Skipping...".format(
+                            #         count_string, 
+                            #         f"{data_dir}.zip"
+                            #     ),
+                            #     style="bold green"
+                            # )
                             continue
 
                 sftp.get(
@@ -147,10 +149,10 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
                     os.remove(f"{local_download_output_dir}/{output_type}/{data_dir}.zip")
                     continue
 
-                console.print(
-                    f"{count_string} {data_dir}.zip ({remote_filesize}) downloaded.", 
-                    style="bold green"
-                )
+                # console.print(
+                #     f"{count_string} {data_dir}.zip ({remote_filesize}) downloaded.", 
+                #     style="bold green"
+                # )
             except Exception as e:
                 console.print(
                     f"Couldn't download {data_dir}:\n\t{e}",
@@ -180,10 +182,10 @@ def main() -> None:
         sftp = ssh.open_sftp()
         ap_path = MACHINE["ap_path"]
 
-        console.print(Markdown(f"# /data"))
+        # console.print(Markdown(f"# /data"))
         zip_and_download(ssh, sftp, "data", ap_path, local_download_output_dir)
-        console.print(Markdown(f"# /summarised_data"))
-        zip_and_download(ssh, sftp, "summarised_data", ap_path, local_download_output_dir)
+        # console.print(Markdown(f"# /summarised_data"))
+        # zip_and_download(ssh, sftp, "summarised_data", ap_path, local_download_output_dir)
 
         remote_ds_dir = f"{ap_path}/output/datasets"
 
