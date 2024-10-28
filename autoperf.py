@@ -2218,13 +2218,13 @@ def run_test(
 
         try:
             result_file_df = pd.read_csv(result_file, nrows=10)
+
             if result_file_df.empty:
                 message = f"{result_file} is empty."
                 comments = new_ess_row['comments'] + message
             else:
-                message = None
-                comments = new_ess_row['comments']
-
+                continue
+            
         except Exception as e:
             message = f"Error reading {result_file}: {e}"
             comments = new_ess_row['comments'] + message
@@ -2236,7 +2236,7 @@ def run_test(
             test_name,
             ping_count,
             ssh_check_count,
-            f"empty_file_found",
+            "empty_file_found",
             qos_config,
             scripts_per_machine,
             comments
@@ -2922,7 +2922,7 @@ def get_must_wait_for_self_reboot(ess_df: pd.DataFrame = pd.DataFrame()) -> Tupl
 
 def extract_ip(comment: str = ""):
     if comment == "":
-        logger.warning("No comment passed to extract_ip()")
+        # logger.warning("No comment passed to extract_ip()")
         return None
 
     if 'nan' in str(comment).lower():
