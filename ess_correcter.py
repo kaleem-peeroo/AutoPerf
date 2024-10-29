@@ -6,9 +6,10 @@ from rich.pretty import pprint
 
 console = Console()
 
-ESS_PATH = "./output/ess/3Pi_Data_Collection_6Mbps.parquet"
+CAMP_NAME = "5Pi_Data_Collection_71Mbps_Missing_Reruns"
+ESS_PATH = f"./output/ess/{CAMP_NAME}.parquet"
 
-ess_df = pd.read_parquet(ESS_PATH)
+ess_df = pd.read_parquet(ESS_PATH, engine="fastparquet")
 
 empty_ess_df = ess_df[ess_df['end_status'] == 'empty_file_found']
 
@@ -20,7 +21,7 @@ for index, row in empty_ess_df.iterrows():
     with console.status(f"{count_string} Processing {row['test_name']}...") as status:
 
         test_name = row['test_name']
-        output_path = os.path.join("./output/data/3Pi_Data_Collection_6Mbps/", test_name)
+        output_path = os.path.join(f"./output/data/{CAMP_NAME}/", test_name)
 
         if not os.path.exists(output_path):
             print(f"{output_path} does NOT exist.")
@@ -55,3 +56,4 @@ for index, row in empty_ess_df.iterrows():
 print(f"success After: {len(ess_df[ess_df['end_status'] == 'success'])}")
 print(f"empty_file_found After: {len(ess_df[ess_df['end_status'] == 'empty_file_found'])}")
 
+ess_df.to_parquet(ESS_PATH)
