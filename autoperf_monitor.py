@@ -1615,7 +1615,7 @@ def create_table(table_data: List[Dict] = []) -> Table:
         "Elapsed\n-----\nExpected\nTime"
     )
     table.add_column(
-        "Elapsed\nTime\n/\nExpected\nTime"
+        "Time\nSince\nLast\nStatus"
     )
     table.add_column(
         "Last\n100\nStatuses"
