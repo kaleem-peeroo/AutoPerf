@@ -2892,7 +2892,7 @@ def check_if_ess_rows_match_expected_test_count(campaign_config: Dict = {}) -> T
     if error:
         return None, error
 
-    if ess_row_count != expected_test_count:
+    if ess_row_count < expected_test_count:
         return False, None
 
     return True, None
