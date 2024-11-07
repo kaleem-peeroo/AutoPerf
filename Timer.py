@@ -23,7 +23,7 @@ class Timer:
 
         elif self.interval > 60:
             minutes = int(self.interval / 60)
-            seconds = self.interval % 60
+            seconds = int(self.interval % 60)
             print(f"[{now_timestamp}] Ran in {minutes} minutes and {seconds} seconds.")
 
         else:
