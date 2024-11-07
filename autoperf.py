@@ -94,7 +94,7 @@ async def restart_tapo_plug_from_machine_name(machine_name: str = ""):
         with open('output/tapo_restart.log', 'a+') as f:
             date_timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
             f.write(
-                f"[{date_timestamp}] Failed to restart {chosen_plug['name']} with IP {chosen_plug['ip']}\n"
+                f"[{date_timestamp}] Failed to restart {chosen_plug['name']} with IP {chosen_plug['ip']}: {e}\n"
             )
         return
 
