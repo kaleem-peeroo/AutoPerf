@@ -605,7 +605,7 @@ def get_ess_df(ess_filepath: str = "") -> Tuple[Optional[pd.DataFrame], Optional
             "start_timestamp",
             "end_timestamp",
             "test_name",
-            "pings_count",
+            "ping_count",
             "ssh_check_count",
             "end_status",
             "qos_settings",
