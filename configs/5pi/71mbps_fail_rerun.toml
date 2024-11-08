@@ -1,0 +1,79 @@
+[[campaigns]]
+campaign_name = "71Mbps Fail Rerun 2P2S"
+combination_generation_type = ""
+rcg_target_test_count = 0 
+quit_after_n_failed_tests = 10
+retry_failed_tests_n_times = 0
+custom_test_list = [
+    "600SEC_512B_20PUB_20SUB_REL_UC_0DUR_100LC",
+    "600SEC_1000B_15PUB_15SUB_REL_UC_0DUR_100LC",
+    "600SEC_1000B_15PUB_15SUB_REL_UC_1DUR_100LC",
+    "600SEC_1000B_15PUB_15SUB_REL_UC_2DUR_100LC",
+    "600SEC_1000B_15PUB_15SUB_REL_UC_3DUR_100LC",
+    "600SEC_1000B_15PUB_20SUB_REL_UC_0DUR_100LC",
+    "600SEC_1000B_15PUB_20SUB_REL_UC_1DUR_100LC",
+    "600SEC_1000B_15PUB_20SUB_REL_UC_2DUR_100LC",
+    "600SEC_1000B_15PUB_20SUB_REL_UC_3DUR_100LC",
+    "600SEC_1000B_20PUB_15SUB_REL_UC_0DUR_100LC",
+    "600SEC_1000B_20PUB_15SUB_REL_UC_1DUR_100LC",
+    "600SEC_1000B_20PUB_15SUB_REL_UC_2DUR_100LC",
+    "600SEC_1000B_20PUB_15SUB_REL_UC_3DUR_100LC",
+    "600SEC_1000B_20PUB_20SUB_REL_UC_0DUR_100LC",
+    "600SEC_1000B_20PUB_20SUB_REL_UC_1DUR_100LC",
+    "600SEC_1000B_20PUB_20SUB_REL_UC_2DUR_100LC",
+    "600SEC_1000B_20PUB_20SUB_REL_UC_3DUR_100LC"
+]
+
+  [campaigns.qos_settings]
+  duration_secs = [1]
+  datalen_bytes = [1]
+  pub_count = [1]
+  sub_count = [1]
+  use_reliable = [true]
+  use_multicast = [true]
+  durability_level = [1]
+  latency_count = [1]
+
+  [campaigns.noise_generation]
+  packet_loss = "0%"
+  packet_corruption = "0%"
+  packet_duplication = "0%"
+  bandwidth_rate = "71mbit"
+
+    [campaigns.noise_generation.delay]
+    value = "0ms"
+    variation = "0ms"
+    correlation = "0%"
+    distribution = "normal"
+
+  [[campaigns.slave_machines]]
+  machine_name = "k2"
+  participant_allocation = "pub"
+  ip = "169.254.251.21"
+  ssh_key_path = "~/.ssh/id_rsa"
+  username = "acwh025"
+  perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+
+  [[campaigns.slave_machines]]
+  machine_name = "k3" 
+  participant_allocation = "pub"
+  ip = "169.254.251.22"
+  ssh_key_path = "~/.ssh/id_rsa"
+  username = "acwh025"
+  perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+
+  [[campaigns.slave_machines]]
+  machine_name = "k4" 
+  participant_allocation = "sub"
+  ip = "169.254.251.23"
+  ssh_key_path = "~/.ssh/id_rsa"
+  username = "acwh025"
+  perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+
+  [[campaigns.slave_machines]]
+  machine_name = "k5" 
+  participant_allocation = "sub"
+  ip = "169.254.251.24"
+  ssh_key_path = "~/.ssh/id_rsa"
+  username = "acwh025"
+  perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
