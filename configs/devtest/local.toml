@@ -1,0 +1,46 @@
+[[campaigns]]
+campaign_name = "local devtest"
+combination_generation_type = "pcg"
+quit_after_n_failed_tests = 0
+rcg_target_test_count = 2
+retry_failed_tests_n_times = 0 
+custom_test_list = []
+
+  [campaigns.noise_generation]
+  packet_loss = ""
+  packet_corruption = ""
+  packet_duplication = ""
+  bandwidth_rate = "1000mbit"
+
+  [campaigns.noise_generation.delay]
+  value = "0ms"
+  variation = "0ms"
+  correlation = "0%"
+  distribution = "normal"
+
+  [campaigns.qos_settings]
+  duration_secs = [10]
+  datalen_bytes = [100, 200]
+  pub_count = [1]
+  sub_count = [1]
+  use_reliable = [false]
+  use_multicast = [true]
+  durability_level = [0]
+  latency_count = [100]
+
+  [[campaigns.slave_machines]]
+  machine_name = "vm1"
+  participant_allocation = "pub"
+  ip = "192.168.64.4"
+  ssh_key_path = "~/.ssh/id_rsa"
+  username = "ubuntu"
+  perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+
+  [[campaigns.slave_machines]]
+  machine_name = "vm2" 
+  participant_allocation = "sub"
+  ip = "192.168.64.5"
+  ssh_key_path = "~/.ssh/id_rsa"
+  username = "ubuntu"
+  perftest_exec_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
+

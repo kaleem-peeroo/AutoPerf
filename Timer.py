@@ -1,5 +1,6 @@
 from datetime import datetime
 
+
 class Timer:
     def __enter__(self):
         self.start_time = datetime.now()
