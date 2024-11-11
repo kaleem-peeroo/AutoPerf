@@ -3311,6 +3311,8 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                     test_prefix
                 )
 
+                ess_df.to_parquet(ESS_PATH, index = False)
+
                 if run_test_error:
                     logger.error(f"{campaign_prefix}Error running test {test_name}: {run_test_error}")
                     logger.info(
@@ -3322,7 +3324,6 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 test_status = "success"
                 retry_counter -= 1
 
-                ess_df.to_parquet(ESS_PATH, index = False)
         
         # Compress results at end of campaign
         if os.path.exists(f"{CAMPAIGN_DIRPATH}.zip"):
