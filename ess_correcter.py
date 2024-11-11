@@ -11,16 +11,17 @@ ESS_PATH = f"./output/ess/{CAMP_NAME}.parquet"
 
 ess_df = pd.read_parquet(ESS_PATH, engine="fastparquet")
 
-empty_ess_df = ess_df[ess_df['end_status'] == 'empty_file_found']
+empty_ess_df = ess_df[ess_df["end_status"] == "empty_file_found"]
 
 print(f"success Before: {len(ess_df[ess_df['end_status'] == 'success'])}")
-print(f"empty_file_found Before: {len(ess_df[ess_df['end_status'] == 'empty_file_found'])}")
+print(
+    f"empty_file_found Before: {len(ess_df[ess_df['end_status'] == 'empty_file_found'])}"
+)
 
 for index, row in empty_ess_df.iterrows():
     count_string = f"[{index}/{len(ess_df)}]"
     with console.status(f"{count_string} Processing {row['test_name']}...") as status:
-
-        test_name = row['test_name']
+        test_name = row["test_name"]
         output_path = os.path.join(f"./output/data/{CAMP_NAME}/", test_name)
 
         if not os.path.exists(output_path):
@@ -51,9 +52,11 @@ for index, row in empty_ess_df.iterrows():
                 continue
 
         if not really_has_empty_file:
-            ess_df.at[index, 'end_status'] = 'success'
+            ess_df.at[index, "end_status"] = "success"
 
 print(f"success After: {len(ess_df[ess_df['end_status'] == 'success'])}")
-print(f"empty_file_found After: {len(ess_df[ess_df['end_status'] == 'empty_file_found'])}")
+print(
+    f"empty_file_found After: {len(ess_df[ess_df['end_status'] == 'empty_file_found'])}"
+)
 
 ess_df.to_parquet(ESS_PATH)

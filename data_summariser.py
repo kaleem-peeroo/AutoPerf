@@ -13,46 +13,44 @@ from autoperf import get_qos_dict_from_test_name
 from Timer import Timer
 
 console = Console()
-warnings.simplefilter(action='ignore', category=FutureWarning)
-warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
+warnings.simplefilter(action="ignore", category=FutureWarning)
+warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
 error_df = []
 
+
 def parse_sub_files(
-    sub_files: list[str] = []
-) -> Tuple[
-    Optional[pd.DataFrame | pd.Series],
-    Optional[str]
-]:
+    sub_files: list[str] = [],
+) -> Tuple[Optional[pd.DataFrame | pd.Series], Optional[str]]:
     global error_df
     if len(sub_files) == 0:
         return None, "No subscriber files found"
 
     subs_df = pd.DataFrame()
     for sub_file in sub_files:
-        # ? Find out where to start parsing the file from 
+        # ? Find out where to start parsing the file from
         with open(sub_file, "r") as file_obj:
             if os.stat(sub_file).st_size == 0:
                 continue
             file_obj.seek(0)
             sub_first_5_lines = [next(file_obj) for _ in range(5)]
-            
-        start_index = 0    
+
+        start_index = 0
         for i, line in enumerate(sub_first_5_lines):
             if "Length (Bytes)" in line:
                 start_index = i
                 break
-        
+
         if start_index == 0:
             console.print(
                 f"Couldn't get start_index for header row from {os.path.basename(sub_file)}.",
-                style="bold red"
+                style="bold red",
             )
             error_df.append(
                 {
                     "filepath": sub_file,
                     "filename": os.path.basename(sub_file),
-                    "error": "Couldn't get start_index for header row"
+                    "error": "Couldn't get start_index for header row",
                 }
             )
             continue
@@ -62,13 +60,13 @@ def parse_sub_files(
             file_contents = file_obj.readlines()
         sub_last_5_lines = file_contents[-5:]
         line_count = len(file_contents)
-        
+
         end_index = 0
         for i, line in enumerate(sub_last_5_lines):
             if "throughput summary" in line.lower():
                 end_index = line_count - 5 + i - 2
                 break
-            
+
         if end_index == 0:
             # console.print(
             #     f"Couldn't get end_index for summary row from {os.path.basename(sub_file)}. Defaulting to end of file.",
@@ -78,7 +76,7 @@ def parse_sub_files(
                 {
                     "filepath": sub_file,
                     "filename": os.path.basename(sub_file),
-                    "error": "Couldn't get end_index for summary row. File writing might have been interrupted."
+                    "error": "Couldn't get end_index for summary row. File writing might have been interrupted.",
                 }
             )
             end_index = line_count - 1
@@ -88,27 +86,24 @@ def parse_sub_files(
 
         try:
             df = pd.read_csv(
-                sub_file, 
-                on_bad_lines="skip", 
-                skiprows=start_index, 
-                nrows=nrows
+                sub_file, on_bad_lines="skip", skiprows=start_index, nrows=nrows
             )
         except pd.errors.ParserError as e:
             console.log(
                 f"Error when getting data from {os.path.basename(sub_file)}:{e}",
-                style="bold red"
+                style="bold red",
             )
             error_df.append(
                 {
                     "filepath": sub_file,
                     "filename": os.path.basename(sub_file),
-                    "error": e
+                    "error": e,
                 }
             )
             continue
-        
+
         desired_metrics = ["total samples", "samples/s", "mbps", "lost samples"]
-        
+
         sub_name = os.path.basename(sub_file).replace(".csv", "")
 
         for col in df.columns:
@@ -122,28 +117,26 @@ def parse_sub_files(
                         col_name = "lost_samples_percent"
 
                     subs_df[f"{sub_name}_{col_name}"] = df[col]
-                    subs_df[
+                    subs_df[f"{sub_name}_{col_name}"] = subs_df[
                         f"{sub_name}_{col_name}"
-                    ] = subs_df[
-                        f"{sub_name}_{col_name}"
-                    ].astype(
-                        float, 
-                        errors="ignore"
-                    )
+                    ].astype(float, errors="ignore")
 
     if subs_df.empty:
         error_df.append(
             {
                 "filepath": sub_file,
                 "filename": os.path.basename(sub_file),
-                "error": "Subscriber data is empty"
+                "error": "Subscriber data is empty",
             }
         )
         return None, "Subscriber data is empty"
 
     return subs_df, None
 
-def get_colname(coltype: str = "", colnames: list[str] = []) -> Tuple[str, Optional[str]]:
+
+def get_colname(
+    coltype: str = "", colnames: list[str] = []
+) -> Tuple[str, Optional[str]]:
     if coltype == "":
         return "", "Col name type not specified"
 
@@ -156,12 +149,8 @@ def get_colname(coltype: str = "", colnames: list[str] = []) -> Tuple[str, Optio
 
     return "", f"Couldn't find {coltype} colname"
 
-def parse_pub_file(
-    pub_file: str = ""
-) -> Tuple[
-    Optional[pd.Series],
-    Optional[str]
-]:
+
+def parse_pub_file(pub_file: str = "") -> Tuple[Optional[pd.Series], Optional[str]]:
     global error_df
     if pub_file == "":
         return None, "Publisher file not specified"
@@ -173,15 +162,18 @@ def parse_pub_file(
             if not line:
                 break
             pub_first_5_lines.append(line)
-    
-    start_index = 0    
+
+    start_index = 0
     for i, line in enumerate(pub_first_5_lines):
         if "Ave" in line and "Length (Bytes)" in line:
             start_index = i
             break
 
     if start_index == 0:
-        return None, f"Couldn't find start index for header row for {os.path.basename(pub_file)}."
+        return (
+            None,
+            f"Couldn't find start index for header row for {os.path.basename(pub_file)}.",
+        )
 
     # ? Find out where to stop parsing the file from (ignore the summary stats at the end)
     with open(pub_file, "r") as pub_file_obj:
@@ -189,60 +181,58 @@ def parse_pub_file(
 
     pub_last_5_lines = pub_file_contents[-5:]
     line_count = len(pub_file_contents)
-    
+
     end_index = 0
     for i, line in enumerate(pub_last_5_lines):
         if "latency summary" in line.lower():
             end_index = line_count - 5 + i - 2
             break
-    
+
     if end_index == 0:
         error_df.append(
             {
                 "filepath": pub_file,
                 "filename": os.path.basename(pub_file),
-                "error": "Couldn't get end_index for summary row. File writing might have been interrupted."
+                "error": "Couldn't get end_index for summary row. File writing might have been interrupted.",
             }
         )
         end_index = line_count - 1
 
     try:
         lat_df = pd.read_csv(
-            pub_file, 
-            skiprows=start_index, 
-            nrows=end_index-start_index, 
-            on_bad_lines="skip"
+            pub_file,
+            skiprows=start_index,
+            nrows=end_index - start_index,
+            on_bad_lines="skip",
         )
     except pd.errors.EmptyDataError:
         error_df.append(
             {
                 "filepath": pub_file,
                 "filename": os.path.basename(pub_file),
-                "error": "EmptyDataError"
+                "error": "EmptyDataError",
             }
         )
         return None, f"EmptyDataError for {os.path.basename(pub_file)}."
-    
-    min_colname, error = get_colname('min', lat_df.columns)
+
+    min_colname, error = get_colname("min", lat_df.columns)
     if error:
         console.print(
-            f"Error getting min colname for {pub_file}: {error}",
-            style="bold red"
+            f"Error getting min colname for {pub_file}: {error}", style="bold red"
         )
 
-    max_colname, error = get_colname('max', lat_df.columns)
+    max_colname, error = get_colname("max", lat_df.columns)
     if error:
         console.print(
-            f"Error getting max colname for {pub_file}: {error}",
-            style="bold red"
+            f"Error getting max colname for {pub_file}: {error}", style="bold red"
         )
-    
+
     if len(lat_df) == 0:
         error_df.append(
             {
                 "filepath": pub_file,
                 "filename": os.path.basename(pub_file),
-                "error": "Publisher data is empty"
+                "error": "Publisher data is empty",
             }
         )
         return None, f"Publisher data is empty for {os.path.basename(pub_file)}."
@@ -250,7 +240,7 @@ def parse_pub_file(
     first_row = lat_df.iloc[0]
     first_min = first_row[min_colname]
     first_max = first_row[max_colname]
-    
+
     first_latency_values = list(set([first_min, first_max]))
 
     # ? Pick out the latency column ONLY
@@ -265,7 +255,7 @@ def parse_pub_file(
             {
                 "filepath": pub_file,
                 "filename": os.path.basename(pub_file),
-                "error": "Couldn't find latency column"
+                "error": "Couldn't find latency column",
             }
         )
         return None, f"Couldn't find latency column for {os.path.basename(pub_file)}."
@@ -273,10 +263,7 @@ def parse_pub_file(
     lat_df = lat_df[latency_col]
 
     # ? Add the first latency values to the dataframe
-    lat_df = pd.concat([
-        pd.Series(first_latency_values),
-        lat_df
-    ], axis=0)
+    lat_df = pd.concat([pd.Series(first_latency_values), lat_df], axis=0)
 
     lat_df = lat_df.reset_index(drop=True)
 
@@ -284,33 +271,30 @@ def parse_pub_file(
     lat_df = lat_df.apply(lambda x: x.strip() if isinstance(x, str) else x)
 
     # Set the type to float
-    lat_df = pd.to_numeric(lat_df, errors='coerce')
+    lat_df = pd.to_numeric(lat_df, errors="coerce")
 
     lat_df = lat_df.rename("latency_us")
     lat_df = lat_df.dropna()
-    
+
     return lat_df, None
 
-def remove_strings(
-    df: pd.DataFrame = pd.DataFrame()
-) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
 
+def remove_strings(
+    df: pd.DataFrame = pd.DataFrame(),
+) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
     # TODO: Validate parameters
-    
+
     for col in df.columns:
         if df[col].dtype == "object":
-            df.loc[:, col] = df[col].str.replace('[^0-9]', '')
-            df.loc[:, col] = pd.to_numeric(df[col], errors='coerce')
+            df.loc[:, col] = df[col].str.replace("[^0-9]", "")
+            df.loc[:, col] = pd.to_numeric(df[col], errors="coerce")
 
     return df, None
 
+
 def summarise_test(
-    test_dir: str = "",
-    summ_path: str = ""
-) -> Tuple[
-    str,
-    Optional[str]
-]:
+    test_dir: str = "", summ_path: str = ""
+) -> Tuple[str, Optional[str]]:
     global error_df
     if test_dir == "":
         return "", "Test directory not specified"
@@ -331,16 +315,10 @@ def summarise_test(
     summ_path = os.path.abspath(summ_path)
     test_name = os.path.basename(test_dir)
 
-    test_summ_path = os.path.join(
-        summ_path,
-        test_name + ".parquet"
-    )
+    test_summ_path = os.path.join(summ_path, test_name + ".parquet")
 
-    csv_files = [f for f in os.listdir(test_dir) if f.endswith(".csv")] 
-    pub_file = os.path.join(
-        test_dir,
-        "pub_0.csv"
-    )
+    csv_files = [f for f in os.listdir(test_dir) if f.endswith(".csv")]
+    pub_file = os.path.join(test_dir, "pub_0.csv")
     sub_files = [f for f in csv_files if f.startswith("sub_")]
     sub_files = [os.path.join(test_dir, f) for f in sub_files]
 
@@ -349,7 +327,7 @@ def summarise_test(
             {
                 "filepath": pub_file,
                 "filename": os.path.basename(pub_file),
-                "error": "Publisher file not found"
+                "error": "Publisher file not found",
             }
         )
         return test_summ_path, f"Publisher file not found: {os.path.basename(pub_file)}"
@@ -359,10 +337,13 @@ def summarise_test(
             {
                 "filepath": test_dir,
                 "filename": os.path.basename(test_dir),
-                "error": "No subscriber files found"
+                "error": "No subscriber files found",
             }
         )
-        return test_summ_path, f"No subscriber files found in {os.path.basename(test_dir)}"
+        return (
+            test_summ_path,
+            f"No subscriber files found in {os.path.basename(test_dir)}",
+        )
 
     lat_df, error = parse_pub_file(pub_file)
     if lat_df is None or error:
@@ -370,7 +351,7 @@ def summarise_test(
             {
                 "filepath": pub_file,
                 "filename": os.path.basename(pub_file),
-                "error": error
+                "error": error,
             }
         )
         return test_summ_path, f"Error parsing publisher file: {error}"
@@ -380,9 +361,9 @@ def summarise_test(
         return test_summ_path, f"Error parsing subscriber files: {error}"
 
     test_df = pd.concat([lat_df, subs_df], axis=1)
-    
+
     # Calculate average and total for subs
-    sub_cols = [col for col in test_df.columns if 'sub' in col.lower()]
+    sub_cols = [col for col in test_df.columns if "sub" in col.lower()]
     sub_cols_without_sub = ["_".join(col.split("_")[2:]) for col in sub_cols]
     sub_metrics = list(set(sub_cols_without_sub))
 
@@ -396,35 +377,28 @@ def summarise_test(
                 {
                     "filepath": test_dir,
                     "filename": os.path.basename(test_dir),
-                    "error": error
+                    "error": error,
                 }
             )
             continue
 
-        test_df['avg_' + sub_metric + "_per_sub"] = sub_metric_df.mean(axis=1)
-        test_df['total_' + sub_metric + "_over_subs"] = sub_metric_df.sum(axis=1)
+        test_df["avg_" + sub_metric + "_per_sub"] = sub_metric_df.mean(axis=1)
+        test_df["total_" + sub_metric + "_over_subs"] = sub_metric_df.sum(axis=1)
 
     try:
         test_df.to_parquet(test_summ_path, index=False)
     except Exception as e:
         error_df.append(
-            {
-                "filepath": test_dir,
-                "filename": os.path.basename(test_dir),
-                "error": e
-            }
+            {"filepath": test_dir, "filename": os.path.basename(test_dir), "error": e}
         )
         return test_summ_path, f"Error saving test summary: {e}"
 
     return test_summ_path, None
 
+
 def summarise_tests(
-    data_path: str = "",
-    status: Console.status = None
-) -> Tuple[
-    str, 
-    Optional[str]
-]:
+    data_path: str = "", status: Console.status = None
+) -> Tuple[str, Optional[str]]:
     global error_df
     if data_path == "":
         return "", "Data path not specified"
@@ -434,10 +408,7 @@ def summarise_tests(
 
     data_path = os.path.abspath(data_path)
 
-    summ_path = os.path.join(
-        "./output/summarised_data/",
-        os.path.basename(data_path)
-    )
+    summ_path = os.path.join("./output/summarised_data/", os.path.basename(data_path))
 
     SUMM_PATH = os.path.abspath(summ_path)
     os.makedirs(SUMM_PATH, exist_ok=True)
@@ -445,26 +416,23 @@ def summarise_tests(
     test_dirs = [os.path.join(data_path, d) for d in os.listdir(data_path)]
     test_dirs = [d for d in test_dirs if os.path.isdir(d)]
     test_list = [os.path.basename(d) for d in test_dirs]
-    
+
     for test_dir_count, test_dir in enumerate(test_dirs):
         count_string = f"[{test_dir_count + 1}/{len(test_dirs)}]"
         status.update(
-            "{} Summarising {}".format(
-                count_string, 
-                os.path.basename(test_dir)
-            )
+            "{} Summarising {}".format(count_string, os.path.basename(test_dir))
         )
         test_summ_path, error = summarise_test(test_dir, SUMM_PATH)
         if error:
             console.print(
                 f"Error summarising test {os.path.basename(test_dir)}: {error}",
-                style="bold red"
+                style="bold red",
             )
             error_df.append(
                 {
                     "filepath": test_dir,
                     "filename": os.path.basename(test_dir),
-                    "error": error
+                    "error": error,
                 }
             )
             continue
@@ -475,7 +443,11 @@ def summarise_tests(
         # )
 
     # Check if all tests were summarised and if not list out which ones were not summarised
-    summ_test_list = [os.path.basename(f).replace(".parquet", "") for f in os.listdir(SUMM_PATH) if f.endswith(".parquet")]
+    summ_test_list = [
+        os.path.basename(f).replace(".parquet", "")
+        for f in os.listdir(SUMM_PATH)
+        if f.endswith(".parquet")
+    ]
 
     if len(test_list) != len(summ_test_list):
         unsummarised_test_list = list(set(test_list) - set(summ_test_list))
@@ -484,25 +456,21 @@ def summarise_tests(
                 {
                     "filepath": data_path,
                     "filename": unsummarised_test,
-                    "error": "Test not summarised"
+                    "error": "Test not summarised",
                 }
             )
 
         console.print(
             f"{len(unsummarised_test_list)} tests were not summarised.",
-            style="bold red"
+            style="bold red",
         )
-                    
+
     return SUMM_PATH, None
 
+
 def generate_dataset(
-    summ_path: str = "",
-    truncation_percent: float = 0,
-    status: Console.status = None
-) -> Tuple[
-    str,
-    Optional[str]
-]:
+    summ_path: str = "", truncation_percent: float = 0, status: Console.status = None
+) -> Tuple[str, Optional[str]]:
     if summ_path == "":
         return "", "Summary path not specified"
 
@@ -526,9 +494,7 @@ def generate_dataset(
         count_string = f"[{test_csv_count + 1}/{len(test_files)}]"
         status.update(
             "{} Generating {} dataset from {}".format(
-                count_string, 
-                f"{truncation_integer}%",
-                os.path.basename(test_csv)
+                count_string, f"{truncation_integer}%", os.path.basename(test_csv)
             )
         )
 
@@ -537,20 +503,14 @@ def generate_dataset(
         try:
             test_df = pd.read_csv(test_csv)
         except UnicodeDecodeError:
-            console.print(
-                f"UnicodeDecodeError reading {test_csv}.",
-                style="bold red"
-            )
+            console.print(f"UnicodeDecodeError reading {test_csv}.", style="bold red")
             continue
 
         test_name = os.path.basename(test_csv)
 
         new_dataset_row = get_qos_dict_from_test_name(test_name)
         if new_dataset_row is None:
-            console.print(
-                f"Couldn't get qos dict for {test_name}.",
-                style="bold red"
-            )
+            console.print(f"Couldn't get qos dict for {test_name}.", style="bold red")
             continue
 
         for key, value in new_dataset_row.items():
@@ -566,17 +526,15 @@ def generate_dataset(
             column_values = test_df[column]
             value_count = len(column_values)
 
-            values_to_truncate = int(
-                value_count * (truncation_percent / 100)
-            )
+            values_to_truncate = int(value_count * (truncation_percent / 100))
 
             column_values = test_df[column].iloc[values_to_truncate:]
             column_df = pd.DataFrame(column_values)
-            
+
             for PERCENTILE in PERCENTILES:
-                new_dataset_row[
-                    f"{column}_{PERCENTILE}%"
-                ] = column_df.quantile(PERCENTILE / 100).values[0]
+                new_dataset_row[f"{column}_{PERCENTILE}%"] = column_df.quantile(
+                    PERCENTILE / 100
+                ).values[0]
 
             for STAT in DISTRIBUTION_STATS:
                 if STAT == "mean":
@@ -591,23 +549,19 @@ def generate_dataset(
                 elif STAT == "max":
                     new_dataset_row[f"{column}_max"] = column_df.max().values[0]
 
-        new_dataset_row_df = pd.DataFrame(
-            [new_dataset_row]
-        )
+        new_dataset_row_df = pd.DataFrame([new_dataset_row])
 
         dataset_df = pd.concat(
-            [dataset_df, new_dataset_row_df],
-            axis = 0,
-            ignore_index = True
+            [dataset_df, new_dataset_row_df], axis=0, ignore_index=True
         )
 
     dataset_df.to_parquet(ds_path, index=False)
     console.print(
-        f"Generated {truncation_integer}% dataset at {ds_path}.",
-        style="bold green"
+        f"Generated {truncation_integer}% dataset at {ds_path}.", style="bold green"
     )
 
     return ds_path, None
+
 
 def main(sys_args: list[str]) -> None:
     global error_df
@@ -618,53 +572,40 @@ def main(sys_args: list[str]) -> None:
                     "Filepath not specified. Usage:{}".format(
                         "\n\tpython data_summariser.py <path_to_test_folders>"
                     ),
-                    style="bold red"
+                    style="bold red",
                 )
                 return
 
             DATA_PATH = sys_args[1]
             if not os.path.exists(DATA_PATH):
-                console.print(
-                    f"Path does not exist: {DATA_PATH}",
-                    style="bold red"
-                )
+                console.print(f"Path does not exist: {DATA_PATH}", style="bold red")
                 return
 
             status.update("Summarising tests...")
             SUMM_PATH, error = summarise_tests(DATA_PATH, status)
             if error:
                 console.print(
-                    "Error summarising tests: {}".format(error),
-                    style="bold red"
+                    "Error summarising tests: {}".format(error), style="bold red"
                 )
                 return
-            
+
         errors_filename = os.path.basename(SUMM_PATH)
         errors_filepath = os.path.join(
-            "./output/summarised_data/",
-            errors_filename + "_errors.parquet"
+            "./output/summarised_data/", errors_filename + "_errors.parquet"
         )
         error_df = pd.DataFrame(error_df)
         try:
-            error_df.to_parquet(
-                errors_filepath,
-                index=False
-            )
+            error_df.to_parquet(errors_filepath, index=False)
         except Exception as e:
             console.print(
                 f"Error saving errors to {errors_filepath}: {e}. Writing to .csv instead",
-                style="bold red"
+                style="bold red",
             )
-            error_df.to_csv(
-                errors_filepath.replace(".parquet", ".csv"),
-                index=False
-            )
+            error_df.to_csv(errors_filepath.replace(".parquet", ".csv"), index=False)
             errors_filepath = errors_filepath.replace(".parquet", ".csv")
 
-        console.print(
-            f"Errors saved to {errors_filepath}.",
-            style="bold red"
-        )
+        console.print(f"Errors saved to {errors_filepath}.", style="bold red")
+
 
 if __name__ == "__main__":
     main(sys.argv)

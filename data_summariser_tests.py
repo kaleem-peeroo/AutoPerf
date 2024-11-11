@@ -2,12 +2,13 @@ import unittest
 
 from data_summariser import *
 
+
 class TestDataSummariser(unittest.TestCase):
     def test_parse_pub_file(self):
         pub_file = os.path.abspath(
             "./pytests/data/{}/{}".format(
                 "1P3S_Multicast_Exploration",
-                "600SEC_512B_1PUB_1SUB_REL_MC_0DUR_100LC/pub_0.csv"
+                "600SEC_512B_1PUB_1SUB_REL_MC_0DUR_100LC/pub_0.csv",
             )
         )
 
@@ -23,25 +24,23 @@ class TestDataSummariser(unittest.TestCase):
             os.path.abspath(
                 "./pytests/data/{}/{}".format(
                     "1P3S_Multicast_Exploration",
-                    "600SEC_512B_1PUB_1SUB_REL_MC_0DUR_100LC"
+                    "600SEC_512B_1PUB_1SUB_REL_MC_0DUR_100LC",
                 )
-            ), 
+            ),
             os.path.abspath(
-                "./output/summarised_data/{}".format(
-                    "1P3S_Multicast_Exploration"
-                )
-            )
+                "./output/summarised_data/{}".format("1P3S_Multicast_Exploration")
+            ),
         )
         self.assertEqual(
-            test_summ_path, 
+            test_summ_path,
             os.path.abspath(
                 "./{}/{}/{}/{}".format(
                     "output",
                     "summarised_data",
                     "1P3S_Multicast_Exploration",
-                    "600SEC_512B_1PUB_1SUB_REL_MC_0DUR_100LC.csv"
+                    "600SEC_512B_1PUB_1SUB_REL_MC_0DUR_100LC.csv",
                 )
-            )
+            ),
         )
 
     def test_summarise_tests(self):
@@ -52,15 +51,15 @@ class TestDataSummariser(unittest.TestCase):
 
         summ_path, error = summarise_tests("./pytests/data/1P3S_Multicast_Exploration/")
         self.assertEqual(
-            summ_path, 
+            summ_path,
             "/{}/{}/{}/{}/{}/{}".format(
                 "Users",
                 "kaleem",
                 "AutoPerf",
                 "output",
                 "summarised_data",
-                "1P3S_Multicast_Exploration"
-            )
+                "1P3S_Multicast_Exploration",
+            ),
         )
         self.assertEqual(error, None)
 
@@ -69,5 +68,6 @@ class TestDataSummariser(unittest.TestCase):
         summ_files = os.listdir(summ_path)
         self.assertGreater(len(summ_files), 0)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -18,16 +18,17 @@ MACHINES = [
         "ip": "100.114.252.94",
         "username": "acwh025",
         "ssh_key_path": "/Users/kaleem/.ssh/id_rsa",
-        "ap_path": "/home/acwh025/AutoPerf"
+        "ap_path": "/home/acwh025/AutoPerf",
     },
     {
         "name": "5pi",
         "ip": "100.103.95.99",
         "username": "acwh025",
         "ssh_key_path": "/Users/kaleem/.ssh/id_rsa",
-        "ap_path": "/home/acwh025/AutoPerf"
-    }
+        "ap_path": "/home/acwh025/AutoPerf",
+    },
 ]
+
 
 def check_remote_file_exists(sftp, remote_file_path):
     try:
@@ -37,6 +38,7 @@ def check_remote_file_exists(sftp, remote_file_path):
         return False
     except Exception as e:
         raise e
+
 
 def remove_zi_files(sftp, remote_data_path):
     # Look for files that start with zi in the remote_data_path and delete them
@@ -48,9 +50,13 @@ def remove_zi_files(sftp, remote_data_path):
         sftp.remove(f"{remote_data_path}/{file}")
         console.print(f"{count_string} {file} deleted.", style="bold green")
 
+
 def get_remote_hash(ssh, remote_file_path):
-    stdin, stdout, stderr = ssh.exec_command(f"sha1sum {remote_file_path} | awk '{{print $1}}'")
+    stdin, stdout, stderr = ssh.exec_command(
+        f"sha1sum {remote_file_path} | awk '{{print $1}}'"
+    )
     return stdout.read().decode().strip()
+
 
 def format_bytes(bytes):
     # Return the number of bytes in a human-readable format
@@ -63,6 +69,7 @@ def format_bytes(bytes):
         i += 1
 
     return f"{int(bytes)}{suffixes[i]}"
+
 
 def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir):
     if output_type == "data":
@@ -87,15 +94,17 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
 
             # If the zip doesn't exist, create it
             if not check_remote_file_exists(sftp, remote_data_zip):
-                status.update(f"{data_dir}.zip ({remote_filesize}) does NOT exist. Creating...")
+                status.update(
+                    f"{data_dir}.zip ({remote_filesize}) does NOT exist. Creating..."
+                )
                 stdin, stdout, stderr = ssh.exec_command(
                     f"cd {remote_data_path} && zip -r {data_dir}.zip {data_dir}"
-                ) 
+                )
                 exit_status = stdout.channel.recv_exit_status()
                 if exit_status != 0:
                     console.print(
                         f"Couldn't create {data_dir}.zip:\n\t{stderr.read().decode()}",
-                        style="bold red"
+                        style="bold red",
                     )
                     continue
 
@@ -105,7 +114,7 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
 
             # console.print(
             #     "Downloading {}\n\t{}\n\t{}".format(
-            #         data_dir, 
+            #         data_dir,
             #         f"remote: {remote_data_zip}",
             #         f"local: {local_download_output_dir}/{output_type}/{data_dir}.zip"
             #     )
@@ -118,14 +127,18 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
                     if os.path.exists(
                         f"{local_download_output_dir}/{output_type}/{data_dir}.zip"
                     ):
-                        local_hash = os.popen(
-                            f"sha1sum {local_download_output_dir}/{output_type}/{data_dir}.zip | awk '{{print $1}}'"
-                        ).read().strip()
+                        local_hash = (
+                            os.popen(
+                                f"sha1sum {local_download_output_dir}/{output_type}/{data_dir}.zip | awk '{{print $1}}'"
+                            )
+                            .read()
+                            .strip()
+                        )
 
                         if remote_hash == local_hash:
                             # console.print(
                             #     "{} {} already exists locally. Skipping...".format(
-                            #         count_string, 
+                            #         count_string,
                             #         f"{data_dir}.zip"
                             #     ),
                             #     style="bold green"
@@ -133,41 +146,43 @@ def zip_and_download(ssh, sftp, output_type, ap_path, local_download_output_dir)
                             continue
 
                 sftp.get(
-                    remote_data_zip, 
-                    f"{local_download_output_dir}/{output_type}/{data_dir}.zip"
+                    remote_data_zip,
+                    f"{local_download_output_dir}/{output_type}/{data_dir}.zip",
                 )
 
-                local_hash = os.popen(
-                    f"sha1sum {local_download_output_dir}/{output_type}/{data_dir}.zip | awk '{{print $1}}'"
-                ).read().strip()
+                local_hash = (
+                    os.popen(
+                        f"sha1sum {local_download_output_dir}/{output_type}/{data_dir}.zip | awk '{{print $1}}'"
+                    )
+                    .read()
+                    .strip()
+                )
 
                 if remote_hash != local_hash:
                     console.print(
                         f"Hashes don't match for {data_dir}.zip. Deleting...",
-                        style="bold red"
+                        style="bold red",
                     )
-                    os.remove(f"{local_download_output_dir}/{output_type}/{data_dir}.zip")
+                    os.remove(
+                        f"{local_download_output_dir}/{output_type}/{data_dir}.zip"
+                    )
                     continue
 
                 # console.print(
-                #     f"{count_string} {data_dir}.zip ({remote_filesize}) downloaded.", 
+                #     f"{count_string} {data_dir}.zip ({remote_filesize}) downloaded.",
                 #     style="bold green"
                 # )
             except Exception as e:
-                console.print(
-                    f"Couldn't download {data_dir}:\n\t{e}",
-                    style="bold red"
-                )
+                console.print(f"Couldn't download {data_dir}:\n\t{e}", style="bold red")
                 continue
 
     remove_zi_files(sftp, remote_data_path)
     remove_zi_files(sftp, os.path.dirname(remote_data_path))
-    
+
+
 def main() -> None:
     for MACHINE in MACHINES:
-        console.print(
-            f"Downloading from {MACHINE['name']} ({MACHINE['ip']})..."
-        )
+        console.print(f"Downloading from {MACHINE['name']} ({MACHINE['ip']})...")
 
         local_download_output_dir = f"./output/downloads/{MACHINE['name']}"
         os.makedirs(local_download_output_dir, exist_ok=True)
@@ -177,7 +192,7 @@ def main() -> None:
         ssh.connect(
             MACHINE["ip"],
             username=MACHINE["username"],
-            key_filename=MACHINE["ssh_key_path"]
+            key_filename=MACHINE["ssh_key_path"],
         )
         sftp = ssh.open_sftp()
         ap_path = MACHINE["ap_path"]
@@ -191,24 +206,19 @@ def main() -> None:
 
         if not check_remote_file_exists(sftp, f"{remote_ds_dir}.zip"):
             console.print(f"{remote_ds_dir}.zip does NOT exist. Creating...")
-            ssh.exec_command(
-                f"cd {ap_path}/output && zip -r datasets.zip datasets"
-            )
+            ssh.exec_command(f"cd {ap_path}/output && zip -r datasets.zip datasets")
 
         try:
             sftp.get(
-                f"{remote_ds_dir}.zip",
-                f"{local_download_output_dir}/datasets.zip"
+                f"{remote_ds_dir}.zip", f"{local_download_output_dir}/datasets.zip"
             )
             console.print(f"datasets.zip downloaded.", style="bold green")
         except Exception as e:
-            console.print(
-                f"Couldn't download datasets.zip:\n\t{e}",
-                style="bold red"
-            )
+            console.print(f"Couldn't download datasets.zip:\n\t{e}", style="bold red")
 
         sftp.close()
         ssh.close()
-        
+
+
 if __name__ == "__main__":
     main()

@@ -8,9 +8,12 @@ from pprint import pprint
 from Timer import Timer
 
 console = Console()
+
+
 class TestDatasetMaker(unittest.TestCase):
     def test_dataset_maker(self):
         self.assertTrue(os.path.exists("./output/datasets/"))
+
 
 class APExperiment:
     def __init__(self, path):
@@ -34,14 +37,12 @@ class APExperiment:
                 self.qos["sub_count"] = int(item.replace("sub", ""))
 
             elif "be" in item or "rel" in item:
-
                 if "be" in item:
                     self.qos["use_reliable"] = False
                 else:
                     self.qos["use_reliable"] = True
 
             elif "uc" in item or "mc" in item:
-
                 if "uc" in item:
                     self.qos["use_multicast"] = False
                 else:
@@ -60,6 +61,7 @@ class APExperiment:
                 print(f"Unknown item: {item}")
 
         return self.qos
+
 
 class DatasetMaker:
     def __init__(self, path):
@@ -111,13 +113,16 @@ class DatasetMaker:
             if index % 50 == 0:
                 try:
                     df.to_parquet(f"{self.output_dir}_dataset.parquet", index=False)
-                    print(f"Dataset periodically saved to {self.output_dir}_dataset.parquet")
+                    print(
+                        f"Dataset periodically saved to {self.output_dir}_dataset.parquet"
+                    )
                 except Exception as e:
                     pprint(e)
                     return
 
         df.to_parquet(f"{self.output_dir}_dataset.parquet", index=False)
         print(f"Dataset saved to {self.output_dir}_dataset.parquet")
+
 
 def main(args):
     SUMM_PATH = args[0]
@@ -126,6 +131,7 @@ def main(args):
 
     dataset_maker = DatasetMaker(SUMM_PATH)
     dataset_maker.make_dataset()
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

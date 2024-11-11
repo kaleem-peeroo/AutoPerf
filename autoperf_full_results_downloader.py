@@ -28,7 +28,7 @@ from constants import *
 
 console = Console()
 
-warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 import pandas as pd
 
@@ -36,10 +36,10 @@ DEBUG_MODE = False
 
 # Set up logging
 logging.basicConfig(
-    level=logging.DEBUG, 
-    filename="logs/autoperf_results_downloader.log", 
+    level=logging.DEBUG,
+    filename="logs/autoperf_results_downloader.log",
     filemode="w",
-    format='%(asctime)s \t%(levelname)s \t%(message)s'
+    format="%(asctime)s \t%(levelname)s \t%(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -48,12 +48,11 @@ if DEBUG_MODE:
     console_handler.setLevel(logging.DEBUG)
 else:
     console_handler.setLevel(logging.INFO)
-formatter = logging.Formatter(
-    '%(asctime)s \t%(levelname)s \t%(message)s'
-)
+formatter = logging.Formatter("%(asctime)s \t%(levelname)s \t%(message)s")
 console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
+
 
 def ping_machine(ip: str = "") -> Optional[bool]:
     """
@@ -65,9 +64,7 @@ def ping_machine(ip: str = "") -> Optional[bool]:
         bool: True if machine is up, False if machine is down.
     """
     if ip == "":
-        logger.error(
-            f"No IP passed for connection check."
-        )
+        logger.error(f"No IP passed for connection check.")
         return None
 
     # logger.debug(
@@ -77,9 +74,10 @@ def ping_machine(ip: str = "") -> Optional[bool]:
     response = os.system(f"ping -c 1 {ip} > /dev/null 2>&1")
 
     if response == 0:
-       return True
+        return True
     else:
         return False
+
 
 def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
     """
@@ -92,25 +90,26 @@ def check_ssh_connection(machine_config: Dict = {}) -> Optional[bool]:
         bool: True if SSH connection can be established, False if it can't.
     """
     if machine_config == {}:
-        logger.error(
-            f"No machine config passed to check_ssh_connection()."
-        )
+        logger.error(f"No machine config passed to check_ssh_connection().")
         return None
-    
-    ssh_key_path = machine_config['ssh_key_path']
-    username = machine_config['username']
-    ip = machine_config['ip']
+
+    ssh_key_path = machine_config["ssh_key_path"]
+    username = machine_config["username"]
+    ip = machine_config["ip"]
 
     # logger.debug(
     #     f"Checking SSH connection to {username}@{ip}"
     # )
 
-    response = os.system(f"ssh -i {ssh_key_path} {username}@{ip} 'echo \"SSH connection successful.\"' > /dev/null 2>&1")
+    response = os.system(
+        f"ssh -i {ssh_key_path} {username}@{ip} 'echo \"SSH connection successful.\"' > /dev/null 2>&1"
+    )
 
     if response == 0:
         return True
     else:
         return False
+
 
 def get_difference_between_lists(list_one: List = [], list_two: List = []):
     """
@@ -124,38 +123,25 @@ def get_difference_between_lists(list_one: List = [], list_two: List = []):
         List: List containing elements that are in list_one but not in list_two
     """
     if list_one is None:
-        logger.error(
-            f"List one is none."
-        )
+        logger.error(f"List one is none.")
         return None
 
     if list_two is None:
-        logger.error(
-            f"List two is none."
-        )
+        logger.error(f"List two is none.")
         return None
 
-    longer_list = get_longer_list(
-        list_one, 
-        list_two
-    )
+    longer_list = get_longer_list(list_one, list_two)
     if longer_list is None:
-        logger.error(
-            f"Couldn't get longer list"
-        )
+        logger.error(f"Couldn't get longer list")
         return None
 
-    shorter_list = get_shorter_list(
-        list_one, 
-        list_two
-    )
+    shorter_list = get_shorter_list(list_one, list_two)
     if shorter_list is None:
-        logger.error(
-            f"Couldn't get shorter list"
-        )
+        logger.error(f"Couldn't get shorter list")
         return None
 
     return [item for item in longer_list if item not in shorter_list]
+
 
 def get_longer_list(list_one: List = [], list_two: List = []):
     """
@@ -169,21 +155,18 @@ def get_longer_list(list_one: List = [], list_two: List = []):
         List: The longer list.
     """
     if list_one is None:
-        logger.error(
-            f"List one is none."
-        )
+        logger.error(f"List one is none.")
         return None
 
     if list_two is None:
-        logger.error(
-            f"List two is none."
-        )
+        logger.error(f"List two is none.")
         return None
 
     if len(list_one) > len(list_two):
         return list_one
     else:
         return list_two
+
 
 def get_shorter_list(list_one: List = [], list_two: List = []):
     """
@@ -197,15 +180,11 @@ def get_shorter_list(list_one: List = [], list_two: List = []):
         List: The shorter list.
     """
     if list_one is None:
-        logger.error(
-            f"List one is none."
-        )
+        logger.error(f"List one is none.")
         return None
 
     if list_two is None:
-        logger.error(
-            f"List two is none."
-        )
+        logger.error(f"List two is none.")
         return None
 
     if len(list_one) > len(list_two):
@@ -213,7 +192,10 @@ def get_shorter_list(list_one: List = [], list_two: List = []):
     else:
         return list_one
 
-def validate_dict_using_keys(given_keys: List = [], required_keys: List = []) -> Optional[bool]:
+
+def validate_dict_using_keys(
+    given_keys: List = [], required_keys: List = []
+) -> Optional[bool]:
     """
     Validate a dictionary using required keys.
 
@@ -225,34 +207,24 @@ def validate_dict_using_keys(given_keys: List = [], required_keys: List = []) ->
         bool: True if all required keys are present, False if not.
     """
     if given_keys == []:
-        logger.error(
-            f"No given_keys given."
-        )
+        logger.error(f"No given_keys given.")
         return None
 
     if required_keys == []:
-        logger.error(
-            f"No required_keys given."
-        )
+        logger.error(f"No required_keys given.")
         return None
 
-    list_difference = get_difference_between_lists(
-        list(given_keys), 
-        required_keys
-    )
+    list_difference = get_difference_between_lists(list(given_keys), required_keys)
     if list_difference is None:
-        logger.error(
-            f"Error comparing keys for {given_keys}"
-        )
+        logger.error(f"Error comparing keys for {given_keys}")
         return None
 
     if len(list_difference) > 0:
-        logger.error(
-            f"Mismatch in keys for \n\t{given_keys}: \n\t\t{list_difference}"
-        )
+        logger.error(f"Mismatch in keys for \n\t{given_keys}: \n\t\t{list_difference}")
         return False
-    
+
     return True
+
 
 def read_config(config_path: str = ""):
     """
@@ -267,24 +239,18 @@ def read_config(config_path: str = ""):
     """
 
     if config_path == "":
-        logger.error(
-            f"No config path passed to read_config()"
-        )
+        logger.error(f"No config path passed to read_config()")
         return None
 
-    with open(config_path, 'r') as f:
+    with open(config_path, "r") as f:
         try:
             config = json.load(f)
         except ValueError as e:
-            logger.error(
-                f"Error parsing JSON for config file: {config_path}: \n\t{e}"
-            )
+            logger.error(f"Error parsing JSON for config file: {config_path}: \n\t{e}")
             return None
 
     if not isinstance(config, list):
-        logger.error(
-            f"Config file does not contain a list: {config_path}"
-        )
+        logger.error(f"Config file does not contain a list: {config_path}")
         return None
 
     for machine_config in config:
@@ -296,29 +262,21 @@ def read_config(config_path: str = ""):
 
         keys = machine_config.keys()
         if keys is None:
-            logger.error(
-                f"Keys not found in machine config: {machine_config}"
-            )
+            logger.error(f"Keys not found in machine config: {machine_config}")
             return
-        if not validate_dict_using_keys(
-            keys, 
-            REQUIRED_MONITOR_MACHINE_KEYS
-        ):
-            logger.error(
-                f"Invalid keys in machine config: {machine_config}"
-            )
+        if not validate_dict_using_keys(keys, REQUIRED_MONITOR_MACHINE_KEYS):
+            logger.error(f"Invalid keys in machine config: {machine_config}")
             return None
 
         for key in keys:
             if key == "ip":
                 ip = machine_config[key]
-                if ip.split('.') == 4:
-                    logger.error(
-                        f"Invalid IP address: {ip}"
-                    )
+                if ip.split(".") == 4:
+                    logger.error(f"Invalid IP address: {ip}")
                     return None
-                    
+
     return config
+
 
 def run_command_via_ssh(machine_config: Dict = {}, command: str = "") -> Optional[str]:
     """
@@ -332,48 +290,35 @@ def run_command_via_ssh(machine_config: Dict = {}, command: str = "") -> Optiona
         str: Output of the command if successful, None if not.
     """
     if machine_config == {}:
-        logger.error(
-            f"No machine config passed."
-        )
+        logger.error(f"No machine config passed.")
         return None
 
     if command == "":
-        logger.error(
-            f"No command passed."
-        )
+        logger.error(f"No command passed.")
         return None
 
-    machine_name = machine_config['name']
-    machine_ip = machine_config['ip']
-    username = machine_config['username']
-    ssh_key = machine_config['ssh_key_path']
+    machine_name = machine_config["name"]
+    machine_ip = machine_config["ip"]
+    username = machine_config["username"]
+    ssh_key = machine_config["ssh_key_path"]
 
-    logger.debug(
-        f"Running {command} on {machine_name} ({machine_ip})."
-    )
+    logger.debug(f"Running {command} on {machine_name} ({machine_ip}).")
 
     if not ping_machine(machine_ip):
-        logger.error(
-            f"Couldn't ping {machine_name} ({machine_ip})."
-        )
+        logger.error(f"Couldn't ping {machine_name} ({machine_ip}).")
         return None
 
     if not check_ssh_connection(machine_config):
-        logger.error(
-            f"Couldn't SSH into {machine_name} ({machine_ip})."
-        )
+        logger.error(f"Couldn't SSH into {machine_name} ({machine_ip}).")
         return None
 
     ssh_command = f"ssh -i {ssh_key} {username}@{machine_ip} '{command}'"
     command_process = subprocess.Popen(
-        ssh_command,
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        ssh_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     stdout, stderr = command_process.communicate(timeout=30)
-    stdout = stdout.decode('utf-8').strip()
-    stderr = stderr.decode('utf-8').strip()
+    stdout = stdout.decode("utf-8").strip()
+    stderr = stderr.decode("utf-8").strip()
 
     if command_process.returncode != 0:
         if "No such file or directory" not in stderr:
@@ -384,17 +329,18 @@ def run_command_via_ssh(machine_config: Dict = {}, command: str = "") -> Optiona
 
     return stdout
 
-def download_items_from_machine(
-    machine: Dict = {},
-    item_type: str = "",
-    status: Console.status = None
-) -> Tuple[Optional[List], Optional[str]]:
 
+def download_items_from_machine(
+    machine: Dict = {}, item_type: str = "", status: Console.status = None
+) -> Tuple[Optional[List], Optional[str]]:
     if machine == {}:
         return None, "No machine config passed."
 
     if item_type not in ["zipped_dirs", "datasets", "summarised_data"]:
-        return None, f"Invalid item type: {item_type}. Must be one of ['zipped_dirs', 'datasets', 'summarised_data']."
+        return (
+            None,
+            f"Invalid item type: {item_type}. Must be one of ['zipped_dirs', 'datasets', 'summarised_data'].",
+        )
 
     if item_type == "zipped_dirs":
         remote_item_dir = f"~/AutoPerf/{DATA_DIR}"
@@ -412,7 +358,10 @@ def download_items_from_machine(
         local_item_dir = f"{SUMMARISED_DIR}{machine['name']}"
 
     else:
-        return None, f"Invalid item type: {item_type}. Must be one of ['zipped_dirs', 'datasets', 'summarised_data']."
+        return (
+            None,
+            f"Invalid item type: {item_type}. Must be one of ['zipped_dirs', 'datasets', 'summarised_data'].",
+        )
 
     status.update(f"Getting {item_type} from {machine['name']} ({machine['ip']})...")
 
@@ -420,18 +369,20 @@ def download_items_from_machine(
     if item_type == "zipped_dirs":
         get_items_command = f"ls {remote_item_dir}*.zip"
 
-    get_items_output = run_command_via_ssh(
-        machine,
-        get_items_command
-    )
+    get_items_output = run_command_via_ssh(machine, get_items_command)
     if get_items_output is None:
-        return None, f"Couldn't get {item_type} from {machine['name']} ({machine['ip']})."
+        return (
+            None,
+            f"Couldn't get {item_type} from {machine['name']} ({machine['ip']}).",
+        )
 
     os.makedirs(local_item_dir, exist_ok=True)
 
     item_dirs = get_items_output.split()
     if len(item_dirs) == 0:
-        console.print(f"No {item_type} found on {machine['name']}.", style="bold yellow")
+        console.print(
+            f"No {item_type} found on {machine['name']}.", style="bold yellow"
+        )
         status.update(f"Checking {backup_remote_dir} as backup.")
 
         if item_type == "zipped_dirs":
@@ -439,18 +390,24 @@ def download_items_from_machine(
         else:
             get_items_command = f"ls {backup_remote_dir}"
 
-        get_items_output = run_command_via_ssh(
-            machine,
-            get_items_command
-        )
+        get_items_output = run_command_via_ssh(machine, get_items_command)
         if get_items_output is None:
-            return None, f"Couldn't get {item_type} from {machine['name']} ({machine['ip']})."
+            return (
+                None,
+                f"Couldn't get {item_type} from {machine['name']} ({machine['ip']}).",
+            )
 
         item_dirs = get_items_output.split()
         if len(item_dirs) == 0:
-            return None, f"No {item_type} found on {machine['name']} (including old location - {backup_remote_dir})."
+            return (
+                None,
+                f"No {item_type} found on {machine['name']} (including old location - {backup_remote_dir}).",
+            )
 
-        console.print(f"Found {len(item_dirs)} {item_type} in old location ({backup_remote_dir}).", style="bold yellow")
+        console.print(
+            f"Found {len(item_dirs)} {item_type} in old location ({backup_remote_dir}).",
+            style="bold yellow",
+        )
         remote_item_dir = backup_remote_dir
 
     if item_type == "summarised_data":
@@ -466,65 +423,70 @@ def download_items_from_machine(
         counter_string = f"[{i}/{len(item_dirs)}]"
         item_dir = os.path.basename(item_dir)
 
-        get_file_size_command = f"du -sh {remote_item_dir}/{item_dir}".replace("//", "/")
-        get_file_size_output = run_command_via_ssh(
-            machine,
-            get_file_size_command
+        get_file_size_command = f"du -sh {remote_item_dir}/{item_dir}".replace(
+            "//", "/"
         )
+        get_file_size_output = run_command_via_ssh(machine, get_file_size_command)
         if get_file_size_output is None:
-           console.print(f"Couldn't get file size of {item_dir} from {machine['name']}", style="bold red")
-           continue
+            console.print(
+                f"Couldn't get file size of {item_dir} from {machine['name']}",
+                style="bold red",
+            )
+            continue
 
         file_size = get_file_size_output.split()[0]
-        status.update(f"{counter_string} Downloading {item_dir} ({file_size}B) from {machine['name']}...")
+        status.update(
+            f"{counter_string} Downloading {item_dir} ({file_size}B) from {machine['name']}..."
+        )
 
         if item_type == "summarised_data":
             download_command = f"scp -r"
         else:
             download_command = f"scp -i"
 
-        download_command = f"{download_command} {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{remote_item_dir}/{item_dir} {local_item_dir}".replace("//", "/")
+        download_command = f"{download_command} {machine['ssh_key_path']} {machine['username']}@{machine['ip']}:{remote_item_dir}/{item_dir} {local_item_dir}".replace(
+            "//", "/"
+        )
 
         download_output = subprocess.Popen(
-            download_command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            download_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         stdout, stderr = download_output.communicate()
-        stdout = stdout.decode('utf-8').strip()
-        stderr = stderr.decode('utf-8').strip()
+        stdout = stdout.decode("utf-8").strip()
+        stderr = stderr.decode("utf-8").strip()
 
         if download_output.returncode != 0:
-            console.print(f"{counter_string} ❌ {item_dir} ({file_size}B)\n\t{stderr}", style="bold red")
+            console.print(
+                f"{counter_string} ❌ {item_dir} ({file_size}B)\n\t{stderr}",
+                style="bold red",
+            )
             continue
 
-        console.print(f"{counter_string} ✅ {item_dir} ({file_size}B)", style="bold green")
-        
+        console.print(
+            f"{counter_string} ✅ {item_dir} ({file_size}B)", style="bold green"
+        )
+
     return item_dirs, None
-   
+
+
 def main(sys_args: list[str] = []) -> None:
     if len(sys_args) < 2:
         logger.error(
             "\n\t{}\n\t{}".format(
                 "Config file path not passed.",
-                "Usage: python autoperf_results_downloader.py <config_file_path>"
+                "Usage: python autoperf_results_downloader.py <config_file_path>",
             )
         )
         return
 
     CONFIG_PATH = sys_args[1]
     if not os.path.exists(CONFIG_PATH):
-        logger.error(
-            f"Config path {CONFIG_PATH} does NOT exist."
-        )
+        logger.error(f"Config path {CONFIG_PATH} does NOT exist.")
         return
 
     CONFIG = read_config(CONFIG_PATH)
     if CONFIG is None:
-        logger.error(
-            f"Couldn't read config of {CONFIG_PATH}."
-        )
+        logger.error(f"Couldn't read config of {CONFIG_PATH}.")
         return
 
     SKIP_DOWNLOADED = False
@@ -535,9 +497,9 @@ def main(sys_args: list[str] = []) -> None:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(
-            MACHINE_CONFIG['ip'],
-            username=MACHINE_CONFIG['username'],
-            key_filename=MACHINE_CONFIG['ssh_key_path']
+            MACHINE_CONFIG["ip"],
+            username=MACHINE_CONFIG["username"],
+            key_filename=MACHINE_CONFIG["ssh_key_path"],
         )
 
         sftp = ssh.open_sftp()
@@ -556,57 +518,44 @@ def main(sys_args: list[str] = []) -> None:
             elif destination == "datasets":
                 files = [f for f in files if f.endswith(".csv")]
             else:
-                logger.error(
-                    f"Invalid destination: {destination}"
-                )
+                logger.error(f"Invalid destination: {destination}")
                 return
 
             for file_index, file in enumerate(files):
                 local_file = "./output/{}/{}/{}".format(
-                    destination,
-                    MACHINE_CONFIG['name'],
-                    file
+                    destination, MACHINE_CONFIG["name"], file
                 )
 
                 remote_file = "/home/acwh025/AutoPerf/output/{}/{}".format(
-                    destination,
-                    file
+                    destination, file
                 )
 
                 if os.path.exists(local_file) and SKIP_DOWNLOADED:
                     # logger.info(
-                        # f" Skipping {os.path.basename(file)}..."
+                    # f" Skipping {os.path.basename(file)}..."
                     # )
                     continue
 
-                count_string = "[{}/{}]".format(
-                    file_index + 1,
-                    len(files)
-                )
+                count_string = "[{}/{}]".format(file_index + 1, len(files))
 
                 with console.status(
-                    "{} Downloading {}...".format(
-                        count_string,
-                        os.path.basename(file)
-                    )
+                    "{} Downloading {}...".format(count_string, os.path.basename(file))
                 ):
                     try:
                         sftp.get(remote_file, local_file)
                     except Exception as e:
                         logger.error(
                             "Error downloading {}:\n\t{}".format(
-                                os.path.basename(file),
-                                e
+                                os.path.basename(file), e
                             )
                         )
                         continue
 
-                logger.info(
-                    f"{count_string} ✅ Downloaded {os.path.basename(file)}"
-                )
-            
+                logger.info(f"{count_string} ✅ Downloaded {os.path.basename(file)}")
+
         sftp.close()
         ssh.close()
-                    
+
+
 if __name__ == "__main__":
     main(sys.argv)
