@@ -69,12 +69,12 @@ async def restart_tapo_plug_from_machine_name(machine_name: str = ""):
         return
 
     TAPO_PLUGS = [
-        {"name": "k2", "ip": "192.168.1.102"},
-        {"name": "k3", "ip": "192.168.1.103"},
-        {"name": "k4", "ip": "192.168.1.104"},
-        {"name": "k5", "ip": "192.168.1.105"},
-        {"name": "p1", "ip": "192.168.1.106"},
-        {"name": "p2", "ip": "192.168.1.107"},
+        {"name": "k2", "ip": "192.168.1.101"},
+        {"name": "k3", "ip": "192.168.1.104"},
+        {"name": "k4", "ip": "192.168.1.100"},
+        {"name": "k5", "ip": "192.168.1.102"},
+        {"name": "p1", "ip": "192.168.1.105"},
+        {"name": "p2", "ip": "192.168.1.103"},
     ]
 
     chosen_plug = None
