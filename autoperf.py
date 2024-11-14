@@ -1692,6 +1692,10 @@ def update_ess_df(
         axis = 0,
         ignore_index = True
     )
+
+    # Generate the IPs from the comments
+    new_ess_df['ip'] = new_ess_df.apply(extract_ip)
+
     return new_ess_df
 
 def get_noise_gen_scripts(config: Dict = {}) -> Tuple[Optional[List[str]], Optional[str]]:
