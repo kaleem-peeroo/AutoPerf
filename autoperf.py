@@ -1694,7 +1694,7 @@ def update_ess_df(
     )
 
     # Generate the IPs from the comments
-    new_ess_df['ip'] = new_ess_df.apply(extract_ip)
+    new_ess_df['ip'] = new_ess_df['comments'].apply(extract_ip)
 
     return new_ess_df
 
