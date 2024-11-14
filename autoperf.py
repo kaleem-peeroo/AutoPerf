@@ -2918,7 +2918,6 @@ def get_must_wait_for_self_reboot(ess_df: pd.DataFrame = pd.DataFrame()) -> Tupl
     if not have_last_n_test_failed_bool:
         return False, None
 
-    ess_df['ip'] = ess_df['comments'].apply(extract_ip)
     ess_df_tail = ess_df.tail(3)
     all_ips_match = ess_df_tail['ip'].nunique() == 1
 
@@ -3059,16 +3058,22 @@ def make_output_dirs():
 
 def check_for_self_reboot(
     ess_df: pd.DataFrame = pd.DataFrame(), 
-    campaign_conf: Dict = {}
+    campaign_conf: Dict = {},
+    campaign_prefix: str = ""
 ) -> Optional[str]:
 
+    logger.info(f"{campaign_prefix} Checking for self reboot...")
     must_wait_for_self_reboot, error = get_must_wait_for_self_reboot(
         ess_df
     )
     if error:
         logger.warning(f"Couldn't check if self-reboot needed: {error}")
 
-    if must_wait_for_self_reboot:
+    if not must_wait_for_self_reboot:
+        logger.info(f"No self-reboot needed.")
+
+    else:
+        logger.info(f"Self-reboot needed. Getting unreachable machine IP...")
         machine_ip, error = get_unreachable_machine_ip_from_ess_df(ess_df)
         if error:
             logger.warning(f"Error getting unreachable machine IP: {error}")
@@ -3192,7 +3197,8 @@ def main(sys_args: list[str] = []) -> Optional[None]:
 
             error = check_for_self_reboot(
                 ess_df,
-                CAMPAIGN_CONF
+                CAMPAIGN_CONF,
+                campaign_prefix
             )
             if error:
                 logger.error(f"{campaign_prefix} Error checking for self reboot: {error}")
@@ -3306,6 +3312,20 @@ def main(sys_args: list[str] = []) -> Optional[None]:
             test_status = "failed"
 
             while retry_counter > 0 and test_status != "success":
+                ess_df, ess_error = get_ess_df(ESS_PATH)
+                if ess_error:
+                    logger.error(f"Error getting ess: {ess_error}")
+                    continue
+
+                error = check_for_self_reboot(
+                    ess_df,
+                    CAMPAIGN_CONF,
+                    campaign_prefix
+                )
+                if error:
+                    logger.error(f"{campaign_prefix} Error checking for self reboot: {error}")
+                continue
+
                 ess_df, run_test_error = run_test(
                     failed_test,
                     CAMPAIGN_CONF['slave_machines'],
