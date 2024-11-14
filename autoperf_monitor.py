@@ -11,6 +11,7 @@ import warnings
 import toml
 
 import autoperf as ap
+import pandas as pd
 
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
@@ -28,13 +29,11 @@ console = Console(record=True)
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
-import pandas as pd
-
 DEBUG_MODE = False
 
 logging.basicConfig(
     level=logging.DEBUG,
-    filename="logs/autoperf_monitor_refactor.log",
+    filename="logs/autoperf_monitor.log",
     filemode="w",
     format="%(message)s",
 )
@@ -1395,6 +1394,26 @@ def get_last_n_statuses_as_string_from_ess_df(
 
     return last_n_statuses_output, status_emoji_dict
 
+def resolve_missing_ips(ess_df: pd.DataFrame = pd.DataFrame()) -> Tuple[pd.DataFrame, Optional[str]]:
+    """
+    Resolve missing IPs in the ESS DataFrame by extracting the IP from the comments.
+
+    Params:
+        ess_df: pd.DataFrame: DataFrame containing ESS data.
+
+    Returns:
+        pd.DataFrame: DataFrame with resolved IPs if successful, None if not.
+        str: Error message if not.
+    """
+    if ess_df is None:
+        return None, "No ESS DataFrame passed."
+
+    if ess_df.empty:
+        return None, "ESS DataFrame is empty."
+
+    ess_df["ip"] = ess_df["comments"].str.extract(r"(\d+\.\d+\.\d+\.\d+)")
+
+    return ess_df, None
 
 def get_ip_output_from_ess_df(ess_df, n: int = 100, line_break_point: int = 10):
     if ess_df is None:
@@ -1402,6 +1421,10 @@ def get_ip_output_from_ess_df(ess_df, n: int = 100, line_break_point: int = 10):
 
     if "ip" not in ess_df.columns:
         return "", {}
+
+    ess_df, error = resolve_missing_ips(ess_df)
+    if error:
+        logger.warning(f"Couldn't resolve missing IPs: {error}")
 
     ip_df = ess_df["ip"].dropna()
 
