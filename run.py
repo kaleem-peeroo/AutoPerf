@@ -13,4 +13,7 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
-    main()
+    try:
+        main()
+    except Exception as e:
+        console.print_exception()
