@@ -1,15 +1,26 @@
-# test_data_summariser:
-test_ds:
-	python data_summariser_tests.py
+PROJECT_NAME = AutoPerf
+PYTHON = python3
 
-# run_data_summariser:
-run_ds:
-	python data_summariser.py $(DATA_PATH)
+all: run
 
-devrun_ds:
-	python data_summariser.py "./output/data/devtest/1P3S_Multicast_Exploration/"
+run:
+	@echo "Running AutoPerf..."
+	$(PYTHON) run.py
 
-# test_and_run_data_summariser:
-test_and_run_ds:
-	python data_summariser_tests.py
-	python data_summariser.py $(DATA_PATH)
+test:
+	@echo "Running tests..."
+	$(PYTHON) -m unittest discover -s tests
+
+clean:
+	@echo "Cleaning up..."
+	find . -name "__pycache__" -type d -exec rm -rf {} +
+	find . -name "*.pyc" -type f -delete
+	find . -name "*.pyo" -type f -delete
+
+help:
+	@echo "Usage: make [target]"
+	@echo "Targets:"
+	@echo "  run: Run AutoPerf"
+	@echo "  test: Run tests"
+	@echo "  clean: Clean up"
+	@echo "  help: Show this help message"

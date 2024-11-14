@@ -1,0 +1,34 @@
+[[campaigns]]
+campaign_name = "Devtest"
+combination_generation_type = "pcg"
+rcg_target_test_count = 0 
+quit_after_n_failed_tests = 10
+noise_generation = {}
+retry_failed_tests_n_times = 0
+custom_test_list = []
+
+  [campaigns.qos_settings]
+  duration_secs = [60]
+  datalen_bytes = [100]
+  pub_count = [5]
+  sub_count = [5]
+  use_reliable = [true]
+  use_multicast = [true]
+  durability_level = [0]
+  latency_count = [100]
+
+  [[campaigns.slave_machines]]
+  machine_name = "vm1"
+  participant_allocation = "pub"
+  ip = "192.168.64.7"
+  ssh_key_path = "~/.ssh/id_rsa"
+  username = "ubuntu"
+  perftest_exec_path = "~/rtiperftest/perftest_cpp"
+
+  [[campaigns.slave_machines]]
+  machine_name = "vm2" 
+  participant_allocation = "sub"
+  ip = "192.168.64.9"
+  ssh_key_path = "~/.ssh/id_rsa"
+  username = "ubuntu"
+  perftest_exec_path = "~/rtiperftest/perftest_cpp"
