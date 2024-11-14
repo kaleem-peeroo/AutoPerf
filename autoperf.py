@@ -3045,7 +3045,7 @@ def get_failed_test_names(ess_df: pd.DataFrame):
 
     failed_rows = ess_df[ess_df['end_status'] != 'success']
 
-    return failed_rows['test_name'].to_list(), None
+    return failed_rows['test_name'].unique(), None
 
 def get_custom_test_list(exp_conf) -> Tuple[Optional[list[str]], Optional[str]]:
     return exp_conf['custom_test_list'], None
