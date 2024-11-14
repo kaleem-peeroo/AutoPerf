@@ -1,11 +1,12 @@
 PROJECT_NAME = AutoPerf
 PYTHON = python3
+CONFIG_PATH = config/vms/devtest.toml
 
 all: run
 
 run:
 	@echo "Running AutoPerf..."
-	$(PYTHON) run.py
+	$(PYTHON) run.py $(CONFIG_PATH)
 
 test:
 	@echo "Running tests..."
