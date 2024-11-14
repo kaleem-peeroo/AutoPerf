@@ -3071,6 +3071,7 @@ def check_for_self_reboot(
 
     if not must_wait_for_self_reboot:
         logger.info(f"No self-reboot needed.")
+        return None
 
     else:
         logger.info(f"Self-reboot needed. Getting unreachable machine IP...")
@@ -3320,11 +3321,11 @@ def main(sys_args: list[str] = []) -> Optional[None]:
                 error = check_for_self_reboot(
                     ess_df,
                     CAMPAIGN_CONF,
-                    campaign_prefix
+                    test_prefix
                 )
                 if error:
                     logger.error(f"{campaign_prefix} Error checking for self reboot: {error}")
-                continue
+                break
 
                 ess_df, run_test_error = run_test(
                     failed_test,
