@@ -1,8 +1,8 @@
 import sys
 
-from src import Timer 
+from src import Timer, ExperimentRunner
 from src.logger import logger
-from .config_parser import ConfigParser
+from .config import Config
 
 from rich.console import Console
 from rich.pretty import pprint
@@ -18,11 +18,20 @@ def main():
         sys.exit(1)
 
     config_file = sys.argv[1]
-    config = ConfigParser(config_file)
-    config.parse()
-    config.validate()
 
-    # pprint(config.config)
+    config = Config(config_file)
+
+    campaigns = config.get_campaigns()
+
+    for campaign in campaigns:
+        experiments = campaign.generate_experiments()
+
+        for experiment in experiments:
+            experiment_runner = ExperimentRunner(experiment)
+            experiment_runner.run()
+            experiment_runner.save_results()
+
+        campaign.save_results()
 
 if __name__ == "__main__":
     with Timer():

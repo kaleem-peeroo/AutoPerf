@@ -1,0 +1,246 @@
+import toml
+
+from src.logger import logger
+from src.experiments import Campaign, Machine
+
+from rich.pretty import pprint
+
+class Config:
+    REQUIRED_SETTINGS = [
+        "campaign_name",
+        "gen_type",
+        "max_failures",
+        "max_retries",
+        "slave_machines",
+        "qos_settings"
+    ]
+
+    OPTIONAL_SETTINGS = [
+        "total_tests",
+        "noise_gen",
+        "test_names"
+    ]
+
+    QOS_SETTINGS = [
+        "duration_secs",
+        "datalen_bytes",
+        "pub_count",
+        "sub_count",
+        "use_reliable",
+        "use_multicast",
+        "durability",
+        "latency_count"
+    ]
+
+    def __init__(self, filename):
+        self.filename = filename
+        self.config = self.parse()
+        self.campaigns = []
+
+    def __rich_repr__(self):
+        yield "filename", self.filename
+        yield "config", self.config
+        yield "campaigns", self.campaigns
+
+    def parse(self):
+        logger.info(f"Parsing config file: {self.filename}...")
+        try:
+            with open(self.filename) as f:
+                self.config = toml.load(f)
+
+            if 'campaigns' not in self.config:
+                logger.error(
+                    "No campaigns found in config file. Make sure the config file has a [[campaigns]]."
+                )
+                raise ValueError("No campaigns found in config file")
+
+            else:
+                self.config = self.config['campaigns']
+
+                if len(self.config) == 0:
+                    raise ValueError(f"No campaigns found in {self.filename}")
+
+        except FileNotFoundError as e:
+            logger.error(
+                f"Config file {self.filename} not found"
+            )
+            raise e
+
+        logger.info(f"Parsed {self.filename} and found {len(self.config)} campaigns")
+
+        return self.config
+
+    def get_filename(self):
+        return self.filename
+
+    def set_filename(self, filename):
+        if not isinstance(filename, str):
+            raise ValueError(f"Filename must be a string: {filename}")
+
+        if filename == "":
+            raise ValueError("Filename must not be empty")
+
+        self.filename = filename
+
+    def get_config(self):
+        return self.config
+
+    def set_config(self, config):
+        if not isinstance(config, dict):
+            raise ValueError(f"Config must be a dict: {config}")
+
+        if config == {}:
+            raise ValueError("Config must not be empty")
+
+        self.config = config
+
+    def get_campaigns(self):
+        logger.info("Getting campaigns...")
+
+        if not self.config:
+            raise ValueError("Config is empty")
+            
+        if self.campaigns == []:
+
+            for campaign in self.config:
+                if not isinstance(campaign, dict):
+                    logger.error(
+                        f"Campaign must be a dictionary in {self.filename}"
+                    )
+                    raise ValueError
+
+                self.validate_campaign_config(campaign)
+
+                keys = list(campaign.keys())
+
+                if "total_tests" not in keys:
+                    campaign["total_tests"] = 0
+                if "noise_gen" not in keys:
+                    campaign["noise_gen"] = {}
+                if "test_names" not in keys:
+                    campaign["test_names"] = []
+
+                new_campaign = Campaign()
+
+                new_campaign.set_name(campaign["campaign_name"])
+                new_campaign.set_gen_type(campaign["gen_type"])
+                new_campaign.set_max_failures(campaign["max_failures"])
+                new_campaign.set_max_retries(campaign["max_retries"])
+                new_campaign.set_machines(campaign["slave_machines"])
+                new_campaign.set_qos_config(campaign["qos_settings"])
+                new_campaign.set_total_tests(campaign["total_tests"])
+                new_campaign.set_noise_gen(campaign["noise_gen"])
+                new_campaign.set_test_names(campaign["test_names"])
+
+                self.campaigns.append(new_campaign)
+
+        return self.campaigns
+
+    def set_campaigns(self, campaigns):
+        if not isinstance(campaigns, list):
+            raise ValueError(f"Campaigns must be a list: {campaigns}")
+
+        if campaigns == []:
+            raise ValueError("Campaigns must not be empty")
+
+        self.campaigns = campaigns
+
+    def validate_noise_gen(self, campaign):
+        REQUIRED_KEYS = [
+            'delay',
+            'bandwidth_rate'
+        ]
+
+        OPTIONAL_KEYS = [
+            'packet_loss',
+            'packet_corruption',
+            'packet_duplication',
+        ]
+
+        noise_gen = campaign["noise_gen"]
+        if noise_gen == {}:
+            return
+
+        keys = list(noise_gen.keys())
+
+        for key in REQUIRED_KEYS:
+            if key not in keys:
+                logger.error(
+                    f"Setting {key} not found in noise_gen in {self.filename}"
+                )
+                raise ValueError
+
+            if key == 'delay':
+                if not isinstance(noise_gen[key], dict):
+                    logger.error(
+                        f"delay must be a dictionary in noise_gen in {self.filename}"
+                    )
+                    raise ValueError
+
+            else:
+                if not isinstance(noise_gen[key], str):
+                    logger.error(
+                        f"{key} must be a string in noise_gen in {self.filename}"
+                    )
+                    raise ValueError
+
+        for key in OPTIONAL_KEYS:
+            if key in keys:
+                if not isinstance(noise_gen[key], str):
+                    logger.error(
+                        f"{key} must be a string in noise_gen in {self.filename}"
+                    )
+                    raise ValueError
+                    
+    def validate_qos_settings(self, campaign):
+        qos_settings = campaign["qos_settings"]
+        keys = list(qos_settings.keys())
+
+        for setting in self.QOS_SETTINGS:
+            if setting not in keys:
+                logger.error(
+                    f"Setting {setting} not found in qos_settings in {self.filename}"
+                )
+                raise ValueError
+
+            if not isinstance(qos_settings[setting], list):
+                logger.error(
+                    f"Setting {setting} must be an list in {self.filename}"
+                )
+                raise ValueError
+
+            if len(qos_settings[setting]) == 0:
+                logger.error(
+                    f"Setting {setting} must have at least one value in {self.filename}"
+                )
+                raise ValueError
+
+            # Sort the lists from small to large
+            qos_settings[setting].sort()
+
+    def validate_config(self):
+        if not self.config:
+            raise ValueError("Config is empty")
+            
+        for campaign in self.config:
+            campaign = self.validate_campaign_config(campaign)
+
+    def validate_campaign_config(self, campaign):
+        keys = list(campaign.keys())
+
+        for setting in self.REQUIRED_SETTINGS:
+            if setting not in keys:
+                logger.error(
+                    f"Setting {setting} not found in {self.filename}"
+                )
+                raise ValueError
+
+        for setting in self.OPTIONAL_SETTINGS:
+            if setting not in keys:
+                campaign[setting] = None
+
+        self.validate_noise_gen(campaign)
+        self.validate_qos_settings(campaign)
+
+        return campaign
+

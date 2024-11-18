@@ -8,7 +8,7 @@ os.makedirs(log_dir, exist_ok=True)
 
 log_file_path = os.path.join(log_dir, "app.log")
 
-log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+log_format = "%(asctime)s %(levelname)s %(message)s"
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 
 logging.basicConfig(
