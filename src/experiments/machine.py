@@ -22,6 +22,8 @@ class Machine:
         self.ssh_key_path = ssh_key_path
         self.username = username
         self.perftest_path = perftest_path
+        self.scripts = []
+        self.command = ""
 
     def __rich_repr__(self):
         yield "hostname", self.hostname
@@ -30,6 +32,8 @@ class Machine:
         yield "ssh_key_path", self.ssh_key_path
         yield "username", self.username
         yield "perftest_path", self.perftest_path
+        yield "scripts", self.scripts
+        yield "command", self.command
 
     def get_hostname(self):
         return self.hostname
@@ -48,6 +52,12 @@ class Machine:
 
     def get_perftest_path(self):
         return self.perftest_path
+
+    def get_scripts(self):
+        return self.scripts
+
+    def get_command(self):
+        return self.command
 
     def set_hostname(self, hostname):
         if not isinstance(hostname, str):
@@ -231,3 +241,43 @@ class Machine:
             "command": " ".join(command),
             "error": error,
         }]
+
+    def set_scripts(self, scripts):
+        if not isinstance(scripts, list):
+            raise ValueError(f"Scripts must be a list: {scripts}")
+
+        if len(scripts) == 0:
+            raise ValueError("Scripts must not be empty")
+
+        self.scripts = scripts
+
+    def set_command(self, command):
+        if not isinstance(command, str):
+            raise ValueError(f"Command must be a string: {command}")
+
+        if command == "":
+            raise ValueError("Command must not be empty")
+
+        self.command = command
+
+    def generate_command(self):
+        machine_script = self.get_command()
+
+        perftest_exec = f"./{os.path.basename(
+            self.perftest_path
+        )}"
+
+        for script in self.scripts:
+            script = f"{perftest_exec} {script}"
+            machine_script = f"{machine_script} {script} &"
+
+        self.set_command(machine_script)
+
+    def add_script(self, script):
+        if not isinstance(script, str):
+            raise ValueError(f"Script must be a string: {script}")
+
+        if script == "":
+            raise ValueError("Script must not be empty")
+
+        self.scripts.append(script)

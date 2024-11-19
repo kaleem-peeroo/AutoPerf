@@ -28,6 +28,26 @@ class Experiment:
     def get_machines(self):
         return self.machines
 
+    def get_machines_by_type(self, participant_type): 
+        if not isinstance(participant_type, str):
+            raise ValueError(f"Participant type must be a str: {participant_type}")
+
+        if len(participant_type) == 0:
+            raise ValueError(f"Participant type must not be empty: {participant_type}")
+
+        if " " in participant_type:
+            raise ValueError(f"Participant type must not contain spaces: {participant_type}")
+
+        if participant_type not in ["pub", "sub", "all"]:
+            raise ValueError(f"Participant type not supported: {participant_type}")
+
+        machines_by_type = []
+        for machine in self.machines:
+            if machine.get_participant_type() == "all" or machine.get_participant_type() == participant_type:
+                machines_by_type.append(machine)
+
+        return machines_by_type
+
     def set_name(self, name):
         if not isinstance(name, str):
             raise ValueError(f"Name must be a str: {name}")

@@ -30,7 +30,6 @@ def main():
         for experiment in experiments:
             experiment_runner = ExperimentRunner(experiment)
             experiment_runner.run()
-            pprint(experiment_runner)
             experiment_runner.save_results()
 
         campaign.save_results()
