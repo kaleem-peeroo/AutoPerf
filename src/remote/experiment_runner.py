@@ -34,8 +34,6 @@ class ExperimentRunner:
         """
 
         machines = self.experiment.get_machines()
-        pprint(machines)
 
         for machine in machines:
             was_pinged, ping_errors = machine.ping()
-            pprint(was_pinged)

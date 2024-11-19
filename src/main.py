@@ -29,7 +29,6 @@ def main():
 
         for experiment in experiments:
             experiment_runner = ExperimentRunner(experiment)
-            pprint(experiment_runner)
             experiment_runner.run()
             experiment_runner.save_results()
 
