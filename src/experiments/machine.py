@@ -143,6 +143,7 @@ class Machine:
 
             if type == "ping":
                 command = ["ping", "-c", "5", "-W", "10", self.ip]
+
             elif type == "ssh":
                 command = [
                     "ssh",
@@ -192,3 +193,5 @@ class Machine:
             
         return False, errors
 
+    def restart(self):
+        raise NotImplementedError("Restart method not implemented.")

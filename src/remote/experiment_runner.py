@@ -55,40 +55,57 @@ class ExperimentRunner:
             self.end_time = datetime.now()
             return
 
-    def check_machines(self, type: str) -> bool:
+        if not self.restart_machines():
+            self.status = "failed to restart machines"
+            self.end_time = datetime.now()
+            return
+
+    def execute_on_machines(self, action: str = "") -> bool:
+        if action == "":
+            raise ValueError("Action must be specified.")
+
+        action_map = {
+            "ping": lambda machine: machine.check_connection("ping"),
+            "ssh": lambda machine: machine.check_connection("ssh"),
+            "restart": lambda machine: machine.restart()
+        }
+
+        if action not in action_map:
+            raise ValueError(f"Action not supported: {action}")
+
+        lambda_function = action_map[action]
+        
         machines = self.experiment.get_machines()
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            results = executor.map(
-                lambda machine: machine.check_connection(
-                    type = type,
-                    total_attempts = 3,
-                    timeout = 10
-                ), 
-                machines
+            results = list(
+                executor.map(
+                    lambda_function,
+                    machines
+                )
             )
-            results = list(results)
 
         for result in results:
-            was_checked, check_errors = result
+            was_executed, execute_errors = result
 
-            if check_errors:
-                # Specify the action to differentiate between errors.
-                for check_error in check_errors:
-                    check_error["action"] = type
+            if execute_errors:
+                for execute_error in execute_errors:
+                    execute_error["action"] = action
+                self.errors.append(execute_errors)
 
-                self.errors.append(check_errors)
-
-            if not was_checked:
+            if not was_executed:
                 return False
 
         return True
-
+    
     def ping_machines(self) -> bool:
-        return self.check_machines("ping")
+        return self.execute_on_machines("ping")
         
     def ssh_machines(self) -> bool:
-        return self.check_machines("ssh")
+        return self.execute_on_machines("ssh")
+
+    def restart_machines(self) -> bool:
+        return self.execute_on_machines("restart")
         
     def save_results(self):
         if self.end_time == datetime.min:
