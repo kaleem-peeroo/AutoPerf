@@ -110,37 +110,53 @@ class Machine:
 
         self.perftest_path = perftest_path
 
-    def ping(
+    def check_connection(
         self, 
-        total_ping_attempts=3,
-        ping_timeout=10
+        type: str = "ping",
+        total_attempts=3,
+        timeout=10
     ) -> Tuple[bool, Optional[ List[str] ]]:
         logger.info(
-            "Pinging {} ({}) {} times (timeout={})...".format(
+            "{}ing {} ({}) {} times (timeout={})...".format(
+                type.capitalize(),
                 self.hostname,
                 self.ip,
-                total_ping_attempts,
-                ping_timeout
+                total_attempts,
+                timeout
             )
         )
 
-        ping_attempts = total_ping_attempts
+        attempts = total_attempts
 
         errors = []
-        while ping_attempts > 0:
+        while attempts > 0:
             logger.info(
-                "[PING {}/{}] Attempting to ping {} ({})...".format(
-                    4 - ping_attempts,
-                    total_ping_attempts,
+                "[{} {}/{}] Attempting to {} {} ({})...".format(
+                    type.upper(),
+                    4 - attempts,
+                    total_attempts,
+                    type,
                     self.hostname,
                     self.ip
                 )
             )
 
-            command = ["ping", "-c", "5", "-W", "10", self.ip]
+            if type == "ping":
+                command = ["ping", "-c", "5", "-W", "10", self.ip]
+            elif type == "ssh":
+                command = [
+                    "ssh",
+                    "-o", 
+                    f"ConnectTimeout={timeout}",
+                    f"{self.username}@{self.ip}",
+                    "echo", "Connected."
+                ]
+
+            else:
+                raise ValueError(f"Invalid connection type: {type}")
 
             try:
-                result = subprocess.run(command, capture_output=True, text=True, timeout=ping_timeout)
+                result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
 
                 if result.returncode != 0:
                     error = f"Return code: {result.returncode}.\nstderr: {result.stderr}"
@@ -149,15 +165,16 @@ class Machine:
                     return True, None
 
             except subprocess.TimeoutExpired:
-                error = f"Ping timeout after {ping_timeout} seconds."
+                error = f"{type.capitalize()} timeout after {timeout} seconds."
                 
             except Exception as e:
                 error = str(e)
                 
             logger.warning(
-                "[PING {}/{}] {} ({}) Failed.".format(
-                    4 - ping_attempts,
-                    total_ping_attempts,
+                "[{} {}/{}] {} ({}) Failed.".format(
+                    type.upper(),
+                    4 - attempts,
+                    total_attempts,
                     self.hostname,
                     self.ip
                 )
@@ -166,10 +183,12 @@ class Machine:
             errors.append({
                 "hostname": self.hostname,
                 "ip": self.ip,
-                "attempt": 4 - ping_attempts,
-                "error": error
+                "attempt": 4 - attempts,
+                "command": " ".join(command),
+                "error": error,
             })
 
-            ping_attempts -= 1
+            attempts -= 1
             
         return False, errors
+

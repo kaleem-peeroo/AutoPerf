@@ -16,8 +16,14 @@ class ExperimentRunner:
     def __rich_repr__(self):
         yield "experiment", self.experiment
         yield "attempt", self.attempt
-        yield "start_time", datetime.strftime(self.start_time, "%Y-%m-%d %H:%M:%S")
-        yield "end_time", datetime.strftime(self.end_time, "%Y-%m-%d %H:%M:%S")
+        yield "start_time", datetime.strftime(
+            self.start_time, 
+            "%Y-%m-%d %H:%M:%S"
+        )
+        yield "end_time", datetime.strftime(
+            self.end_time, 
+            "%Y-%m-%d %H:%M:%S"
+        )
         yield "status", self.status
         yield "errors", self.errors
 
@@ -43,28 +49,47 @@ class ExperimentRunner:
             self.status = "failed to ping machines"
             self.end_time = datetime.now()
             return
-                
-    def ping_machines(self):
+
+        if not self.ssh_machines():
+            self.status = "failed to ssh to machines"
+            self.end_time = datetime.now()
+            return
+
+    def check_machines(self, type: str) -> bool:
         machines = self.experiment.get_machines()
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            results = executor.map(lambda machine: machine.ping(), machines)
+            results = executor.map(
+                lambda machine: machine.check_connection(
+                    type = type,
+                    total_attempts = 3,
+                    timeout = 10
+                ), 
+                machines
+            )
             results = list(results)
 
         for result in results:
-            was_pinged, ping_errors = result
+            was_checked, check_errors = result
 
-            # Specify the action to differentiate between errors.
-            for ping_error in ping_errors:
-                ping_error["action"] = "ping"
+            if check_errors:
+                # Specify the action to differentiate between errors.
+                for check_error in check_errors:
+                    check_error["action"] = type
 
-            self.errors.append(ping_errors)
+                self.errors.append(check_errors)
 
-            if not was_pinged:
+            if not was_checked:
                 return False
 
         return True
 
+    def ping_machines(self) -> bool:
+        return self.check_machines("ping")
+        
+    def ssh_machines(self) -> bool:
+        return self.check_machines("ssh")
+        
     def save_results(self):
         if self.end_time == datetime.min:
             self.end_time = datetime.now()
@@ -72,4 +97,4 @@ class ExperimentRunner:
         if self.status == "pending":
             self.status = "completed"
 
-        pprint(self)
+        raise NotImplementedError("Saving results is not implemented yet.")
