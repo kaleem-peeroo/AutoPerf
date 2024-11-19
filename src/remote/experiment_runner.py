@@ -1,5 +1,7 @@
 import concurrent.futures
 
+from src.logger import logger
+
 from datetime import datetime
 from rich.pretty import pprint
 from typing import Dict, Tuple
@@ -49,7 +51,7 @@ class ExperimentRunner:
             self.status = "failed to ping machines"
             self.end_time = datetime.now()
             return
-
+        
         if not self.ssh_machines():
             self.status = "failed to ssh to machines"
             self.end_time = datetime.now()
@@ -60,14 +62,35 @@ class ExperimentRunner:
             self.end_time = datetime.now()
             return
 
-    def execute_on_machines(self, action: str = "") -> bool:
+        # Longer timeout to wait for machines to restart
+        if not self.ping_machines(attempts=3, timeout=20):
+            self.status = "failed to ping machines after restart"
+            self.end_time = datetime.now()
+            return
+
+    def execute_on_machines(
+        self, 
+        action: str = "",
+        attempts: int = 3,
+        timeout: int = 10
+    ) -> bool:
         if action == "":
             raise ValueError("Action must be specified.")
 
         action_map = {
-            "ping": lambda machine: machine.check_connection("ping"),
-            "ssh": lambda machine: machine.check_connection("ssh"),
-            "restart": lambda machine: machine.restart()
+            "ping": lambda machine: machine.check_connection(
+                "ping",
+                total_attempts=attempts,
+                timeout=timeout
+            ),
+            "ssh": lambda machine: machine.check_connection(
+                "ssh",
+                total_attempts=attempts,
+                timeout=timeout
+            ),
+            "restart": lambda machine: machine.restart(
+                timeout=timeout
+            )
         }
 
         if action not in action_map:
@@ -98,14 +121,30 @@ class ExperimentRunner:
 
         return True
     
-    def ping_machines(self) -> bool:
-        return self.execute_on_machines("ping")
-        
-    def ssh_machines(self) -> bool:
-        return self.execute_on_machines("ssh")
+    def ping_machines(
+        self,
+        attempts: int = 3,
+        timeout: int = 10
+    ) -> bool:
+        return self.execute_on_machines(
+            "ping",
+            attempts=attempts,
+            timeout=timeout
+        )
 
+    def ssh_machines(
+        self,
+        attempts: int = 3,
+        timeout: int = 10
+    ) -> bool:
+        return self.execute_on_machines(
+            "ssh",
+            attempts=attempts,
+            timeout=timeout
+        )
+    
     def restart_machines(self) -> bool:
-        return self.execute_on_machines("restart")
+        return self.execute_on_machines("restart", timeout=60)
         
     def save_results(self):
         if self.end_time == datetime.min:

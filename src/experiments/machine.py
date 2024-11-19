@@ -193,5 +193,41 @@ class Machine:
             
         return False, errors
 
-    def restart(self):
-        raise NotImplementedError("Restart method not implemented.")
+    def restart(self, timeout=10):
+        logger.info(
+            "Restarting {} ({}) with timeout of {} seconds...".format(
+                self.hostname,
+                self.ip,
+                timeout
+            )
+        )
+
+        command = [
+            "ssh",
+            "-i",
+            self.ssh_key_path,
+            f"{self.username}@{self.ip}",
+            "sudo reboot"
+        ]
+
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+
+            if result.returncode != 0:
+                error = f"Return code: {result.returncode}.\nstderr: {result.stderr}"
+
+            else:
+                return True, None
+
+        except subprocess.TimeoutExpired:
+            error = "Restart timeout after 10 seconds."
+
+        except Exception as e:
+            error = str(e)
+
+        return False, [{
+            "hostname": self.hostname,
+            "ip": self.ip,
+            "command": " ".join(command),
+            "error": error,
+        }]
