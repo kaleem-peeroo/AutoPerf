@@ -211,7 +211,9 @@ class Campaign:
                 qos = get_qos_from_experiment_name(experiment_name)
                 experiment = Experiment(
                     experiment_name, 
-                    qos
+                    qos,
+                    self.machines,
+                    self.noise_gen
                 )
                 experiments.append(experiment)
 
@@ -254,7 +256,8 @@ class Campaign:
             experiment = Experiment(
                 qos.get_qos_name(),
                 qos,
-                self.machines
+                self.machines,
+                self.noise_gen
             )
 
             experiments.append(experiment)

@@ -20,16 +20,20 @@ def main():
     config_file = sys.argv[1]
 
     config = Config(config_file)
-
     campaigns = config.get_campaigns()
 
     for campaign in campaigns:
         campaign.generate_experiments()
         experiments = campaign.get_experiments()
 
-        for experiment in experiments:
-            experiment_runner = ExperimentRunner(experiment)
+        for index, experiment in enumerate(experiments):
+            experiment_runner = ExperimentRunner(
+                experiment, 
+                index,
+                len(experiments)
+            )
             experiment_runner.run()
+            pprint(experiment_runner)
             experiment_runner.save_results()
 
         campaign.save_results()

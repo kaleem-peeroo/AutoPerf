@@ -7,6 +7,10 @@ noise_gen = {}
 max_retries = 0
 experiment_names = []
 
+    [campaigns.noise_gen]
+    delay = {}
+    bandwidth_rate = "99mbit"
+
     [campaigns.qos_settings]
     duration_secs = [60]
     datalen_bytes = [100, 512]

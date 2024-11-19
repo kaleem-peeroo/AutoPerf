@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from .qos import QoS
 from .machine import Machine
 
@@ -9,15 +7,18 @@ class Experiment:
         name: str,
         qos: QoS,
         machines: list,
+        noise_gen: dict = {}
     ):
         self.name = name
         self.qos = qos
         self.machines = machines
+        self.noise_gen = noise_gen
 
     def __rich_repr__(self):
         yield "name", self.name
         yield "qos", self.qos
         yield "machines", self.machines
+        yield "noise_gen", self.noise_gen
 
     def get_name(self):
         return self.name
@@ -28,6 +29,12 @@ class Experiment:
     def get_machines(self):
         return self.machines
 
+    def get_noise_gen(self):
+        return self.noise_gen
+
+    def get_timeout(self):
+        return self.qos.duration_secs + 120
+        
     def get_machines_by_type(self, participant_type): 
         if not isinstance(participant_type, str):
             raise ValueError(f"Participant type must be a str: {participant_type}")
@@ -76,3 +83,9 @@ class Experiment:
                 raise ValueError(f"Machine must be a Machine: {machine}")
 
         self.machines = machines
+
+    def set_noise_gen(self, noise_gen):
+        if not isinstance(noise_gen, dict):
+            raise ValueError(f"Noise gen must be a dict: {noise_gen}")
+
+        self.noise_gen = noise_gen

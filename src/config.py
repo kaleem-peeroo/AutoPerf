@@ -43,7 +43,8 @@ class Config:
         yield "campaigns", self.campaigns
 
     def parse(self):
-        logger.info(f"Parsing config file: {self.filename}...")
+        logger.debug(f"Parsing config file: {self.filename}...")
+
         try:
             with open(self.filename) as f:
                 self.config = toml.load(f)
@@ -66,7 +67,7 @@ class Config:
             )
             raise e
 
-        logger.info(f"Parsed {self.filename} and found {len(self.config)} campaigns")
+        logger.debug(f"Parsed {self.filename} and found {len(self.config)} campaigns")
 
         return self.config
 
@@ -95,7 +96,7 @@ class Config:
         self.config = config
 
     def get_campaigns(self):
-        logger.info("Getting campaigns...")
+        logger.debug("Getting campaigns...")
 
         if not self.config:
             raise ValueError("Config is empty")

@@ -1,6 +1,8 @@
 import re
 import os
 import subprocess
+import random
+import time
 
 from typing import Tuple, Optional, List
 
@@ -24,6 +26,7 @@ class Machine:
         self.perftest_path = perftest_path
         self.scripts = []
         self.command = ""
+        self.run_output = []
 
     def __rich_repr__(self):
         yield "hostname", self.hostname
@@ -34,6 +37,7 @@ class Machine:
         yield "perftest_path", self.perftest_path
         yield "scripts", self.scripts
         yield "command", self.command
+        yield "run_output", self.run_output
 
     def get_hostname(self):
         return self.hostname
@@ -58,6 +62,18 @@ class Machine:
 
     def get_command(self):
         return self.command
+
+    def get_run_output(self):
+        return self.run_output
+
+    def set_run_output(self, run_output):
+        if not isinstance(run_output, list):
+            raise ValueError(f"Run output must be a list: {run_output}")
+
+        self.run_output = run_output
+
+    def add_run_output(self, run_output):
+        self.run_output.append(run_output)
 
     def set_hostname(self, hostname):
         if not isinstance(hostname, str):
@@ -126,7 +142,7 @@ class Machine:
         total_attempts=3,
         timeout=10
     ) -> Tuple[bool, Optional[ List[str] ]]:
-        logger.info(
+        logger.debug(
             "{}ing {} ({}) {} times (timeout={})...".format(
                 type.capitalize(),
                 self.hostname,
@@ -140,7 +156,7 @@ class Machine:
 
         errors = []
         while attempts > 0:
-            logger.info(
+            logger.debug(
                 "[{} {}/{}] Attempting to {} {} ({})...".format(
                     type.upper(),
                     4 - attempts,
@@ -204,7 +220,7 @@ class Machine:
         return False, errors
 
     def restart(self, timeout=10):
-        logger.info(
+        logger.debug(
             "Restarting {} ({}) with timeout of {} seconds...".format(
                 self.hostname,
                 self.ip,
@@ -281,3 +297,41 @@ class Machine:
             raise ValueError("Script must not be empty")
 
         self.scripts.append(script)
+
+    def run(self):
+        random_number = random.randint(10, 15)
+        logger.debug(f"Pretending to run command on machine for {random_number} seconds...")
+        time.sleep(random_number)
+        return True, None
+
+    def remove_artifact_files(self):
+        perftest_path = self.get_perftest_path()
+        perftest_dir = os.path.dirname(perftest_path)
+
+        command = [
+            "ssh",
+            "-i",
+            self.ssh_key_path,
+            f"{self.username}@{self.ip}",
+            f"cd {perftest_dir}; rm -f *.csv"
+        ]
+
+        try:
+            result = subprocess.run(command, capture_output=True, text=True)
+
+            if result.returncode != 0:
+                error = f"Return code: {result.returncode}.\nstderr: {result.stderr}"
+
+            else:
+                return True, None
+
+        except Exception as e:
+            error = str(e)
+
+        return False, [{
+            "hostname": self.hostname,
+            "ip": self.ip,
+            "command": " ".join(command),
+            "error": error,
+        }]
+
