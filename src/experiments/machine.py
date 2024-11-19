@@ -1,5 +1,10 @@
 import re
 import os
+import subprocess
+
+from typing import Tuple, Optional, List
+
+from src.logger import logger
 
 class Machine:
     def __init__(
@@ -18,8 +23,31 @@ class Machine:
         self.username = username
         self.perftest_path = perftest_path
 
+    def __rich_repr__(self):
+        yield "hostname", self.hostname
+        yield "participant_type", self.participant_type
+        yield "ip", self.ip
+        yield "ssh_key_path", self.ssh_key_path
+        yield "username", self.username
+        yield "perftest_path", self.perftest_path
+
     def get_hostname(self):
         return self.hostname
+
+    def get_participant_type(self):
+        return self.participant_type
+
+    def get_ip(self):
+        return self.ip
+
+    def get_ssh_key_path(self):
+        return self.ssh_key_path
+
+    def get_username(self):
+        return self.username
+
+    def get_perftest_path(self):
+        return self.perftest_path
 
     def set_hostname(self, hostname):
         if not isinstance(hostname, str):
@@ -30,9 +58,6 @@ class Machine:
 
         self.hostname = hostname
 
-    def get_participant_type(self):
-        return self.participant_type
-
     def set_participant_type(self, participant_type):
         if not isinstance(participant_type, str):
             raise ValueError(f"Participant type must be a string: {participant_type}")
@@ -41,9 +66,6 @@ class Machine:
             raise ValueError("Participant type must not be empty")
 
         self.participant_type = participant_type
-
-    def get_ip(self):
-        return self.ip
 
     def set_ip(self, ip):
         if not isinstance(ip, str):
@@ -58,9 +80,6 @@ class Machine:
 
         self.ip = ip
 
-    def get_ssh_key_path(self):
-        return self.ssh_key_path
-
     def set_ssh_key_path(self, ssh_key_path):
         if not isinstance(ssh_key_path, str):
             raise ValueError(f"SSH key path must be a string: {ssh_key_path}")
@@ -73,9 +92,6 @@ class Machine:
 
         self.ssh_key_path = ssh_key_path
 
-    def get_username(self):
-        return self.username
-
     def set_username(self, username):
         if not isinstance(username, str):
             raise ValueError(f"Username must be a string: {username}")
@@ -85,9 +101,6 @@ class Machine:
 
         self.username = username
 
-    def get_perftest_path(self):
-        return self.perftest_path
-
     def set_perftest_path(self, perftest_path):
         if not isinstance(perftest_path, str):
             raise ValueError(f"Perftest path must be a string: {perftest_path}")
@@ -96,3 +109,56 @@ class Machine:
             raise ValueError("Perftest path must not be empty")
 
         self.perftest_path = perftest_path
+
+    def ping(self, total_ping_attempts=3) -> Tuple[bool, Optional[ List[str] ]]:
+        logger.info(f"Pinging {self.hostname} ({self.ip}) {total_ping_attempts} times...")
+
+        ping_attempts = total_ping_attempts
+
+        errors = []
+
+        while ping_attempts > 0:
+            logger.info(
+                "[PING {}/{}] Attempting to ping {} ({})...".format(
+                    4 - ping_attempts,
+                    total_ping_attempts,
+                    self.hostname,
+                    self.ip
+                )
+            )
+
+            command = ["ping", "-c", "5", "-W", "10", self.ip]
+            try:
+                result = subprocess.run(command, capture_output=True, text=True, timeout=10)
+
+                if result.returncode != 0:
+                    ping_attempts -= 1
+                    errors.append({
+                        "attempt": 4 - ping_attempts,
+                        "error": "Ping failed",
+                        "stdout": result.stdout,
+                        "stderr": result.stderr
+                    })
+
+                else:
+                    return True, None
+
+            except subprocess.TimeoutExpired:
+                ping_attempts -= 1
+                errors.append({
+                    "attempt": 4 - ping_attempts,
+                    "error": "Ping timed out after 10 seconds",
+                    "stdout": None,
+                    "stderr": None
+                })
+
+            except Exception as e:
+                ping_attempts -= 1
+                errors.append({
+                    "attempt": 4 - ping_attempts,
+                    "error": "Ping exception",
+                    "stdout": None,
+                    "stderr": None
+                })
+
+        return False, errors

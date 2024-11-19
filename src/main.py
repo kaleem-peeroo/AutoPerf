@@ -24,10 +24,12 @@ def main():
     campaigns = config.get_campaigns()
 
     for campaign in campaigns:
-        experiments = campaign.generate_experiments()
+        campaign.generate_experiments()
+        experiments = campaign.get_experiments()
 
         for experiment in experiments:
             experiment_runner = ExperimentRunner(experiment)
+            pprint(experiment_runner)
             experiment_runner.run()
             experiment_runner.save_results()
 

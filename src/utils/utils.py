@@ -1,4 +1,8 @@
-def get_qos_from_testname(test_name):
+import itertools
+
+from rich.pretty import pprint
+
+def get_qos_from_experiment_name(experiment_name):
     from src.experiments import QoS
 
     duration_secs = 0
@@ -10,21 +14,21 @@ def get_qos_from_testname(test_name):
     durability = 0
     latency_count = 0
 
-    if test_name == "":
-        raise ValueError("Test name must not be empty")
+    if experiment_name == "":
+        raise ValueError("experiment name must not be empty")
 
-    if not isinstance(test_name, str):
-        raise ValueError(f"Test name must be a string: {test_name}")
+    if not isinstance(experiment_name, str):
+        raise ValueError(f"experiment name must be a string: {experiment_name}")
 
-    test_name_parts = test_name.split("_")
-    if len(test_name_parts) != 8:
+    experiment_name_parts = experiment_name.split("_")
+    if len(experiment_name_parts) != 8:
         raise ValueError("{} must have 8 parts but has {}".format(
-            test_name, len(test_name_parts)
+            experiment_name, len(experiment_name_parts)
         ))
 
-    for part in test_name_parts:
+    for part in experiment_name_parts:
         if part == "":
-            raise ValueError("Test name part must not be empty")
+            raise ValueError("experiment name part must not be empty")
 
         if part.endswith("SEC"):
             duration_secs = int(part[:-3])
@@ -59,7 +63,7 @@ def get_qos_from_testname(test_name):
             sub_count = int(part[:-1])
 
         else:
-            raise ValueError(f"Unknown test name part: {part}")
+            raise ValueError(f"Unknown experiment name part: {part}")
 
     qos = QoS(
         duration_secs,
@@ -73,3 +77,45 @@ def get_qos_from_testname(test_name):
     )
 
     return qos
+
+def generate_qos_permutations(qos_config):
+    if not isinstance(qos_config, dict):
+        raise ValueError(f"QoS config must be a dict: {qos_config}")
+
+    if qos_config == {}:
+        raise ValueError("QoS config must not be empty")
+
+    required_keys = [
+        'duration_secs',
+        'datalen_bytes',
+        'pub_count',
+        'sub_count',
+        'use_reliable',
+        'use_multicast',
+        'durability',
+        'latency_count'
+    ]
+
+    keys = qos_config.keys()
+    if len(keys) == 0:
+        raise ValueError("No options found for qos")
+
+    for key in required_keys:
+        if key not in qos_config:
+            raise ValueError(f"QoS config must have {key}")
+
+    values = qos_config.values()
+    if len(values) == 0:
+        raise ValueError("No values found for QoS")
+
+    for value in values:
+        if len(value) == 0:
+            raise ValueError("One of the settings has no values.")
+
+    combinations = list(itertools.product(*values))
+    combination_dicts = [dict(zip(keys, combination)) for combination in combinations]
+
+    if len(combination_dicts) == 0:
+        raise ValueError(f"No combinations were generated fro mthe QoS values:\n\t {qos}")
+
+    return combination_dicts

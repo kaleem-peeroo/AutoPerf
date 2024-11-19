@@ -18,19 +18,23 @@ class QoS:
         self.use_multicast = use_multicast
         self.durability = durability
         self.latency_count = latency_count
+        self.qos_name = self.get_qos_name()
 
     def __rich_repr__(self):
-        if use_reliable:
+        yield self.qos_name
+        
+    def get_qos_name(self):
+        if self.use_reliable:
             use_reliable_str = "REL"
         else:
             use_reliable_str = "BE"
 
-        if use_multicast:
+        if self.use_multicast:
             use_multicast_str = "MC"
         else:
             use_multicast_str = "UC"
 
-        yield "{}SEC_{}B_{}P_{}S_{}_{}_{}DUR_{}LC".format(
+        return "{}SEC_{}B_{}P_{}S_{}_{}_{}DUR_{}LC".format(
             self.duration_secs,
             self.datalen_bytes,
             self.pub_count,

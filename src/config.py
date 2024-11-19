@@ -16,9 +16,9 @@ class Config:
     ]
 
     OPTIONAL_SETTINGS = [
-        "total_tests",
+        "total_experiments",
         "noise_gen",
-        "test_names"
+        "experiment_names"
     ]
 
     QOS_SETTINGS = [
@@ -113,12 +113,12 @@ class Config:
 
                 keys = list(campaign.keys())
 
-                if "total_tests" not in keys:
-                    campaign["total_tests"] = 0
+                if "total_experiments" not in keys:
+                    campaign["total_experiments"] = 0
                 if "noise_gen" not in keys:
                     campaign["noise_gen"] = {}
-                if "test_names" not in keys:
-                    campaign["test_names"] = []
+                if "experiment_names" not in keys:
+                    campaign["experiment_names"] = []
 
                 new_campaign = Campaign()
 
@@ -128,9 +128,8 @@ class Config:
                 new_campaign.set_max_retries(campaign["max_retries"])
                 new_campaign.set_machines(campaign["slave_machines"])
                 new_campaign.set_qos_config(campaign["qos_settings"])
-                new_campaign.set_total_tests(campaign["total_tests"])
                 new_campaign.set_noise_gen(campaign["noise_gen"])
-                new_campaign.set_test_names(campaign["test_names"])
+                new_campaign.set_experiment_names(campaign["experiment_names"])
 
                 self.campaigns.append(new_campaign)
 
