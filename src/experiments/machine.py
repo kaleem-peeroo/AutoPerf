@@ -110,13 +110,23 @@ class Machine:
 
         self.perftest_path = perftest_path
 
-    def ping(self, total_ping_attempts=3) -> Tuple[bool, Optional[ List[str] ]]:
-        logger.info(f"Pinging {self.hostname} ({self.ip}) {total_ping_attempts} times...")
+    def ping(
+        self, 
+        total_ping_attempts=3,
+        ping_timeout=10
+    ) -> Tuple[bool, Optional[ List[str] ]]:
+        logger.info(
+            "Pinging {} ({}) {} times (timeout={})...".format(
+                self.hostname,
+                self.ip,
+                total_ping_attempts,
+                ping_timeout
+            )
+        )
 
         ping_attempts = total_ping_attempts
 
         errors = []
-
         while ping_attempts > 0:
             logger.info(
                 "[PING {}/{}] Attempting to ping {} ({})...".format(
@@ -128,37 +138,38 @@ class Machine:
             )
 
             command = ["ping", "-c", "5", "-W", "10", self.ip]
+
             try:
-                result = subprocess.run(command, capture_output=True, text=True, timeout=10)
+                result = subprocess.run(command, capture_output=True, text=True, timeout=ping_timeout)
 
                 if result.returncode != 0:
-                    ping_attempts -= 1
-                    errors.append({
-                        "attempt": 4 - ping_attempts,
-                        "error": "Ping failed",
-                        "stdout": result.stdout,
-                        "stderr": result.stderr
-                    })
-
+                    error = f"Return code: {result.returncode}.\nstderr: {result.stderr}"
+                    
                 else:
                     return True, None
 
             except subprocess.TimeoutExpired:
-                ping_attempts -= 1
-                errors.append({
-                    "attempt": 4 - ping_attempts,
-                    "error": "Ping timed out after 10 seconds",
-                    "stdout": None,
-                    "stderr": None
-                })
-
+                error = f"Ping timeout after {ping_timeout} seconds."
+                
             except Exception as e:
-                ping_attempts -= 1
-                errors.append({
-                    "attempt": 4 - ping_attempts,
-                    "error": "Ping exception",
-                    "stdout": None,
-                    "stderr": None
-                })
+                error = str(e)
+                
+            logger.warning(
+                "[PING {}/{}] {} ({}) Failed.".format(
+                    4 - ping_attempts,
+                    total_ping_attempts,
+                    self.hostname,
+                    self.ip
+                )
+            )
 
+            errors.append({
+                "hostname": self.hostname,
+                "ip": self.ip,
+                "attempt": 4 - ping_attempts,
+                "error": error
+            })
+
+            ping_attempts -= 1
+            
         return False, errors

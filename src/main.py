@@ -31,6 +31,7 @@ def main():
             experiment_runner = ExperimentRunner(experiment)
             experiment_runner.run()
             experiment_runner.save_results()
+            asdf
 
         campaign.save_results()
 

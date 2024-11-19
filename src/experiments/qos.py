@@ -21,7 +21,15 @@ class QoS:
         self.qos_name = self.get_qos_name()
 
     def __rich_repr__(self):
-        yield self.qos_name
+        yield "duration_secs", self.duration_secs
+        yield "datalen_bytes", self.datalen_bytes
+        yield "pub_count", self.pub_count
+        yield "sub_count", self.sub_count
+        yield "use_reliable", self.use_reliable
+        yield "use_multicast", self.use_multicast
+        yield "durability", self.durability
+        yield "latency_count", self.latency_count
+        yield "qos_name", self.qos_name
         
     def get_qos_name(self):
         if self.use_reliable:
