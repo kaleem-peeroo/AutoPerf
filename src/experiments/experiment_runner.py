@@ -2,10 +2,13 @@ import concurrent.futures
 import os
 
 from src.logger import logger
+from .experiment import Experiment
+from .data_file import DataFile
+from .machine import Machine
 
 from datetime import datetime
 from rich.pretty import pprint
-from typing import Dict, Tuple
+from typing import Dict
 from multiprocessing import Process, Manager
 
 class ExperimentRunner:
@@ -18,11 +21,13 @@ class ExperimentRunner:
         self.experiment_index = experiment_index
         self.experiment = experiment
         self.total_experiments_count = total_experiments_count
+        self.output_dirpath = experiment.get_output_dirpath()
         self.attempt = 0
         self.start_time = datetime.min
         self.end_time = datetime.min
         self.status = "pending"
         self.errors = []
+        self.data_files = []
 
     def __rich_repr__(self):
         yield "experiment_index", self.experiment_index
@@ -39,6 +44,9 @@ class ExperimentRunner:
         )
         yield "status", self.status
         yield "errors", self.errors
+
+    def get_data_files(self):
+        return self.data_files
 
     def get_experiment_index(self):
         return self.experiment_index
@@ -64,6 +72,19 @@ class ExperimentRunner:
     def get_errors(self):
         return self.errors
 
+    def get_output_dirpath(self):
+        return self.output_dirpath
+
+    def set_data_files(self, data_files):
+        if not isinstance(data_files, list):
+            raise ValueError("Data files must be a list.")
+
+        for data_file in data_files:
+            if not isinstance(data_file, DataFile):
+                raise ValueError("Data file must be a DataFile.")
+
+        self.data_files = data_files
+
     def set_experiment_index(self, experiment_index):
         if not isinstance(experiment_index, int):
             raise ValueError("Experiment index must be an integer.")
@@ -88,6 +109,18 @@ class ExperimentRunner:
 
         self.total_experiments_count = total_experiments_count
 
+    def set_output_dirpath(self, output_dirpath):
+        if not isinstance(output_dirpath, str):
+            raise ValueError("Output dirpath must be a string.")
+
+        if output_dirpath == "":
+            raise ValueError("Output dirpath must not be empty.")
+
+        if not os.path.exists(output_dirpath):
+            raise ValueError(f"Output dirpath does not exist: {output_dirpath}")
+
+        self.output_dirpath = output_dirpath
+        
     def set_attempt(self, attempt):
         if not isinstance(attempt, int):
             raise ValueError("Attempt must be an integer.")
@@ -431,8 +464,87 @@ class ExperimentRunner:
     def restart_machines(self) -> bool:
         return self.execute_on_machines("restart", timeout=60)
         
+    def check_results(self):
+        logger.debug(
+            "[{}/{}] [{}] Checking results...".format(
+                self.experiment_index + 1,
+                self.total_experiments_count,
+                self.experiment.get_name()
+            )
+        )
+
+        output_dirpath = self.get_output_dirpath()
+
+        files = os.listdir(output_dirpath)
+        csv_files = [file for file in files if file.endswith(".csv")]
+        expected_file_count = self.experiment.qos.get_expected_file_count()
+
+        logger.debug(
+            "[{}/{}] [{}] Found {} csv files (expected {})...".format(
+                self.experiment_index + 1,
+                self.total_experiments_count,
+                self.experiment.get_name(),
+                len(csv_files),
+                expected_file_count
+            )
+        )
+
+        if len(csv_files) != expected_file_count:
+            self.add_error({
+                "error": f"Expected {expected_file_count} csv files, but found {len(csv_files)}",
+                "expected_file_count": expected_file_count,
+                "actual_file_count": len(csv_files),
+                "action": "check_results"
+            })
+            return
+
+        for csv_file in csv_files:
+            csv_file_path = os.path.join(output_dirpath, csv_file)
+            data_file = DataFile(csv_file_path)
+            self.data_files.append(data_file)
+
+        logger.debug(
+            "[{}/{}] [{}] Checking data files...".format(
+                self.experiment_index + 1,
+                self.total_experiments_count,
+                self.experiment.get_name()
+            )
+        )
+
+        for data_file in self.data_files:
+            is_valid, error = data_file.is_valid()
+            if not is_valid:
+                logger.warning(
+                    "[{}/{}] [{}] Data file {} is invalid: {}".format(
+                        self.experiment_index + 1,
+                        self.total_experiments_count,
+                        self.experiment.get_name(),
+                        data_file.get_filename(),
+                        error
+                    )
+                )
+
+                self.add_error({
+                    "error": f"Data file {data_file.get_filename()} is not valid: {error}",
+                    "action": "check_results"
+                })
+                continue
+
+        self.status = "checked results"
+
     def download_results(self):
-        raise NotImplementedError("Downloading results is not implemented yet.")
+        machines = self.experiment.get_machines()
+        for machine in machines:
+            if not machine.download_results(self.get_output_dirpath()):
+                self.add_error({
+                    "hostname": machine.get_hostname(),
+                    "ip": machine.get_ip(),
+                    "error": "failed to download results",
+                    "action": "download_results"
+                })
+                continue
+
+        self.status = "downloaded results"
     
 def run_script_on_machine(machine, timeout_secs: int = 600, shared_dict: Dict = {}):
     output = machine.run(timeout_secs)

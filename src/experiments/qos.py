@@ -53,6 +53,9 @@ class QoS:
             self.latency_count
         ) 
 
+    def get_expected_file_count(self):
+        return self.sub_count + 1
+
     def generate_scripts(self):
         if self.pub_count == 0:
             raise ValueError(f"Pub count is 0 for qos: {self.qos_name}")

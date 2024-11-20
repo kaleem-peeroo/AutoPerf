@@ -6,6 +6,7 @@ from typing import Tuple, Optional, List
 from rich.pretty import pprint
 
 from src.logger import logger
+from .ssh_client import SSHClient
 
 class Machine:
     def __init__(
@@ -26,7 +27,7 @@ class Machine:
         self.scripts = []
         self.command = ""
         self.run_output = []
-
+        
     def __rich_repr__(self):
         yield "hostname", self.hostname
         yield "participant_type", self.participant_type
@@ -64,6 +65,13 @@ class Machine:
 
     def get_run_output(self):
         return self.run_output
+
+    def create_ssh_client(self):
+        return SSHClient(
+            self.ip, 
+            self.username, 
+            self.ssh_key_path
+        )
 
     def set_run_output(self, run_output):
         if not isinstance(run_output, list):
@@ -377,4 +385,54 @@ class Machine:
             "command": " ".join(command),
             "error": error,
         }]
+
+    def download_results(self, output_dirpath):
+        perftest_path = self.get_perftest_path()
+        perftest_dir = os.path.dirname(perftest_path)
+
+        logger.debug(
+            "Downloading results from {} on {} ({}) to {}...".format(
+                perftest_dir,
+                self.hostname,
+                self.ip,
+                output_dirpath
+            )
+        )
+
+        # command = [
+        #     "scp",
+        #     "-i",
+        #     self.ssh_key_path,
+        #     f"{self.username}@{self.ip}:{perftest_dir}/*.csv",
+        #     output_dirpath
+        # ]
+
+        try:
+            # result = subprocess.run(command, capture_output=True, text=True)
+            #
+            # if result.returncode != 0:
+            #     error = f"Return code: {result.returncode}.\nstderr: {result.stderr}"
+            #
+            # else:
+            #     return True, None
+
+            ssh_client = self.create_ssh_client()
+            sftp = ssh_client.get_sftp()
+
+            sftp.get(
+                f"{perftest_dir}/*.csv",
+                output_dirpath
+            )
+
+            return True, None
+                            
+        except Exception as e:
+            error = str(e)
+
+        return False, [{
+            "hostname": self.hostname,
+            "ip": self.ip,
+            "error": error,
+        }]
+
 

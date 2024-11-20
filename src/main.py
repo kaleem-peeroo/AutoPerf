@@ -3,9 +3,11 @@ import sys
 from src import Timer, ExperimentRunner
 from src.logger import logger
 from .config import Config
+from src.experiments import Campaign
 
 from rich.console import Console
 from rich.pretty import pprint
+from datetime import datetime
 
 console = Console()
 
@@ -23,6 +25,8 @@ def main():
     campaigns = config.get_campaigns()
 
     for campaign_index, campaign in enumerate(campaigns):
+        campaign.set_start_time(datetime.now())
+
         logger.info("[{}/{}] Running campaign: {}".format(
             campaign_index + 1,
             len(campaigns),
@@ -34,6 +38,12 @@ def main():
         experiments = campaign.get_experiments()
 
         for index, experiment in enumerate(experiments):
+            logger.info("[{}/{}] Running experiment: {}".format(
+                index + 1,
+                len(experiments),
+                experiment.get_name()
+            ))
+
             experiment_runner = ExperimentRunner(
                 experiment, 
                 index,
@@ -42,7 +52,18 @@ def main():
 
             experiment_runner.run()
             experiment_runner.download_results()
+            experiment_runner.check_results()
 
+            logger.info("[{}/{}] {} completed.".format(
+                index + 1,
+                len(experiments),
+                experiment.get_name()
+            ))
+
+            campaign.add_results(experiment_runner)
+
+        campaign.set_end_time(datetime.now())
+        pprint(campaign)
         campaign.save_results()
 
 if __name__ == "__main__":

@@ -4,10 +4,10 @@ from typing import List
 from .machine import Machine
 from .experiment import Experiment
 from .qos import QoS
-
 from src.utils import get_qos_from_experiment_name, generate_qos_permutations
 
 from rich.pretty import pprint
+from datetime import datetime
 
 class Campaign:
     def __init__(self):
@@ -27,6 +27,7 @@ class Campaign:
         self.total_experiments = 0
         self.noise_gen = {}
         self.experiment_names = []
+        self.results = []
 
     def __rich_repr__(self):
         yield "name", self.name
@@ -42,6 +43,8 @@ class Campaign:
         yield "end_time", self.end_time
         yield "experiments", self.experiments
         yield "total_experiments", self.total_experiments
+        yield "output_dirpath", self.output_dirpath
+        yield "results", self.results
         
     def get_name(self):
         return self.name
@@ -182,20 +185,14 @@ class Campaign:
         self.experiments = experiments
 
     def set_start_time(self, start_time):
-        if not isinstance(start_time, float):
+        if not isinstance(start_time, datetime):
             raise ValueError(f"Start time must be a float: {start_time}")
-
-        if start_time < 0:
-            raise ValueError(f"Start time must be >= 0: {start_time}")
 
         self.start_time = start_time
 
     def set_end_time(self, end_time):
-        if not isinstance(end_time, float):
+        if not isinstance(end_time, datetime):
             raise ValueError(f"End time must be a float: {end_time}")
-
-        if end_time < 0:
-            raise ValueError(f"End time must be >= 0: {end_time}")
 
         self.end_time = end_time
     
@@ -352,3 +349,6 @@ class Campaign:
             os.makedirs(dirpath)
 
         self.set_output_dirpath(dirpath)
+
+    def add_results(self, experiment_runner):
+        self.results.append(experiment_runner)
