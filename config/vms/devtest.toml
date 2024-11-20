@@ -12,7 +12,7 @@ experiment_names = []
     bandwidth_rate = "99mbit"
 
     [campaigns.qos_settings]
-    duration_secs = [60]
+    duration_secs = [5]
     datalen_bytes = [100, 512]
     pub_count = [5]
     sub_count = [5]

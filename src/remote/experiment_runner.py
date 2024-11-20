@@ -264,6 +264,9 @@ class ExperimentRunner:
                 self.status = "timed out"
                 self.end_time = datetime.now()
                 return
+
+        self.status = "completed"
+        self.end_time = datetime.now()
                 
     def generate_noise_scripts(self):
         logger.debug(
@@ -428,17 +431,8 @@ class ExperimentRunner:
     def restart_machines(self) -> bool:
         return self.execute_on_machines("restart", timeout=60)
         
-    def save_results(self):
-        if self.end_time == datetime.min:
-            self.end_time = datetime.now()
-
-        if self.status == "pending":
-            self.status = "completed"
-
-        pprint(self)
-        pprint(self.experiment.get_output_dirpath())
-
-        raise NotImplementedError("Saving results is not implemented yet.")
+    def download_results(self):
+        raise NotImplementedError("Downloading results is not implemented yet.")
     
 def run_script_on_machine(machine, timeout_secs: int = 600, shared_dict: Dict = {}):
     output = machine.run(timeout_secs)

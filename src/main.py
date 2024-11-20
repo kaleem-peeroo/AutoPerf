@@ -41,7 +41,7 @@ def main():
             )
 
             experiment_runner.run()
-            experiment_runner.save_results()
+            experiment_runner.download_results()
 
         campaign.save_results()
 
