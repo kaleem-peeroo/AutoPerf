@@ -1,10 +1,12 @@
 import os
+import pandas as pd
 
 from typing import List
 from .machine import Machine
 from .experiment import Experiment
 from .qos import QoS
 from src.utils import get_qos_from_experiment_name, generate_qos_permutations
+from src.logger import logger
 
 from rich.pretty import pprint
 from datetime import datetime
@@ -13,6 +15,7 @@ class Campaign:
     def __init__(self):
         self.name = ""
         self.output_dirpath = ""
+        self.ess_path = ""
         self.gen_type = ""
         self.max_failures = 0
         self.max_retries = 0
@@ -341,6 +344,45 @@ class Campaign:
 
         self.output_dirpath = output_dirpath
 
+    def create_ess(self):
+        ess_path = os.path.join("./output/ess", f"{self.get_name()}.parquet") 
+
+        if os.path.exists(ess_path):
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+            logger.warning("ESS already exists at {}. Renaming the existing file to {}".format(
+                ess_path,
+                f"{ess_path.replace(".parquet", "")}_{timestamp}.parquet"
+            ))
+
+            os.rename(
+                ess_path, 
+                f"{ess_path.replace(".parquet", "")}_{timestamp}.parquet"
+            )
+
+        os.makedirs("./output/ess", exist_ok=True)
+
+        logger.debug("Creating ESS at {}".format(ess_path))
+
+        if os.path.exists(ess_path):
+            self.ess_path = ess_path
+            return
+        else:
+            columns = [
+                'experiment_name',
+                'attempt',
+                'machine',
+                'status',
+                'errors',
+                'start_time',
+                'end_time'
+            ]
+
+            df = pd.DataFrame(columns=columns)
+
+            df.to_parquet(ess_path)
+            self.ess_path = ess_path
+
     def create_output_folder(self):
         dirname = self.get_name().replace(" ", "_")
         dirpath = os.path.join("./output/data", dirname)
@@ -352,3 +394,48 @@ class Campaign:
 
     def add_results(self, experiment_runner):
         self.results.append(experiment_runner)
+
+    def write_results(self):
+        """
+        Data that we have per ExperimentRunner (which is what is in self.results):
+            - experiment
+                - name
+                - qos
+                    - qos_name
+                - machines
+                    - hostname
+                    - command
+                    - run_output
+                - output_dirpath
+            - status
+            - errors
+            - attempt
+            - start_time
+            - end_time
+
+        We can flatten into:
+            - attempt
+            - experiment_name
+            - machine
+                - dictionary string:
+                    - hostname
+                    - command
+                    - run_output
+            - status
+            - errors
+            - start_time
+            - end_time
+        """
+        if not self.ess_path:
+            raise ValueError("ESS path must be set")
+
+        logger.info("Writing latest Experiment to ESS")
+
+        df = pd.read_parquet(self.ess_path)
+        
+        df_row_count = len(df)
+        results_count = len(self.results)
+
+        if df_row_count > 0:
+            if df_row_count + 1 != results_count:
+                raise ValueError(f"Dataframe row count {df_row_count} + 1 != results count {results_count}")
