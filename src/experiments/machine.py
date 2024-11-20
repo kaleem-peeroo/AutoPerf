@@ -4,10 +4,12 @@ import subprocess
 
 from typing import Tuple, Optional, List
 from rich.pretty import pprint
+from dataclasses import dataclass
 
 from src.logger import logger
 from .ssh_client import SSHClient
 
+@dataclass
 class Machine:
     def __init__(
         self,
@@ -38,6 +40,19 @@ class Machine:
         yield "scripts", self.scripts
         yield "command", self.command
         yield "run_output", self.run_output
+
+    def __str__(self):
+        return {
+            "hostname": self.hostname,
+            "participant_type": self.participant_type,
+            "ip": self.ip,
+            "ssh_key_path": self.ssh_key_path,
+            "username": self.username,
+            "perftest_path": self.perftest_path,
+            "scripts": self.scripts,
+            "command": self.command,
+            "run_output": "\n".join(self.run_output),
+        }.__str__()
 
     def get_hostname(self):
         return self.hostname
