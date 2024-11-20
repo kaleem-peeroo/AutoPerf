@@ -22,7 +22,14 @@ def main():
     config = Config(config_file)
     campaigns = config.get_campaigns()
 
-    for campaign in campaigns:
+    for campaign_index, campaign in enumerate(campaigns):
+        logger.info("[{}/{}] Running campaign: {}".format(
+            campaign_index + 1,
+            len(campaigns),
+            campaign.get_name()
+        ))
+
+        campaign.create_output_folder()
         campaign.generate_experiments()
         experiments = campaign.get_experiments()
 
@@ -32,8 +39,8 @@ def main():
                 index,
                 len(experiments)
             )
+
             experiment_runner.run()
-            pprint(experiment_runner)
             experiment_runner.save_results()
 
         campaign.save_results()

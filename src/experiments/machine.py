@@ -1,10 +1,9 @@
 import re
 import os
 import subprocess
-import random
-import time
 
 from typing import Tuple, Optional, List
+from rich.pretty import pprint
 
 from src.logger import logger
 
@@ -73,6 +72,9 @@ class Machine:
         self.run_output = run_output
 
     def add_run_output(self, run_output):
+        if not isinstance(run_output, str):
+            raise ValueError(f"Run output must be a string: {run_output}")
+
         self.run_output.append(run_output)
 
     def set_hostname(self, hostname):
@@ -298,11 +300,52 @@ class Machine:
 
         self.scripts.append(script)
 
-    def run(self):
-        random_number = random.randint(10, 15)
-        logger.debug(f"Pretending to run command on machine for {random_number} seconds...")
-        time.sleep(random_number)
-        return True, None
+    def run(self, timeout_secs=600):
+        ip = self.get_ip()
+        username = self.get_username()
+        ssh_command = f"ssh {username}@{ip} '{self.get_command()}'"
+
+        run_output = []
+
+        process = subprocess.Popen(
+            ssh_command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        try:
+            stdout, stderr = process.communicate(timeout=timeout_secs)
+            stdout = stdout.decode('utf-8').strip()
+            stderr = stderr.decode('utf-8').strip()
+
+            if process.returncode != 0:
+                logger.warning(
+                    f"Error running script on {self.get_hostname()}."
+                )
+                logger.warning(
+                    f"Return code: \t{process.returncode}"
+                )
+
+                run_output.append(f"Return code: {process.returncode}")
+                        
+        except subprocess.TimeoutExpired:
+            process.kill()
+
+            stdout, stderr = process.communicate()
+            stdout = stdout.decode('utf-8').strip()
+            stderr = stderr.decode('utf-8').strip()
+
+            logger.error(
+                f"Script on {self.get_hostname()} timed out."
+            )
+
+            run_output.append(f"Timeout after {timeout_secs} seconds.")
+            
+        run_output.append(f"stdout: {stdout}")
+        run_output.append(f"stderr: {stderr}")
+
+        return run_output
 
     def remove_artifact_files(self):
         perftest_path = self.get_perftest_path()

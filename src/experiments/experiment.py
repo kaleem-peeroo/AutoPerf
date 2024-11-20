@@ -1,3 +1,5 @@
+import os
+
 from .qos import QoS
 from .machine import Machine
 
@@ -13,12 +15,14 @@ class Experiment:
         self.qos = qos
         self.machines = machines
         self.noise_gen = noise_gen
+        self.output_dirpath = ""
 
     def __rich_repr__(self):
         yield "name", self.name
         yield "qos", self.qos
         yield "machines", self.machines
         yield "noise_gen", self.noise_gen
+        yield "output_dirpath", self.output_dirpath
 
     def get_name(self):
         return self.name
@@ -35,6 +39,9 @@ class Experiment:
     def get_timeout(self):
         return self.qos.duration_secs + 120
         
+    def get_output_dirpath(self):
+        return self.output_dirpath
+
     def get_machines_by_type(self, participant_type): 
         if not isinstance(participant_type, str):
             raise ValueError(f"Participant type must be a str: {participant_type}")
@@ -89,3 +96,12 @@ class Experiment:
             raise ValueError(f"Noise gen must be a dict: {noise_gen}")
 
         self.noise_gen = noise_gen
+
+    def set_output_dirpath(self, output_dirpath):
+        if not isinstance(output_dirpath, str):
+            raise ValueError(f"Output dirpath must be a str: {output_dirpath}")
+
+        if not os.path.exists(output_dirpath):
+            os.makedirs(output_dirpath)
+
+        self.output_dirpath = output_dirpath    

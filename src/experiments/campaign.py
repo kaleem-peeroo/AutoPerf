@@ -1,3 +1,5 @@
+import os
+
 from typing import List
 from .machine import Machine
 from .experiment import Experiment
@@ -10,6 +12,7 @@ from rich.pretty import pprint
 class Campaign:
     def __init__(self):
         self.name = ""
+        self.output_dirpath = ""
         self.gen_type = ""
         self.max_failures = 0
         self.max_retries = 0
@@ -72,6 +75,9 @@ class Campaign:
 
     def get_experiment_names(self):
         return self.experiment_names
+
+    def get_output_dirpath(self):
+        return self.output_dirpath
 
     def get_total_experiments(self):
         if self.total_experiments == 0:
@@ -215,6 +221,16 @@ class Campaign:
                     self.machines,
                     self.noise_gen
                 )
+
+                experiment_dirname = experiment_name.replace(" ", "_")
+                experiment_dirpath = os.path.join(
+                    self.output_dirpath, 
+                    experiment_dirname
+                )
+                experiment.set_output_dirpath(
+                    experiment_dirpath
+                )
+
                 experiments.append(experiment)
 
             self.set_experiments(experiments)
@@ -258,6 +274,15 @@ class Campaign:
                 qos,
                 self.machines,
                 self.noise_gen
+            )
+
+            experiment_dirname = qos.get_qos_name().replace(" ", "_")
+            experiment_dirpath = os.path.join(
+                self.output_dirpath, 
+                experiment_dirname
+            )
+            experiment.set_output_dirpath(
+                experiment_dirpath
             )
 
             experiments.append(experiment)
@@ -306,3 +331,24 @@ class Campaign:
                 raise ValueError(f"experiment name must be a string: {experiment_name}")
 
             self.experiment_names.append(experiment_name)
+
+    def set_output_dirpath(self, output_dirpath):
+        if not isinstance(output_dirpath, str):
+            raise ValueError(f"Output dirpath must be a string: {output_dirpath}")
+
+        if output_dirpath == "":
+            raise ValueError("Output dirpath must not be empty")
+
+        if not os.path.exists(output_dirpath):
+            raise ValueError(f"Output dirpath does not exist: {output_dirpath}")
+
+        self.output_dirpath = output_dirpath
+
+    def create_output_folder(self):
+        dirname = self.get_name().replace(" ", "_")
+        dirpath = os.path.join("./output/data", dirname)
+
+        if not os.path.exists(dirpath):
+            os.makedirs(dirpath)
+
+        self.set_output_dirpath(dirpath)

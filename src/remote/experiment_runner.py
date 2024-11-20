@@ -193,24 +193,27 @@ class ExperimentRunner:
                 self.end_time = datetime.now()
                 return
 
-        self.run_scripts(timeout=self.experiment.get_timeout())
+        self.run_scripts(timeout_secs=self.experiment.get_timeout())
 
-    def run_scripts(self, timeout: int = 600):
+    
+    def run_scripts(self, timeout_secs: int = 600):
         logger.debug(
             "[{}/{}] [{}] Running scripts with timeout of {} seconds...".format(
                 self.experiment_index + 1,
                 self.total_experiments_count,
                 self.experiment.get_name(),
-                timeout
+                timeout_secs
             )
         )
 
         machines = self.experiment.get_machines()
         with Manager() as manager:
+            shared_dict = manager.dict()
             processes = []
             for machine in machines:
                 process = Process(
-                    target=machine.run,
+                    target=run_script_on_machine,
+                    args=(machine, timeout_secs, shared_dict),
                     name=f"{machine.get_hostname()}-process",
                 )
                 processes.append(process)
@@ -219,7 +222,7 @@ class ExperimentRunner:
             for index, process in enumerate(processes):
                 # Give the first process the actual timeout (test + buffer)
                 if index == 0:
-                    process.join(timeout)
+                    process.join(timeout_secs)
 
                 # Give everything else just the buffer
                 else:
@@ -227,13 +230,13 @@ class ExperimentRunner:
 
                 if process.is_alive():
                     logger.warning(
-                        f"{process.name} is still alive after {timeout} seconds. Terminating..."
+                        f"{process.name} is still alive after {timeout_secs} seconds. Terminating..."
                     )
                     
                     machines[index].add_run_output(
                         "{} timed out after {} seconds".format(
                             machines[index].get_hostname(),
-                            timeout
+                            timeout_secs
                         )
                     )
 
@@ -241,7 +244,7 @@ class ExperimentRunner:
                         "hostname": machines[index].get_hostname(),
                         "ip": machines[index].get_ip(),
                         "command": machines[index].get_command(),
-                        "error": f"{process.name} timed out after {timeout} seconds.",
+                        "error": f"{process.name} timed out after {timeout_secs} seconds.",
                         "action": "run_scripts"
                     })
 
@@ -250,11 +253,12 @@ class ExperimentRunner:
                     process.close()
 
                 else:
-                    machines[index].add_run_output(
-                        "completed"
-                    )
                     process.close()
                 
+                run_outputs = shared_dict.get(machines[index].get_hostname(), "")
+                for run_output in run_outputs:
+                    machines[index].add_run_output(run_output)
+            
         for machine in machines: 
             if "timed out" in machine.get_run_output():
                 self.status = "timed out"
@@ -431,4 +435,13 @@ class ExperimentRunner:
         if self.status == "pending":
             self.status = "completed"
 
+        pprint(self)
+        pprint(self.experiment.get_output_dirpath())
+
         raise NotImplementedError("Saving results is not implemented yet.")
+    
+def run_script_on_machine(machine, timeout_secs: int = 600, shared_dict: Dict = {}):
+    output = machine.run(timeout_secs)
+    hostname = machine.get_hostname()
+    shared_dict[hostname] = output
+
