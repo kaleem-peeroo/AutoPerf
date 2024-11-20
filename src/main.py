@@ -34,6 +34,7 @@ def main():
         ))
 
         campaign.create_output_folder()
+        campaign.create_ess()
         campaign.generate_experiments()
         experiments = campaign.get_experiments()
 
@@ -61,10 +62,9 @@ def main():
             ))
 
             campaign.add_results(experiment_runner)
+            campaign.write_results()
 
         campaign.set_end_time(datetime.now())
-        pprint(campaign)
-        campaign.save_results()
 
 if __name__ == "__main__":
     with Timer():
