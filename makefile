@@ -25,3 +25,7 @@ help:
 	@echo "  test: Run tests"
 	@echo "  clean: Clean up"
 	@echo "  help: Show this help message"
+
+install:
+	@echo "Installing dependencies..."
+	pip install -r requirements.txt
