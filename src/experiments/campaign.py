@@ -439,3 +439,26 @@ class Campaign:
         if df_row_count > 0:
             if df_row_count + 1 != results_count:
                 raise ValueError(f"Dataframe row count {df_row_count} + 1 != results count {results_count}")
+
+        latest_result = self.results[-1]
+
+        new_row = {
+            'experiment_name': latest_result.experiment.get_name(),
+            'attempt': latest_result.attempt,
+            'machine': [machine.to_str() for machine in latest_result.experiment.get_machines()],
+            'status': latest_result.status,
+            'errors': latest_result.errors,
+            'start_time': latest_result.start_time,
+            'end_time': latest_result.end_time
+        }
+
+        df = pd.concat([
+            df, 
+            pd.DataFrame.from_dict([new_row])
+        ], ignore_index=True)
+
+        pprint(df.tail(1))
+
+        df.to_parquet(self.ess_path)
+
+        logger.info("Latest Experiment written to ESS")

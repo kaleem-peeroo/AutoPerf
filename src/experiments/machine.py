@@ -41,7 +41,7 @@ class Machine:
         yield "command", self.command
         yield "run_output", self.run_output
 
-    def __str__(self):
+    def to_str(self):
         return {
             "hostname": self.hostname,
             "participant_type": self.participant_type,
@@ -49,7 +49,7 @@ class Machine:
             "ssh_key_path": self.ssh_key_path,
             "username": self.username,
             "perftest_path": self.perftest_path,
-            "scripts": self.scripts,
+            "scripts": "\n".join(self.scripts),
             "command": self.command,
             "run_output": "\n".join(self.run_output),
         }.__str__()

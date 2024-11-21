@@ -1,5 +1,7 @@
 import os
 
+from typing import List
+
 from .qos import QoS
 from .machine import Machine
 
@@ -8,7 +10,7 @@ class Experiment:
         self,
         name: str,
         qos: QoS,
-        machines: list,
+        machines: List[Machine],
         noise_gen: dict = {}
     ):
         self.name = name
