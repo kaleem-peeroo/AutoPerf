@@ -1,7 +1,7 @@
 [[campaigns]]
 campaign_name = "Devtest"
-gen_type = "rcg"
-total_experiments = 2
+gen_type = "pcg"
+total_experiments = 0
 max_failures = 10
 noise_gen = {}
 max_retries = 0
@@ -12,12 +12,12 @@ experiment_names = []
     bandwidth_rate = "99mbit"
 
     [campaigns.qos_settings]
-    duration_secs = [5]
-    datalen_bytes = [100, 512]
-    pub_count = [5]
-    sub_count = [5]
-    use_reliable = [true]
-    use_multicast = [true]
+    duration_secs = [60]
+    datalen_bytes = [100]
+    pub_count = [1, 5, 10]
+    sub_count = [1, 5, 10]
+    use_reliable = [true, false]
+    use_multicast = [true, false]
     durability = [0]
     latency_count = [100]
 
