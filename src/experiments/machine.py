@@ -88,6 +88,7 @@ class Machine:
             self.ssh_key_path
         )
 
+
     def set_run_output(self, run_output):
         if not isinstance(run_output, list):
             raise ValueError(f"Run output must be a list: {run_output}")
@@ -434,11 +435,31 @@ class Machine:
             ssh_client = self.create_ssh_client()
             sftp = ssh_client.get_sftp()
 
-            sftp.get(
-                f"{perftest_dir}/*.csv",
-                output_dirpath
-            )
+            remote_files = sftp.listdir(perftest_dir)
+            remote_csv_files = [
+                f for f in remote_files if f.endswith(".csv")
+            ]
 
+            if len(remote_csv_files) == 0:
+                raise ValueError(f"No CSV files found in {perftest_dir}")
+
+            for file_index, remote_csv_file in enumerate(remote_csv_files):
+                logger.debug(
+                    "[{}/{}] Downloading {}...".format(
+                        file_index + 1,
+                        len(remote_csv_files),
+                        remote_csv_file
+                    )
+                )
+
+                sftp.get(
+                    f"{perftest_dir}/{remote_csv_file}",
+                    f"{output_dirpath}/{remote_csv_file}"
+                )
+
+            sftp.close()
+            del ssh_client
+            
             return True, None
                             
         except Exception as e:
