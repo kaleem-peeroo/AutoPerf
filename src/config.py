@@ -115,15 +115,21 @@ class Config:
                 keys = list(campaign.keys())
 
                 if "total_experiments" not in keys:
+                    logger.debug("total_experiments not in keys. Setting total_experiments to 0.")
                     campaign["total_experiments"] = 0
+
                 if "noise_gen" not in keys:
+                    logger.debug("noise_gen not in keys. Setting noise_gen to empty dictionary.")
                     campaign["noise_gen"] = {}
+
                 if "experiment_names" not in keys:
+                    logger.debug("experiment_names not in keys. Setting experiment_names to empty list.")
                     campaign["experiment_names"] = []
 
                 new_campaign = Campaign()
 
                 new_campaign.set_name(campaign["campaign_name"])
+                new_campaign.set_total_experiments(campaign["total_experiments"])
                 new_campaign.set_gen_type(campaign["gen_type"])
                 new_campaign.set_max_failures(campaign["max_failures"])
                 new_campaign.set_max_retries(campaign["max_retries"])

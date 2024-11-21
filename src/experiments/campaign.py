@@ -1,4 +1,6 @@
 import os
+import warnings
+import random
 import pandas as pd
 
 from typing import List
@@ -10,6 +12,8 @@ from src.logger import logger
 
 from rich.pretty import pprint
 from datetime import datetime
+
+warnings.simplefilter("ignore", category=FutureWarning)
 
 class Campaign:
     def __init__(self):
@@ -119,8 +123,8 @@ class Campaign:
         if gen_type not in ['pcg', 'rcg']:
             raise ValueError(f"Gen type must be 'pcg' or 'rcg': {gen_type}")
 
-        if gen_type == 'rcg' and not self.total_experiments:
-            raise ValueError("RCG needs total experiments")
+        if gen_type == 'rcg' and self.total_experiments == 0:
+            raise ValueError("RCG needs total experiments to be > 0")
 
         self.gen_type = gen_type
 
@@ -203,8 +207,8 @@ class Campaign:
         if not isinstance(total_experiments, int):
             raise ValueError(f"Total experiments must be an int: {total_experiments}")
 
-        if total_experiments < 0:
-            raise ValueError(f"Total experiments must be >= 0: {total_experiments}")
+        if total_experiments <= 0:
+            raise ValueError(f"Total experiments must be > 0: {total_experiments}")
 
         self.total_experiments = total_experiments
 
@@ -289,8 +293,82 @@ class Campaign:
 
         self.set_experiments(experiments)
 
+    def generate_random_qos(self):
+        if not self.qos_config:
+            raise ValueError("QoS config must be set")
+        
+        # Make sure that each qos value has max 2 values
+        for key, value in self.qos_config.items():
+            if len(value) > 2:
+                raise ValueError(f"QoS value {key} has more than 2 values: {value}")
+
+        random_qos = {}
+        for key, value in self.qos_config.items():
+            if len(value) == 1:
+                random_qos[key] = value[0]
+
+            else:
+                if isinstance(value[0], int):
+                    random_qos[key] = random.choice(range(value[0], value[1]))
+                else:
+                    random_qos[key] = random.choice(value)
+
+        qos = QoS(
+            random_qos['duration_secs'],
+            random_qos['datalen_bytes'],
+            random_qos['pub_count'],
+            random_qos['sub_count'],
+            random_qos['use_reliable'],
+            random_qos['use_multicast'],
+            random_qos['durability'],
+            random_qos['latency_count']
+        )
+
+        return qos
+        
     def generate_rcg_experiments(self):
-        raise NotImplementedError("RCG experiment generation not implemented")
+        """
+        Thought dump:
+        - take the qos config dict
+        - get the total experiments count
+        - for i in range(total_experiments)
+        - generate random qos config
+        - create an experiment
+        - check if the experiment already exists
+        - add the experiment to the list of experiments
+        """
+        if not self.qos_config:
+            raise ValueError("QoS config must be set")
+
+        if not self.total_experiments:
+            raise ValueError("Total experiments must be set")
+
+        while len(self.experiments) < self.total_experiments:
+            qos = self.generate_random_qos()
+            if not qos:
+                continue
+
+            experiment = Experiment(
+                qos.get_qos_name(),
+                qos,
+                self.machines,
+                self.noise_gen
+            )
+
+            experiment_dirname = qos.get_qos_name().replace(" ", "_")
+            experiment_dirpath = os.path.join(
+                self.output_dirpath, 
+                experiment_dirname
+            )
+            experiment.set_output_dirpath(
+                experiment_dirpath
+            )
+
+            if experiment in self.experiments:
+                logger.debug(f"Experiment already exists: {experiment.get_name()}")
+                continue
+
+            self.experiments.append(experiment)
                 
     def set_qos_config(self, qos_config):
         if not isinstance(qos_config, dict):
@@ -387,9 +465,13 @@ class Campaign:
         dirname = self.get_name().replace(" ", "_")
         dirpath = os.path.join("./output/data", dirname)
 
-        if not os.path.exists(dirpath):
-            os.makedirs(dirpath)
+        if os.path.exists(dirpath):
+            logger.warning("Output folder already exists at {}. Renaming the existing folder.".format(dirpath))
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            os.rename(dirpath, f"{dirpath}_{timestamp}")
 
+        os.makedirs(dirpath)
+        
         self.set_output_dirpath(dirpath)
 
     def add_results(self, experiment_runner):
@@ -429,8 +511,6 @@ class Campaign:
         if not self.ess_path:
             raise ValueError("ESS path must be set")
 
-        logger.info("Writing latest Experiment to ESS")
-
         df = pd.read_parquet(self.ess_path)
         
         df_row_count = len(df)
@@ -441,7 +521,6 @@ class Campaign:
                 raise ValueError(f"Dataframe row count {df_row_count} + 1 != results count {results_count}")
 
         latest_result = self.results[-1]
-
         new_row = {
             'experiment_name': latest_result.experiment.get_name(),
             'attempt': latest_result.attempt,
@@ -457,8 +536,5 @@ class Campaign:
             pd.DataFrame.from_dict([new_row])
         ], ignore_index=True)
 
-        pprint(df.tail(1))
-
         df.to_parquet(self.ess_path)
-
         logger.info("Latest Experiment written to ESS")

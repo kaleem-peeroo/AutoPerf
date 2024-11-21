@@ -1,7 +1,7 @@
 [[campaigns]]
 campaign_name = "Devtest"
-gen_type = "pcg"
-total_experiments = 0 
+gen_type = "rcg"
+total_experiments = 2
 max_failures = 10
 noise_gen = {}
 max_retries = 0
