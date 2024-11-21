@@ -207,8 +207,8 @@ class Campaign:
         if not isinstance(total_experiments, int):
             raise ValueError(f"Total experiments must be an int: {total_experiments}")
 
-        if total_experiments <= 0:
-            raise ValueError(f"Total experiments must be > 0: {total_experiments}")
+        if total_experiments < 0:
+            raise ValueError(f"Total experiments must be >= 0: {total_experiments}")
 
         self.total_experiments = total_experiments
 
