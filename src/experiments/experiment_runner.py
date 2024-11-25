@@ -298,8 +298,6 @@ class ExperimentRunner:
                 self.end_time = datetime.now()
                 return
 
-            pprint(machine.get_run_output())
-
         self.status = "completed"
         self.end_time = datetime.now()
                 

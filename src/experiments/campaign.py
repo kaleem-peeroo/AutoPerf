@@ -521,6 +521,7 @@ class Campaign:
                 raise ValueError(f"Dataframe row count {df_row_count} + 1 != results count {results_count}")
 
         latest_result = self.results[-1]
+        pprint([machine for machine in latest_result.experiment.get_machines()])
         new_row = {
             'experiment_name': latest_result.experiment.get_name(),
             'attempt': latest_result.attempt,
