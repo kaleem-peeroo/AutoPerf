@@ -20,6 +20,8 @@ clean:
 
 help:
 	@echo "Usage: make [target]"
+	@echo "Parameters:"
+	@echo "CONFIG_PATH: Path to the configuration file"
 	@echo "Targets:"
 	@echo "  run: Run AutoPerf"
 	@echo "  test: Run tests"
