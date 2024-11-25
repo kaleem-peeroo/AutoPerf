@@ -88,7 +88,6 @@ class Machine:
             self.ssh_key_path
         )
 
-
     def set_run_output(self, run_output):
         if not isinstance(run_output, list):
             raise ValueError(f"Run output must be a list: {run_output}")
