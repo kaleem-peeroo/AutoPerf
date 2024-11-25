@@ -8,7 +8,7 @@ retry_failed_tests_n_times = 0
 custom_test_list = []
 
   [campaigns.qos_settings]
-  duration_secs = [60]
+  duration_secs = [30]
   datalen_bytes = [100]
   pub_count = [5]
   sub_count = [5]
