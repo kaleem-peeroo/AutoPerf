@@ -415,23 +415,7 @@ class Machine:
             )
         )
 
-        # command = [
-        #     "scp",
-        #     "-i",
-        #     self.ssh_key_path,
-        #     f"{self.username}@{self.ip}:{perftest_dir}/*.csv",
-        #     output_dirpath
-        # ]
-
         try:
-            # result = subprocess.run(command, capture_output=True, text=True)
-            #
-            # if result.returncode != 0:
-            #     error = f"Return code: {result.returncode}.\nstderr: {result.stderr}"
-            #
-            # else:
-            #     return True, None
-
             ssh_client = self.create_ssh_client()
             sftp = ssh_client.get_sftp()
 
@@ -459,7 +443,22 @@ class Machine:
 
             sftp.close()
             del ssh_client
-            
+
+            local_files = os.listdir(output_dirpath)
+            local_csv_files = [
+                f for f in local_files if f.endswith(".csv")
+            ]
+
+            if len(local_csv_files) != len(remote_csv_files):
+                return False, [{
+                    "hostname": self.hostname,
+                    "ip": self.ip,
+                    "error": "Not all files downloaded. Expected: {}, Actual: {}.".format(
+                        len(remote_csv_files),
+                        len(local_csv_files)
+                    )
+                }]
+
             return True, None
                             
         except Exception as e:
