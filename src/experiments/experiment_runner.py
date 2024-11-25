@@ -181,26 +181,26 @@ class ExperimentRunner:
 
         # TODO: Uncomment the below:
 
-        # if not self.ping_machines():
-        #     self.status = "failed to ping machines"
-        #     self.end_time = datetime.now()
-        #     return
-        #
-        # if not self.ssh_machines():
-        #     self.status = "failed to ssh to machines"
-        #     self.end_time = datetime.now()
-        #     return
-        #
-        # if not self.restart_machines():
-        #     self.status = "failed to restart machines"
-        #     self.end_time = datetime.now()
-        #     return
-        #
-        # # Longer timeout to wait for machines to restart
-        # if not self.ping_machines(attempts=3, timeout=20):
-        #     self.status = "failed to ping machines after restart"
-        #     self.end_time = datetime.now()
-        #     return
+        if not self.ping_machines():
+            self.status = "failed to ping machines"
+            self.end_time = datetime.now()
+            return
+        
+        if not self.ssh_machines():
+            self.status = "failed to ssh to machines"
+            self.end_time = datetime.now()
+            return
+        
+        if not self.restart_machines():
+            self.status = "failed to restart machines"
+            self.end_time = datetime.now()
+            return
+        
+        # Longer timeout to wait for machines to restart
+        if not self.ping_machines(attempts=3, timeout=20):
+            self.status = "failed to ping machines after restart"
+            self.end_time = datetime.now()
+            return
 
         for machine in self.experiment.get_machines():
             perftest_path = machine.get_perftest_path()
