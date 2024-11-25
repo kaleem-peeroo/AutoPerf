@@ -365,7 +365,10 @@ class Machine:
             )
 
             run_output.append(f"Timeout after {timeout_secs} seconds.")
-            
+
+        logger.warning(f"stdout: {stdout}")
+        logger.warning(f"stderr: {stderr}")
+
         run_output.append(f"stdout: {stdout}")
         run_output.append(f"stderr: {stderr}")
 
@@ -380,7 +383,7 @@ class Machine:
             "-i",
             self.ssh_key_path,
             f"{self.username}@{self.ip}",
-            f"cd {perftest_dir}; rm -f *.csv"
+            f"cd {perftest_dir}; rm -f *.csv; ls -al;"
         ]
 
         try:
@@ -450,6 +453,13 @@ class Machine:
             ]
 
             if len(local_csv_files) != len(remote_csv_files):
+                logger.warning(
+                    "Not all files downloaded. Expected: {}, Actual: {}.".format(
+                        len(remote_csv_files),
+                        len(local_csv_files)
+                    )
+                )
+
                 return False, [{
                     "hostname": self.hostname,
                     "ip": self.ip,
