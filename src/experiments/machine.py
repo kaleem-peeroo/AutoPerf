@@ -442,13 +442,8 @@ class Machine:
         )
 
         try:
-            logger.debug("Creating SSH client...")
             ssh_client = self.create_ssh_client()
-            logger.debug("SSH client created.")
-
-            logger.debug("Getting SFTP client...")
             sftp = ssh_client.get_sftp()
-            logger.debug("SFTP client created.")
 
             if "~" in perftest_dir:
                 perftest_dir = perftest_dir.replace(
