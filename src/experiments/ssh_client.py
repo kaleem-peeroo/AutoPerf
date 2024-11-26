@@ -1,4 +1,5 @@
 import paramiko
+import os
 
 from rich.pretty import pprint
 
@@ -6,6 +7,13 @@ class SSHClient:
     def __init__(self, ip, username, ssh_key_path):
         self.ip = ip
         self.username = username
+
+        if "~" in ssh_key_path:
+            ssh_key_path = ssh_key_path.replace(
+                "~", 
+                os.path.expanduser("~")
+            )
+
         self.ssh_key_path = ssh_key_path
 
         self.ssh = paramiko.SSHClient()
@@ -22,5 +30,9 @@ class SSHClient:
     def get_sftp(self):
         return self.ssh.open_sftp()
 
-    def __del__(self):
+    def get_home_path(self):
+        _, stdout, _ = self.ssh.exec_command("echo $HOME")
+        return stdout.read().decode().strip()
+
+    def close(self):
         self.ssh.close()

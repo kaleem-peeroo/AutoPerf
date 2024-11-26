@@ -196,7 +196,8 @@ class ExperimentRunner:
             return
 
         # Wait 10 seconds for restart
-        time.sleep(10)
+        logger.debug("Waiting 5 seconds for machines to restart...")
+        time.sleep(5)
         
         # Longer timeout to wait for machines to restart
         if not self.ping_machines(attempts=3, timeout=20):

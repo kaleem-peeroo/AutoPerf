@@ -23,9 +23,17 @@ class Machine:
         self.hostname = hostname
         self.participant_type = participant_type
         self.ip = ip
+
+        if "~" in ssh_key_path:
+            ssh_key_path = ssh_key_path.replace(
+                "~", 
+                os.path.expanduser("~")
+            )
         self.ssh_key_path = ssh_key_path
-        self.username = username
+
+
         self.perftest_path = perftest_path
+        self.username = username
         self.scripts = []
         self.command = ""
         self.run_output = []
@@ -426,7 +434,7 @@ class Machine:
 
         logger.debug(
             "Downloading results from {} on {} ({}) to {}...".format(
-                perftest_dir,
+                f"{perftest_dir}/*.csv",
                 self.hostname,
                 self.ip,
                 output_dirpath
@@ -434,9 +442,25 @@ class Machine:
         )
 
         try:
+            logger.debug("Creating SSH client...")
             ssh_client = self.create_ssh_client()
-            sftp = ssh_client.get_sftp()
+            logger.debug("SSH client created.")
 
+            logger.debug("Getting SFTP client...")
+            sftp = ssh_client.get_sftp()
+            logger.debug("SFTP client created.")
+
+            if "~" in perftest_dir:
+                perftest_dir = perftest_dir.replace(
+                    "~", 
+                    ssh_client.get_home_path()
+                )
+                logger.debug(
+                    "Expanded perftest directory path: {}".format(
+                        perftest_dir
+                        )
+                    )
+                
             remote_files = sftp.listdir(perftest_dir)
             remote_csv_files = [
                 f for f in remote_files if f.endswith(".csv")
@@ -444,6 +468,11 @@ class Machine:
 
             if len(remote_csv_files) == 0:
                 raise ValueError(f"No CSV files found in {perftest_dir}")
+
+            logger.debug("Found {} csv files to download on {}".format(
+                len(remote_csv_files),
+                self.hostname
+            ))
 
             for file_index, remote_csv_file in enumerate(remote_csv_files):
                 logger.debug(
@@ -459,13 +488,15 @@ class Machine:
                     f"{output_dirpath}/{remote_csv_file}"
                 )
 
-            sftp.close()
-            del ssh_client
-
             local_files = os.listdir(output_dirpath)
             local_csv_files = [
                 f for f in local_files if f.endswith(".csv")
             ]
+
+            logger.debug("Found {} csv files locally after download on {}".format(
+                len(local_csv_files),
+                self.hostname
+             ))
 
             if len(local_csv_files) != len(remote_csv_files):
                 logger.warning(
@@ -484,15 +515,24 @@ class Machine:
                     )
                 }]
 
+            sftp.close()
+            ssh_client.close()
+
             return True, None
                             
         except Exception as e:
             error = str(e)
+            logger.warning(
+                "Error downloading results from {} on {} ({}): {}".format(
+                    f"{perftest_dir}/*.csv",
+                    self.hostname,
+                    self.ip,
+                    error
+                )
+            )
 
         return False, [{
             "hostname": self.hostname,
             "ip": self.ip,
             "error": error,
         }]
-
-
