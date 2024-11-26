@@ -55,6 +55,11 @@ def main():
             experiment_runner.download_results()
             experiment_runner.check_results()
 
+            logger.debug("{} status: {}".format(
+                experiment.get_name(),
+                experiment_runner.get_status()
+            ))
+
             logger.info("[{}/{}] {} completed.".format(
                 index + 1,
                 len(experiments),

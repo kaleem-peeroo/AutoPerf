@@ -1,5 +1,6 @@
 import concurrent.futures
 import os
+import time
 
 from src.logger import logger
 from .experiment import Experiment
@@ -179,8 +180,6 @@ class ExperimentRunner:
         """
         self.start_time = datetime.now()
 
-        # TODO: Uncomment the below:
-
         if not self.ping_machines():
             self.status = "failed to ping machines"
             self.end_time = datetime.now()
@@ -195,10 +194,19 @@ class ExperimentRunner:
             self.status = "failed to restart machines"
             self.end_time = datetime.now()
             return
+
+        # Wait 10 seconds for restart
+        time.sleep(10)
         
         # Longer timeout to wait for machines to restart
         if not self.ping_machines(attempts=3, timeout=20):
             self.status = "failed to ping machines after restart"
+            self.end_time = datetime.now()
+            return
+
+        # Longer timeout to wait for machines to restart
+        if not self.ssh_machines(attempts=3, timeout=20):
+            self.status = "failed to ssh to machines after restart"
             self.end_time = datetime.now()
             return
 
@@ -221,13 +229,13 @@ class ExperimentRunner:
                     self.experiment.get_name()
                 )
             )
+
             if not machine.remove_artifact_files():
                 self.status = "failed to remove artifact files"
                 self.end_time = datetime.now()
                 return
 
         self.run_scripts(timeout_secs=self.experiment.get_timeout())
-
     
     def run_scripts(self, timeout_secs: int = 600):
         logger.debug(
@@ -432,7 +440,7 @@ class ExperimentRunner:
             if execute_errors:
                 for execute_error in execute_errors:
                     execute_error["action"] = action
-                self.errors.append(execute_errors)
+                    self.errors.append(execute_error)
 
             if not was_executed:
                 return False

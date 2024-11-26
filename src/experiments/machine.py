@@ -214,6 +214,17 @@ class Machine:
                     error = f"Return code: {result.returncode}.\nstderr: {result.stderr}"
                     
                 else:
+
+                    logger.debug(
+                        "[{} {}/{}] {} ({}) Succeeded.".format(
+                            type.upper(),
+                            4 - attempts,
+                            total_attempts,
+                            self.hostname,
+                            self.ip
+                        )
+                    )
+
                     return True, None
 
             except subprocess.TimeoutExpired:
@@ -241,6 +252,14 @@ class Machine:
             })
 
             attempts -= 1
+
+        logger.warning(
+            "{} ({}) failed {} times.".format(
+                self.hostname,
+                self.ip,
+                total_attempts
+            )
+        )
             
         return False, errors
 
@@ -364,9 +383,6 @@ class Machine:
             )
 
             run_output.append(f"Timeout after {timeout_secs} seconds.")
-
-        logger.warning(f"stdout: {stdout}")
-        logger.warning(f"stderr: {stderr}")
 
         run_output.append(f"stdout: {stdout}")
         run_output.append(f"stderr: {stderr}")

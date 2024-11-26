@@ -531,6 +531,8 @@ class Campaign:
             'end_time': latest_result.end_time
         }
 
+        pprint(new_row)
+
         df = pd.concat([
             df, 
             pd.DataFrame.from_dict([new_row])
