@@ -2,6 +2,7 @@ import toml
 
 from src.logger import logger
 from src.experiments import Campaign, Machine
+from src.utils import generate_qos_permutations
 
 from rich.pretty import pprint
 
@@ -95,6 +96,39 @@ class Config:
 
         self.config = config
 
+    def calculate_expected_total_experiments(self, campaign):
+        if not isinstance(campaign, dict):
+            raise ValueError(f"Campaign must be a dict: {campaign}")
+
+        if campaign == {}:
+            raise ValueError("Campaign must not be empty")
+
+        campaign_keys = list(campaign.keys())
+
+        if "gen_type" not in campaign_keys:
+            raise ValueError("gen_type not found in campaign")
+
+        if "total_experiments" not in campaign_keys:
+            raise ValueError("total_experiments not found in campaign")
+
+        if "qos_settings" not in campaign_keys:
+            raise ValueError("qos_settings not found in campaign")
+
+        if "experiment_names" not in campaign_keys:
+            raise ValueError("experiment_names not found in campaign")
+
+        if len(campaign["experiment_names"]) > 0:
+            return len(campaign["experiment_names"])
+
+        elif campaign['gen_type'] == "pcg":
+            return len(generate_qos_permutations(campaign['qos_settings']))
+
+        elif campaign['gen_type'] == "rcg":
+            return campaign['total_experiments']
+
+        else:
+            raise ValueError(f"Unknown gen_type: {campaign['gen_type']}")
+        
     def get_campaigns(self):
         logger.debug("Getting campaigns...")
 
@@ -137,6 +171,9 @@ class Config:
                 new_campaign.set_qos_config(campaign["qos_settings"])
                 new_campaign.set_noise_gen(campaign["noise_gen"])
                 new_campaign.set_experiment_names(campaign["experiment_names"])
+                new_campaign.set_expected_total_experiments(
+                    self.calculate_expected_total_experiments(campaign)
+                )
 
                 self.campaigns.append(new_campaign)
 

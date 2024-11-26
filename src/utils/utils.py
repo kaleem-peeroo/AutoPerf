@@ -116,6 +116,11 @@ def generate_qos_permutations(qos_config):
     combination_dicts = [dict(zip(keys, combination)) for combination in combinations]
 
     if len(combination_dicts) == 0:
-        raise ValueError(f"No combinations were generated fro mthe QoS values:\n\t {qos}")
+        raise ValueError(f"No combinations were generated fro mthe QoS values:\n\t {qos_config}")
 
     return combination_dicts
+
+def machine_params_from_str(machine_str):
+    pprint(machine_str)
+
+    raise NotImplementedError("machine_from_str not implemented")

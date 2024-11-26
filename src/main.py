@@ -34,7 +34,7 @@ def main():
         ))
 
         campaign.create_output_folder()
-        campaign.create_ess()
+        campaign.get_ess()
         campaign.generate_experiments()
         experiments = campaign.get_experiments()
 

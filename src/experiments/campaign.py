@@ -6,8 +6,9 @@ import pandas as pd
 from typing import List
 from .machine import Machine
 from .experiment import Experiment
+from .experiment_runner import ExperimentRunner
 from .qos import QoS
-from src.utils import get_qos_from_experiment_name, generate_qos_permutations
+from src.utils import get_qos_from_experiment_name, generate_qos_permutations, machine_params_from_str
 from src.logger import logger
 
 from rich.pretty import pprint
@@ -17,41 +18,40 @@ warnings.simplefilter("ignore", category=FutureWarning)
 
 class Campaign:
     def __init__(self):
-        self.name = ""
-        self.output_dirpath = ""
-        self.ess_path = ""
-        self.gen_type = ""
-        self.max_failures = 0
-        self.max_retries = 0
-        self.machines = []
-        self.qos_config = None
-        self.total_experiments = 0
-        self.noise_gen = {}
-        self.experiment_names = []
-        self.start_time = None
-        self.end_time = None
-        self.experiments = []
-        self.total_experiments = 0
-        self.noise_gen = {}
-        self.experiment_names = []
-        self.results = []
+        self.name                           = ""
+        self.output_dirpath                 = ""
+        self.ess_path                       = ""
+        self.gen_type                       = ""
+        self.max_failures                   = 0
+        self.max_retries                    = 0
+        self.machines                       = []
+        self.qos_config                     = None
+        self.noise_gen                      = {}
+        self.start_time                     = None
+        self.end_time                       = None
+        self.experiments                    = []
+        self.total_experiments              = 0      # For RCG
+        self.experiment_names               = []
+        self.results                        = []
+        self.expected_total_experiments     = 0
 
     def __rich_repr__(self):
-        yield "name", self.name
-        yield "gen_type", self.gen_type
-        yield "max_failures", self.max_failures
-        yield "max_retries", self.max_retries
-        yield "machines", self.machines
-        yield "qos_config", self.qos_config
-        yield "total_experiments", self.total_experiments
-        yield "noise_gen", self.noise_gen
-        yield "experiment_names", self.experiment_names
-        yield "start_time", self.start_time
-        yield "end_time", self.end_time
-        yield "experiments", self.experiments
-        yield "total_experiments", self.total_experiments
-        yield "output_dirpath", self.output_dirpath
-        yield "results", self.results
+        yield "name",                       self.name
+        yield "output_dirpath",             self.output_dirpath
+        yield "ess_path",                   self.ess_path
+        yield "gen_type",                   self.gen_type
+        yield "max_failures",               self.max_failures
+        yield "max_retries",                self.max_retries
+        yield "machines",                   self.machines
+        yield "qos_config",                 self.qos_config
+        yield "noise_gen",                  self.noise_gen
+        yield "start_time",                 self.start_time
+        yield "end_time",                   self.end_time
+        yield "experiments",                self.experiments
+        yield "total_experiments",          self.total_experiments
+        yield "experiment_names",           self.experiment_names
+        yield "results",                    self.results
+        yield "expected_total_experiments", self.expected_total_experiments
         
     def get_name(self):
         return self.name
@@ -95,6 +95,12 @@ class Campaign:
                 self.generate_experiments()
 
         return len(self.experiments)
+
+    def get_results(self):
+        return self.results
+
+    def get_expected_total_experiments(self):
+        return self.expected_total_experiments
 
     def get_machines_by_type(self, participant_type):
         machines = []
@@ -213,6 +219,12 @@ class Campaign:
         self.total_experiments = total_experiments
 
     def generate_experiments(self):
+        if self.experiments is not None and len(self.experiments) > 0:
+            logger.info("Experiments already generated. Skipping...")
+            return
+
+        if not self.machines:
+            raise ValueError("Machines must be set")
 
         if len(self.experiment_names) > 0:
             experiments = []
@@ -422,29 +434,82 @@ class Campaign:
 
         self.output_dirpath = output_dirpath
 
-    def create_ess(self):
+    def set_results(self, results):
+        if not isinstance(results, list):
+            raise ValueError(f"Results must be a list: {results}")
+        
+        self.results = results
+
+    def set_expected_total_experiments(self, expected_total_experiments):
+        if not isinstance(expected_total_experiments, int):
+            raise ValueError(f"Expected total experiments must be an int: {expected_total_experiments}")
+
+        if expected_total_experiments < 0:
+            raise ValueError(f"Expected total experiments must be >= 0: {expected_total_experiments}")
+
+        self.expected_total_experiments = expected_total_experiments
+
+    def get_experiments_from_ess(self, ess_path):
+        df = pd.read_parquet(ess_path)
+        experiments = []
+
+        for index, row in df.iterrows():
+            cols = list(row.keys())
+
+            if 'experiment_name' not in cols:
+                raise ValueError("experiment_name not found in ESS")
+
+            if 'machine' not in cols:
+                raise ValueError("machine not found in ESS")
+            
+            machines = []
+            for machine_str in row['machine']:
+                machine = Machine(*machine_params_from_str(machine_str))
+                machines.append(machine)
+
+            experiment = Experiment(
+                row['experiment_name'],
+                get_qos_from_experiment_name(row['experiment_name']), 
+                machines,
+                self.noise_gen,
+            )
+
+            experiment.set_output_dirpath(
+                os.path.join(
+                    self.output_dirpath,
+                    row['experiment_name']
+                )
+            )
+
+            experiment_runner = ExperimentRunner( 
+                experiment,
+                row['attempt'],
+                self.expected_total_experiments
+            )
+            
+            experiments.append(experiment)
+
+        raise NotImplementedError("Need to set machines and qos for each experiment")
+        return experiments
+
+    def get_ess(self):
         ess_path = os.path.join("./output/ess", f"{self.get_name()}.parquet") 
 
         if os.path.exists(ess_path):
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-            logger.warning("ESS already exists at {}. Renaming the existing file to {}".format(
-                ess_path,
-                f"{ess_path.replace(".parquet", "")}_{timestamp}.parquet"
-            ))
-
-            os.rename(
-                ess_path, 
-                f"{ess_path.replace(".parquet", "")}_{timestamp}.parquet"
-            )
-
+            logger.info(f"ESS already exists at {ess_path}. Resuming...")
+            self.ess_path = ess_path
+            self.experiments = self.get_experiments_from_ess(ess_path)
+            return
+            
         os.makedirs("./output/ess", exist_ok=True)
 
         logger.debug("Creating ESS at {}".format(ess_path))
 
         if os.path.exists(ess_path):
             self.ess_path = ess_path
+            self.experiments = self.get_experiments_from_ess(ess_path)
             return
+
         else:
             columns = [
                 'experiment_name',
@@ -466,11 +531,9 @@ class Campaign:
         dirpath = os.path.join("./output/data", dirname)
 
         if os.path.exists(dirpath):
-            logger.warning("Output folder already exists at {}. Renaming the existing folder.".format(dirpath))
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            os.rename(dirpath, f"{dirpath}_{timestamp}")
+            logger.info(f"Output folder already exists at {dirpath}")
 
-        os.makedirs(dirpath)
+        os.makedirs(dirpath, exist_ok=True)
         
         self.set_output_dirpath(dirpath)
 

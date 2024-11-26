@@ -180,24 +180,25 @@ class ExperimentRunner:
         """
         self.start_time = datetime.now()
 
-        if not self.ping_machines():
-            self.status = "failed to ping machines"
-            self.end_time = datetime.now()
-            return
-        
-        if not self.ssh_machines():
-            self.status = "failed to ssh to machines"
-            self.end_time = datetime.now()
-            return
-        
-        if not self.restart_machines():
-            self.status = "failed to restart machines"
-            self.end_time = datetime.now()
-            return
-
-        # Wait 10 seconds for restart
-        logger.debug("Waiting 5 seconds for machines to restart...")
-        time.sleep(5)
+        # TODO: Uncomment
+        # if not self.ping_machines():
+        #     self.status = "failed to ping machines"
+        #     self.end_time = datetime.now()
+        #     return
+        #
+        # if not self.ssh_machines():
+        #     self.status = "failed to ssh to machines"
+        #     self.end_time = datetime.now()
+        #     return
+        #
+        # if not self.restart_machines():
+        #     self.status = "failed to restart machines"
+        #     self.end_time = datetime.now()
+        #     return
+        #
+        # # Wait 10 seconds for restart
+        # logger.debug("Waiting 5 seconds for machines to restart...")
+        # time.sleep(5)
         
         # Longer timeout to wait for machines to restart
         if not self.ping_machines(attempts=3, timeout=20):
