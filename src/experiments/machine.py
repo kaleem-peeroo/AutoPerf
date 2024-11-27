@@ -328,9 +328,7 @@ class Machine:
     def generate_command(self):
         machine_script = self.get_command()
 
-        perftest_exec = f"./{os.path.basename(
-            self.perftest_path
-        )}"
+        perftest_exec = f"./{os.path.basename(self.perftest_path)}"
 
         for script in self.scripts:
             script = f"{perftest_exec} {script}"
