@@ -1,6 +1,8 @@
 import os
+import hashlib
 
 from typing import List
+from rich.pretty import pprint
 
 from .qos import QoS
 from .machine import Machine
@@ -8,23 +10,33 @@ from .machine import Machine
 class Experiment:
     def __init__(
         self,
+        index: int,
         name: str,
         qos: QoS,
         machines: List[Machine],
         noise_gen: dict = {}
     ):
+        self.index = index
         self.name = name
         self.qos = qos
         self.machines = machines
         self.noise_gen = noise_gen
         self.output_dirpath = ""
+        self.id = self.generate_id()
 
     def __rich_repr__(self):
+        yield "index", self.index
         yield "name", self.name
         yield "qos", self.qos
         yield "machines", self.machines
         yield "noise_gen", self.noise_gen
         yield "output_dirpath", self.output_dirpath
+
+    def get_id(self):
+        return self.id
+
+    def get_index(self):
+        return self.index
 
     def get_name(self):
         return self.name
@@ -63,6 +75,21 @@ class Experiment:
                 machines_by_type.append(machine)
 
         return machines_by_type
+
+    def set_id(self, id):
+        if not isinstance(id, str):
+            raise ValueError(f"ID must be a str: {id}")
+
+        self.id = id
+
+    def set_index(self, index):
+        if not isinstance(index, int):
+            raise ValueError(f"Index must be an int: {index}")
+
+        if index < 0:
+            raise ValueError(f"Index must be >= 0: {index}")
+
+        self.index = index
 
     def set_name(self, name):
         if not isinstance(name, str):
@@ -107,3 +134,14 @@ class Experiment:
             os.makedirs(output_dirpath)
 
         self.output_dirpath = output_dirpath    
+
+    def generate_id(self):
+        info = "|".join([
+            str(self.index),
+            self.name,
+        ])
+
+        id = hashlib.sha256(info.encode()).hexdigest()
+
+        return id
+

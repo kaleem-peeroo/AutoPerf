@@ -1,9 +1,11 @@
 import sys
+import time
 
 from src import Timer, ExperimentRunner
 from src.logger import logger
 from .config import Config
 from src.experiments import Campaign
+from src.utils import experiment_already_ran
 
 from rich.console import Console
 from rich.pretty import pprint
@@ -38,18 +40,26 @@ def main():
         campaign.generate_experiments()
         experiments = campaign.get_experiments()
 
-        for index, experiment in enumerate(experiments):
+        for experiment in experiments:
+            experiment_runner = ExperimentRunner(
+                experiment, 
+                experiment.get_index(),
+                len(experiments)
+            )
+
+            if experiment_already_ran(experiment, campaign):
+                logger.info("[{}/{}] Skipping experiment (already ran): {}".format(
+                    experiment.get_index() + 1,
+                    len(experiments),
+                    experiment.get_name()
+                ))
+                continue
+            
             logger.info("[{}/{}] Running experiment: {}".format(
-                index + 1,
+                experiment.get_index() + 1,
                 len(experiments),
                 experiment.get_name()
             ))
-
-            experiment_runner = ExperimentRunner(
-                experiment, 
-                index,
-                len(experiments)
-            )
 
             experiment_runner.run()
             experiment_runner.download_results()
@@ -61,7 +71,7 @@ def main():
             ))
 
             logger.info("[{}/{}] {} completed.".format(
-                index + 1,
+                experiment.get_index() + 1,
                 len(experiments),
                 experiment.get_name()
             ))

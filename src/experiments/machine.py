@@ -322,10 +322,7 @@ class Machine:
     def set_command(self, command):
         if not isinstance(command, str):
             raise ValueError(f"Command must be a string: {command}")
-
-        if command == "":
-            raise ValueError("Command must not be empty")
-
+        
         self.command = command
 
     def generate_command(self):
@@ -493,7 +490,7 @@ class Machine:
                 self.hostname
              ))
 
-            if len(local_csv_files) != len(remote_csv_files):
+            if len(local_csv_files) < len(remote_csv_files):
                 logger.warning(
                     "Not all files downloaded. Expected: {}, Actual: {}.".format(
                         len(remote_csv_files),

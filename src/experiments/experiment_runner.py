@@ -239,6 +239,36 @@ class ExperimentRunner:
 
         self.run_scripts(timeout_secs=self.experiment.get_timeout())
     
+    def fake_run(self):
+        """
+        1. Check connections to machines (ping + ssh).
+        2. Restart machines.
+        3. Check connections to machines (ping + ssh).
+
+        4. Get QoS configuration.
+        5. Generate test scripts from QoS config.
+        6. Allocate scripts per machine.
+        7. Delete any artifact csv files.
+        8. Generate noise genertion scripts if needed and add to existing scripts. 
+        9. Run scripts.
+        10. Check for and download results.
+        11. Confirm all files are downloaded.
+        12. Updated ESS.
+        13. Return ESS.
+        """
+        self.start_time = datetime.now()
+
+        for machine in self.experiment.get_machines():
+            machine.generate_command()
+
+            logger.debug(
+                "[{}/{}] [{}] Removing artifact files...".format(
+                    self.experiment_index + 1,
+                    self.total_experiments_count,
+                    self.experiment.get_name()
+                )
+            )
+
     def run_scripts(self, timeout_secs: int = 600):
         logger.debug(
             "[{}/{}] [{}] Running scripts with timeout of {} seconds...".format(

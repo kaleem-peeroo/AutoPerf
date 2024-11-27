@@ -229,9 +229,10 @@ class Campaign:
         if len(self.experiment_names) > 0:
             experiments = []
 
-            for experiment_name in self.experiment_names:
+            for index, experiment_name in enumerate(self.experiment_names):
                 qos = get_qos_from_experiment_name(experiment_name)
                 experiment = Experiment(
+                    index,
                     experiment_name, 
                     qos,
                     self.machines,
@@ -274,7 +275,7 @@ class Campaign:
         qos_permutations = generate_qos_permutations(self.qos_config)
 
         experiments = []
-        for qos_permutation in qos_permutations:
+        for index, qos_permutation in enumerate(qos_permutations):
             qos = QoS(
                 qos_permutation['duration_secs'],
                 qos_permutation['datalen_bytes'],
@@ -286,6 +287,7 @@ class Campaign:
                 qos_permutation['latency_count']
             )
             experiment = Experiment(
+                index,
                 qos.get_qos_name(),
                 qos,
                 self.machines,
@@ -355,12 +357,14 @@ class Campaign:
         if not self.total_experiments:
             raise ValueError("Total experiments must be set")
 
+        index = 0
         while len(self.experiments) < self.total_experiments:
             qos = self.generate_random_qos()
             if not qos:
                 continue
 
             experiment = Experiment(
+                index,
                 qos.get_qos_name(),
                 qos,
                 self.machines,
@@ -381,6 +385,7 @@ class Campaign:
                 continue
 
             self.experiments.append(experiment)
+            index += 1
                 
     def set_qos_config(self, qos_config):
         if not isinstance(qos_config, dict):
@@ -449,9 +454,10 @@ class Campaign:
 
         self.expected_total_experiments = expected_total_experiments
 
-    def get_experiments_from_ess(self, ess_path):
+    def get_experiment_results_from_ess(self, ess_path):
+        logger.debug(f"Getting experiment results from ESS at {ess_path}")
+
         df = pd.read_parquet(ess_path)
-        experiments = []
 
         for index, row in df.iterrows():
             cols = list(row.keys())
@@ -464,16 +470,27 @@ class Campaign:
             
             machines = []
             for machine_str in row['machine']:
-                machine = Machine(*machine_params_from_str(machine_str))
+                machine_params = machine_params_from_str(machine_str)
+                machine = Machine(
+                    machine_params['hostname'],
+                    machine_params['participant_type'],
+                    machine_params['ip'],
+                    machine_params['ssh_key_path'],
+                    machine_params['username'],
+                    machine_params['perftest_path']
+                )
+                machine.set_command(machine_params['command'])
+                machine.add_run_output(machine_params['run_output'])
+
                 machines.append(machine)
 
             experiment = Experiment(
+                index,
                 row['experiment_name'],
                 get_qos_from_experiment_name(row['experiment_name']), 
                 machines,
                 self.noise_gen,
             )
-
             experiment.set_output_dirpath(
                 os.path.join(
                     self.output_dirpath,
@@ -486,11 +503,13 @@ class Campaign:
                 row['attempt'],
                 self.expected_total_experiments
             )
-            
-            experiments.append(experiment)
 
-        raise NotImplementedError("Need to set machines and qos for each experiment")
-        return experiments
+            experiment_runner.set_status(row['status'])
+            experiment_runner.set_errors(list(row['errors']))
+            experiment_runner.set_start_time(row['start_time'])
+            experiment_runner.set_end_time(row['end_time'])
+
+            self.add_results(experiment_runner)
 
     def get_ess(self):
         ess_path = os.path.join("./output/ess", f"{self.get_name()}.parquet") 
@@ -498,7 +517,7 @@ class Campaign:
         if os.path.exists(ess_path):
             logger.info(f"ESS already exists at {ess_path}. Resuming...")
             self.ess_path = ess_path
-            self.experiments = self.get_experiments_from_ess(ess_path)
+            self.get_experiment_results_from_ess(ess_path)
             return
             
         os.makedirs("./output/ess", exist_ok=True)
@@ -507,7 +526,7 @@ class Campaign:
 
         if os.path.exists(ess_path):
             self.ess_path = ess_path
-            self.experiments = self.get_experiments_from_ess(ess_path)
+            self.experiments = self.get_experiment_results_from_ess(ess_path)
             return
 
         else:
@@ -594,12 +613,14 @@ class Campaign:
             'end_time': latest_result.end_time
         }
 
-        pprint(new_row)
+        try:
+            df = pd.concat([
+                df, 
+                pd.DataFrame.from_dict([new_row])
+            ], ignore_index=True)
 
-        df = pd.concat([
-            df, 
-            pd.DataFrame.from_dict([new_row])
-        ], ignore_index=True)
-
-        df.to_parquet(self.ess_path)
-        logger.info("Latest Experiment written to ESS")
+            df.to_parquet(self.ess_path)
+            logger.info("Latest Experiment written to ESS")
+        except Exception as e:
+            pprint(new_row)
+            raise e

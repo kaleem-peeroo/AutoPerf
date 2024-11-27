@@ -1,4 +1,5 @@
 import itertools
+import json
 
 from rich.pretty import pprint
 
@@ -121,6 +122,39 @@ def generate_qos_permutations(qos_config):
     return combination_dicts
 
 def machine_params_from_str(machine_str):
-    pprint(machine_str)
+    machine_str = machine_str.replace("{", "")
+    machine_str = machine_str.replace("}", "")
 
-    raise NotImplementedError("machine_from_str not implemented")
+    machine_str_parts = machine_str.split(", ")
+    
+    machine_params = {
+        'hostname': "",
+        'participant_type': "",
+        'ip': "",
+        'ssh_key_path': "",
+        'username': "",
+        'perftest_path': "",
+        'scripts': "",
+        'command': "",
+        'run_output': "",
+    }
+    for part in machine_str_parts:
+        if 'run_output' in part:
+            part = part.replace("'", "")
+
+        key = part.split(":")[0].replace("'", "")
+        value = ":".join(part.split(":")[1:])
+        
+        if key not in machine_params.keys():
+            raise ValueError(f"Unknown machine parameter: {key}")
+
+        machine_params[key] = value.replace("'", "").strip()
+        
+    return machine_params
+
+def experiment_already_ran(experiment, campaign):
+    ran_exps = [runner.get_experiment().get_id() for runner in campaign.get_results()]
+    if experiment.get_id() in ran_exps:
+        return True
+    else:
+        return False
