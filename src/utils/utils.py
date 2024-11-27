@@ -146,7 +146,7 @@ def machine_params_from_str(machine_str):
         value = ":".join(part.split(":")[1:])
         
         if key not in machine_params.keys():
-            raise ValueError(f"Unknown machine parameter: {key}")
+            continue
 
         machine_params[key] = value.replace("'", "").strip()
         
