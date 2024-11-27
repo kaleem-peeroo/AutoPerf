@@ -204,6 +204,12 @@ class Config:
         if noise_gen == {}:
             return
 
+        if not noise_gen:
+            return
+
+        if len(noise_gen.keys()) == 0:
+            return
+
         keys = list(noise_gen.keys())
 
         for key in REQUIRED_KEYS:
