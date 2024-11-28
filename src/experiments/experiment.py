@@ -6,6 +6,7 @@ from rich.pretty import pprint
 
 from .qos import QoS
 from .machine import Machine
+from src.utils import generate_id
 
 class Experiment:
     def __init__(
@@ -22,7 +23,7 @@ class Experiment:
         self.machines = machines
         self.noise_gen = noise_gen
         self.output_dirpath = ""
-        self.id = self.generate_id()
+        self.id = self.set_id()
 
     def __rich_repr__(self):
         yield "index", self.index
@@ -76,12 +77,11 @@ class Experiment:
 
         return machines_by_type
 
-    def set_id(self, id):
-        if not isinstance(id, str):
-            raise ValueError(f"ID must be a str: {id}")
-
-        self.id = id
-
+    def set_id(self):
+        return generate_id("|".join([
+            self.get_name()
+        ]))
+        
     def set_index(self, index):
         if not isinstance(index, int):
             raise ValueError(f"Index must be an int: {index}")
@@ -134,14 +134,3 @@ class Experiment:
             os.makedirs(output_dirpath)
 
         self.output_dirpath = output_dirpath    
-
-    def generate_id(self):
-        info = "|".join([
-            str(self.index),
-            self.name,
-        ])
-
-        id = hashlib.sha256(info.encode()).hexdigest()
-
-        return id
-

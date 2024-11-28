@@ -31,9 +31,9 @@ class Campaign:
         self.start_time                     = None
         self.end_time                       = None
         self.experiments                    = []
-        self.total_experiments              = 0      # For RCG
-        self.experiment_names               = []
-        self.results                        = []
+        self.total_experiments              = 0         # For RCG
+        self.experiment_names               = []        # Custom experiment list
+        self.results                        = []        # List of ExperimentRunners
         self.expected_total_experiments     = 0
 
     def __rich_repr__(self):
@@ -95,6 +95,9 @@ class Campaign:
             if not self.experiments:
                 self.generate_experiments()
 
+        if not self.experiments:
+            raise ValueError("Experiments must be set")
+
         return len(self.experiments)
 
     def get_results(self):
@@ -110,6 +113,14 @@ class Campaign:
                 machines.append(machine)
 
         return machines
+
+    def get_experiment_runners_for_experiment(self, experiment):
+        experiment_runners = []
+        for result in self.results:
+            if result.get_experiment().get_id() == experiment.get_id():
+                experiment_runners.append(result)
+
+        return experiment_runners
 
     def set_name(self, name):
         if not isinstance(name, str):
@@ -455,6 +466,25 @@ class Campaign:
 
         self.expected_total_experiments = expected_total_experiments
 
+    def get_ran_statuses(self, experiment=None, type="fail"):
+        if type not in ["fail", "success"]:
+            raise ValueError(f"Type must be 'fail' or 'success': {type}")
+
+        if not experiment:
+            results = self.results
+        else:
+            results = self.get_experiment_runners_for_experiment(experiment)
+
+        if type == "fail":
+            return [len(result.get_errors()) > 0 for result in results]
+
+        else:
+            return [len(result.get_errors()) == 0 for result in results]
+
+    def get_ran_attempts(self, experiment):
+        results = self.get_experiment_runners_for_experiment(experiment)
+        return len(results)
+
     def get_experiment_results_from_ess(self, ess_path):
         logger.debug(f"Getting experiment results from ESS at {ess_path}")
 
@@ -466,30 +496,15 @@ class Campaign:
             if 'experiment_name' not in cols:
                 raise ValueError("experiment_name not found in ESS")
 
-            if 'machine' not in cols:
-                raise ValueError("machine not found in ESS")
-            
-            machines = []
-            for machine_str in row['machine']:
-                machine_params = machine_params_from_str(machine_str)
-                machine = Machine(
-                    machine_params['hostname'],
-                    machine_params['participant_type'],
-                    machine_params['ip'],
-                    machine_params['ssh_key_path'],
-                    machine_params['username'],
-                    machine_params['perftest_path']
-                )
-                machine.set_command(machine_params['command'])
-                machine.add_run_output(machine_params['run_output'])
+            if 'machines' not in cols:
+                raise ValueError(f"machines not found in ESS. cols: {cols}")
 
-                machines.append(machine)
 
             experiment = Experiment(
                 index,
                 row['experiment_name'],
                 get_qos_from_experiment_name(row['experiment_name']), 
-                machines,
+                row['machines'],
                 self.noise_gen,
             )
             experiment.set_output_dirpath(
@@ -502,7 +517,8 @@ class Campaign:
             experiment_runner = ExperimentRunner( 
                 experiment,
                 row['attempt'],
-                self.expected_total_experiments
+                self.expected_total_experiments,
+                row['attempt']
             )
 
             experiment_runner.set_status(row['status'])
@@ -535,7 +551,7 @@ class Campaign:
             columns = [
                 'experiment_name',
                 'attempt',
-                'machine',
+                'machines',
                 'status',
                 'errors',
                 'start_time',
@@ -545,7 +561,7 @@ class Campaign:
             df = pd.DataFrame(columns=columns)
 
             with gzip.open(ess_path, 'wt', encoding="utf-8") as f:
-                df.to_json(f, orient='records', lines=False)
+                df.to_json(f, orient='records', lines=False, indent=4)
 
             self.ess_path = ess_path
 
@@ -611,7 +627,8 @@ class Campaign:
         new_row = {
             'experiment_name': latest_result.experiment.get_name(),
             'attempt': latest_result.attempt,
-            'machine': [machine.to_str() for machine in latest_result.experiment.get_machines()],
+            # 'machine': [machine.to_str() for machine in latest_result.experiment.get_machines()],
+            'machines': latest_result.experiment.get_machines(),
             'status': latest_result.status,
             'errors': latest_result.errors,
             'start_time': latest_result.start_time,
@@ -621,11 +638,12 @@ class Campaign:
         try:
             df = pd.concat([
                 df, 
-                pd.DataFrame.from_dict([new_row])
+                pd.DataFrame([new_row])
             ], ignore_index=True)
 
             df.to_json(self.ess_path)
             logger.info("Latest Experiment written to ESS")
+
         except Exception as e:
             pprint(new_row)
             raise e

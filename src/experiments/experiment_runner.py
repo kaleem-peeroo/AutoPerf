@@ -6,6 +6,7 @@ from src.logger import logger
 from .experiment import Experiment
 from .data_file import DataFile
 from .machine import Machine
+from src.utils import generate_id
 
 from datetime import datetime
 from rich.pretty import pprint
@@ -17,19 +18,21 @@ class ExperimentRunner:
         self, 
         experiment, 
         experiment_index,
-        total_experiments_count
+        total_experiments_count,
+        attempt
     ):
-        self.experiment_index = experiment_index
-        self.experiment = experiment
-        self.total_experiments_count = total_experiments_count
-        self.output_dirpath = experiment.get_output_dirpath()
-        self.attempt = 0
-        self.start_time = datetime.min
-        self.end_time = datetime.min
-        self.status = "pending"
-        self.errors = []
-        self.data_files = []
-
+        self.experiment_index           = experiment_index
+        self.experiment                 = experiment
+        self.total_experiments_count    = total_experiments_count
+        self.output_dirpath             = experiment.get_output_dirpath()
+        self.attempt                    = attempt
+        self.start_time                 = datetime.min
+        self.end_time                   = datetime.min
+        self.status                     = "pending"
+        self.errors                     = []
+        self.data_files                 = []
+        self.id                         = self.set_id()
+        
     def __rich_repr__(self):
         yield "experiment_index", self.experiment_index
         yield "experiment", self.experiment
@@ -45,6 +48,9 @@ class ExperimentRunner:
         )
         yield "status", self.status
         yield "errors", self.errors
+
+    def get_id(self):
+        return self.id
 
     def get_data_files(self):
         return self.data_files
@@ -75,6 +81,14 @@ class ExperimentRunner:
 
     def get_output_dirpath(self):
         return self.output_dirpath
+
+    def set_id(self):
+        return generate_id(
+            "|".join([
+                self.experiment.get_id(),
+                str(self.attempt),
+            ])
+        )
 
     def set_data_files(self, data_files):
         if not isinstance(data_files, list):
@@ -225,15 +239,16 @@ class ExperimentRunner:
             machine.generate_command()
 
             logger.debug(
-                "[{}/{}] [{}] Removing artifact files...".format(
+                "[{}/{}] [{}] [{}]Removing artifact files...".format(
                     self.experiment_index + 1,
                     self.total_experiments_count,
-                    self.experiment.get_name()
+                    self.experiment.get_name(),
+                    machine.get_hostname()
                 )
             )
 
             if not machine.remove_artifact_files():
-                self.status = "failed to remove artifact files"
+                self.status = f"failed to remove artifact files on {machine.get_hostname()}"
                 self.end_time = datetime.now()
                 return
 
@@ -268,6 +283,9 @@ class ExperimentRunner:
                     self.experiment.get_name()
                 )
             )
+
+        self.status = "completed"
+        self.end_time = datetime.now()
 
     def run_scripts(self, timeout_secs: int = 600):
         logger.debug(

@@ -1,5 +1,8 @@
 import itertools
 import json
+import hashlib
+
+from src.logger import logger
 
 from rich.pretty import pprint
 
@@ -154,7 +157,34 @@ def machine_params_from_str(machine_str):
 
 def experiment_already_ran(experiment, campaign):
     ran_exps = [runner.get_experiment().get_id() for runner in campaign.get_results()]
+
     if experiment.get_id() in ran_exps:
+        logger.info(f"Experiment {experiment.get_name()} has already ran")
         return True
     else:
+        logger.info(f"Experiment {experiment.get_name()} has not ran yet")
         return False
+
+def has_experiment_succeeded(experiment, campaign):
+    if not experiment_already_ran(experiment, campaign):
+        return False
+
+    experiment_runners = campaign.get_experiment_runners_for_experiment(experiment)
+    
+    runners_with_errors = [len(runner.get_errors()) > 0 for runner in experiment_runners]
+
+    if not any(runners_with_errors):
+        logger.info(f"Experiment {experiment.get_name()} has succeeded")
+        return True
+            
+    logger.info(f"Experiment {experiment.get_name()} has failed.")
+    return False
+
+def generate_id(info_string):
+    if not info_string:
+        raise ValueError("info_string must not be empty")
+
+    if info_string == "":
+        raise ValueError("info_string must not be empty")
+
+    return hashlib.sha256(info_string.encode()).hexdigest()

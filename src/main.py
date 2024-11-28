@@ -41,43 +41,58 @@ def main():
         experiments = campaign.get_experiments()
 
         for experiment in experiments:
-            experiment_runner = ExperimentRunner(
-                experiment, 
-                experiment.get_index(),
-                len(experiments)
-            )
+            max_retries = campaign.get_max_retries()
+            current_attempt = 1
 
             if experiment_already_ran(experiment, campaign):
-                logger.info("[{}/{}] Skipping experiment (already ran): {}".format(
+                successful_statuses = campaign.get_ran_statuses(experiment, "success")
+                if any(successful_statuses):
+                    logger.info("[{}/{}] Experiment: {} already ran successfully. Skipping.".format(
+                        experiment.get_index() + 1,
+                        len(experiments),
+                        experiment.get_name()
+                    ))
+                    continue
+
+            current_attempt = campaign.get_ran_attempts(experiment) + 1
+
+            while current_attempt <= max_retries:
+                experiment_runner = ExperimentRunner(
+                    experiment, 
+                    experiment.get_index(),
+                    len(experiments),
+                    current_attempt
+                )
+                            
+                logger.info("[{}/{}] [Attempt #{}] Running experiment: {}".format(
+                    experiment.get_index() + 1,
+                    len(experiments),
+                    current_attempt,
+                    experiment.get_name()
+                ))
+
+                experiment_runner.run()
+                experiment_runner.download_results()
+                experiment_runner.check_results()
+
+                logger.debug("{} status: {}".format(
+                    experiment.get_name(),
+                    experiment_runner.get_status()
+                ))
+
+                logger.info("[{}/{}] {} completed.".format(
                     experiment.get_index() + 1,
                     len(experiments),
                     experiment.get_name()
                 ))
-                continue
-            
-            logger.info("[{}/{}] Running experiment: {}".format(
-                experiment.get_index() + 1,
-                len(experiments),
-                experiment.get_name()
-            ))
 
-            experiment_runner.run()
-            experiment_runner.download_results()
-            experiment_runner.check_results()
+                campaign.add_results(experiment_runner)
+                campaign.write_results()
 
-            logger.debug("{} status: {}".format(
-                experiment.get_name(),
-                experiment_runner.get_status()
-            ))
+                if len(experiment_runner.get_errors()) == 0:
+                    break
 
-            logger.info("[{}/{}] {} completed.".format(
-                experiment.get_index() + 1,
-                len(experiments),
-                experiment.get_name()
-            ))
-
-            campaign.add_results(experiment_runner)
-            campaign.write_results()
+                current_attempt += 1
 
         campaign.set_end_time(datetime.now())
 
