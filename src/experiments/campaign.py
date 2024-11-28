@@ -2,6 +2,7 @@ import os
 import warnings
 import random
 import pandas as pd
+import gzip
 
 from typing import List
 from .machine import Machine
@@ -457,7 +458,7 @@ class Campaign:
     def get_experiment_results_from_ess(self, ess_path):
         logger.debug(f"Getting experiment results from ESS at {ess_path}")
 
-        df = pd.read_parquet(ess_path)
+        df = pd.read_json(ess_path)
 
         for index, row in df.iterrows():
             cols = list(row.keys())
@@ -512,7 +513,7 @@ class Campaign:
             self.add_results(experiment_runner)
 
     def get_ess(self):
-        ess_path = os.path.join("./output/ess", f"{self.get_name()}.parquet") 
+        ess_path = os.path.join("./output/ess", f"{self.get_name().replace(" ", "_")}.json.gz") 
 
         if os.path.exists(ess_path):
             logger.info(f"ESS already exists at {ess_path}. Resuming...")
@@ -542,7 +543,9 @@ class Campaign:
 
             df = pd.DataFrame(columns=columns)
 
-            df.to_parquet(ess_path)
+            with gzip.open(ess_path, 'wt', encoding="utf-8") as f:
+                df.to_json(f, orient='records', lines=False)
+
             self.ess_path = ess_path
 
     def create_output_folder(self):
@@ -593,7 +596,8 @@ class Campaign:
         if not self.ess_path:
             raise ValueError("ESS path must be set")
 
-        df = pd.read_parquet(self.ess_path)
+        with gzip.open(self.ess_path, 'rt', encoding="utf-8") as f:
+            df = pd.read_json(f)
         
         df_row_count = len(df)
         results_count = len(self.results)
@@ -619,7 +623,7 @@ class Campaign:
                 pd.DataFrame.from_dict([new_row])
             ], ignore_index=True)
 
-            df.to_parquet(self.ess_path)
+            df.to_json(self.ess_path)
             logger.info("Latest Experiment written to ESS")
         except Exception as e:
             pprint(new_row)
