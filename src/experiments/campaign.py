@@ -513,7 +513,8 @@ class Campaign:
             self.add_results(experiment_runner)
 
     def get_ess(self):
-        ess_path = os.path.join("./output/ess", f"{self.get_name().replace(" ", "_")}.json.gz") 
+        ess_name = self.get_name().replace(" ", "_")
+        ess_path = os.path.join("./output/ess", f"{ess_name}.json.gz") 
 
         if os.path.exists(ess_path):
             logger.info(f"ESS already exists at {ess_path}. Resuming...")
