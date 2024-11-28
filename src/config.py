@@ -288,6 +288,12 @@ class Config:
             if setting not in keys:
                 campaign[setting] = None
 
+        if campaign['max_retries'] < 1:
+            logger.error(
+                f"max_retries must be greater than 0 in {self.filename}"
+            )
+            raise ValueError
+        
         self.validate_noise_gen(campaign)
         self.validate_qos_settings(campaign)
 

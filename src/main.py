@@ -41,20 +41,26 @@ def main():
         experiments = campaign.get_experiments()
 
         for experiment in experiments:
+            logger.debug("[{}/{}] Experiment: {}".format(
+                experiment.get_index() + 1,
+                len(experiments),
+                experiment.get_name()
+            ))
+
             max_retries = campaign.get_max_retries()
             current_attempt = 1
 
             if experiment_already_ran(experiment, campaign):
                 successful_statuses = campaign.get_ran_statuses(experiment, "success")
                 if any(successful_statuses):
-                    logger.info("[{}/{}] Experiment: {} already ran successfully. Skipping.".format(
-                        experiment.get_index() + 1,
-                        len(experiments),
-                        experiment.get_name()
-                    ))
+                    logger.info("Already ran successfully. Skipping.")
                     continue
 
             current_attempt = campaign.get_ran_attempts(experiment) + 1
+
+            if current_attempt > max_retries:
+                logger.info(f"Reached max retries ({max_retries}). Skipping.")
+                continue
 
             while current_attempt <= max_retries:
                 experiment_runner = ExperimentRunner(
@@ -71,7 +77,7 @@ def main():
                     experiment.get_name()
                 ))
 
-                experiment_runner.run()
+                experiment_runner.fake_run()
                 experiment_runner.download_results()
                 experiment_runner.check_results()
 
