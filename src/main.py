@@ -41,22 +41,31 @@ def main():
         experiments = campaign.get_experiments()
 
         for experiment in experiments:
-            logger.debug("[{}/{}] Experiment: {}".format(
+            message_header = "[{}/{}] [{}/{}]".format(
+                campaign_index + 1,
+                len(campaigns),
                 experiment.get_index() + 1,
-                len(experiments),
+                len(experiments)
+            )
+
+            logger.info("\n{} {}".format(
+                message_header,
                 experiment.get_name()
             ))
 
             max_retries = campaign.get_max_retries()
-            current_attempt = 1
+            current_attempt = campaign.get_ran_attempts(experiment) + 1
 
             if experiment_already_ran(experiment, campaign):
                 successful_statuses = campaign.get_ran_statuses(experiment, "success")
                 if any(successful_statuses):
-                    logger.info("Already ran successfully. Skipping.")
+                    logger.info(
+                        "{} [#{}] Already ran successfully. Skipping.".format(
+                            message_header,
+                            current_attempt
+                        )
+                    )
                     continue
-
-            current_attempt = campaign.get_ran_attempts(experiment) + 1
 
             if current_attempt > max_retries:
                 logger.info(f"Reached max retries ({max_retries}). Skipping.")
@@ -70,35 +79,30 @@ def main():
                     current_attempt
                 )
                             
-                logger.info("[{}/{}] [Attempt #{}] Running experiment: {}".format(
-                    experiment.get_index() + 1,
-                    len(experiments),
-                    current_attempt,
-                    experiment.get_name()
-                ))
+                logger.info(
+                    f"{message_header} [#{current_attempt}] Running..."
+                )
 
                 experiment_runner.fake_run()
                 experiment_runner.download_results()
                 experiment_runner.check_results()
 
-                logger.debug("{} status: {}".format(
-                    experiment.get_name(),
-                    experiment_runner.get_status()
-                ))
-
-                logger.info("[{}/{}] {} completed.".format(
-                    experiment.get_index() + 1,
-                    len(experiments),
-                    experiment.get_name()
-                ))
-
                 campaign.add_results(experiment_runner)
                 campaign.write_results()
 
                 if len(experiment_runner.get_errors()) == 0:
+                    logger.info(
+                        "{} [#{}] Experiment {} succeeded.".format(
+                            message_header,
+                            current_attempt,
+                            experiment.get_name()
+                        )
+                    )
                     break
 
                 current_attempt += 1
+
+            print()
 
         campaign.set_end_time(datetime.now())
 

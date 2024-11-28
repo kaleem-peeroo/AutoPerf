@@ -159,10 +159,10 @@ def experiment_already_ran(experiment, campaign):
     ran_exps = [runner.get_experiment().get_id() for runner in campaign.get_results()]
 
     if experiment.get_id() in ran_exps:
-        logger.info(f"Experiment {experiment.get_name()} has already ran")
+        logger.debug(f"Experiment {experiment.get_name()} has already ran")
         return True
     else:
-        logger.info(f"Experiment {experiment.get_name()} has not ran yet")
+        logger.debug(f"Experiment {experiment.get_name()} has not ran yet")
         return False
 
 def has_experiment_succeeded(experiment, campaign):
@@ -174,10 +174,10 @@ def has_experiment_succeeded(experiment, campaign):
     runners_with_errors = [len(runner.get_errors()) > 0 for runner in experiment_runners]
 
     if not any(runners_with_errors):
-        logger.info(f"Experiment {experiment.get_name()} has succeeded")
+        logger.debug(f"Experiment {experiment.get_name()} has succeeded")
         return True
             
-    logger.info(f"Experiment {experiment.get_name()} has failed.")
+    logger.debug(f"Experiment {experiment.get_name()} has failed.")
     return False
 
 def generate_id(info_string):

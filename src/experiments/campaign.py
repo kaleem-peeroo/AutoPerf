@@ -533,7 +533,7 @@ class Campaign:
         ess_path = os.path.join("./output/ess", f"{ess_name}.json.gz") 
 
         if os.path.exists(ess_path):
-            logger.info(f"ESS already exists at {ess_path}. Resuming...")
+            logger.info(f"Resuming campaign: {self.get_name()}...")
             self.ess_path = ess_path
             self.get_experiment_results_from_ess(ess_path)
             return
@@ -642,7 +642,8 @@ class Campaign:
             ], ignore_index=True)
 
             df.to_json(self.ess_path)
-            logger.info("Latest Experiment written to ESS")
+
+            logger.debug("Latest Experiment written to ESS")
 
         except Exception as e:
             pprint(new_row)
