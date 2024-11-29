@@ -9,6 +9,7 @@ from .machine import Machine
 from .experiment import Experiment
 from .experiment_runner import ExperimentRunner
 from .qos import QoS
+from .smart_plug import SmartPlug
 from src.utils import get_qos_from_experiment_name, generate_qos_permutations, machine_params_from_str
 from src.logger import logger
 
@@ -193,6 +194,14 @@ class Campaign:
                 machine['username'],
                 machine['perftest_path']
             )
+
+            if 'smart_plug_name' in machine and 'smart_plug_ip' not in machine:
+                smart_plug = SmartPlug(
+                    machine['smart_plug_name'],
+                    machine['smart_plug_ip'],
+                    new_machine
+                )
+                new_machine.set_smart_plug(smart_plug)
 
             self.machines.append(new_machine)
 

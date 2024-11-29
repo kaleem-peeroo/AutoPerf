@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 from src.logger import logger
 from .ssh_client import SSHClient
+from .smart_plug import SmartPlug
 
 @dataclass
 class Machine:
@@ -20,34 +21,28 @@ class Machine:
         username: str,
         perftest_path: str
     ):
-        self.hostname = hostname
-        self.participant_type = participant_type
-        self.ip = ip
-
-        if "~" in ssh_key_path:
-            ssh_key_path = ssh_key_path.replace(
-                "~", 
-                os.path.expanduser("~")
-            )
-        self.ssh_key_path = ssh_key_path
-
-
-        self.perftest_path = perftest_path
-        self.username = username
-        self.scripts = []
-        self.command = ""
-        self.run_output = []
+        self.hostname           = hostname
+        self.participant_type   = participant_type
+        self.ip                 = ip
+        self.ssh_key_path       = self.validate_ssh_key_path(ssh_key_path)
+        self.perftest_path      = perftest_path
+        self.username           = username
+        self.scripts            = []
+        self.command            = ""
+        self.run_output         = []
+        self.smart_plug         = None
         
     def __rich_repr__(self):
-        yield "hostname", self.hostname
-        yield "participant_type", self.participant_type
-        yield "ip", self.ip
-        yield "ssh_key_path", self.ssh_key_path
-        yield "username", self.username
-        yield "perftest_path", self.perftest_path
-        yield "scripts", self.scripts
-        yield "command", self.command
-        yield "run_output", self.run_output
+        yield "hostname",           self.hostname
+        yield "participant_type",   self.participant_type
+        yield "ip",                 self.ip
+        yield "ssh_key_path",       self.ssh_key_path
+        yield "username",           self.username
+        yield "perftest_path",      self.perftest_path
+        yield "scripts",            self.scripts
+        yield "command",            self.command
+        yield "run_output",         self.run_output
+        yield "smart_plug",         self.smart_plug
 
     def to_str(self):
         return {
@@ -60,7 +55,20 @@ class Machine:
             "scripts": "\n".join(self.scripts),
             "command": self.command,
             "run_output": "\n".join(self.run_output),
+            "smart_plug": self.smart_plug
         }.__str__()
+
+    def validate_ssh_key_path(self, ssh_key_path):
+        if "~" in ssh_key_path:
+            ssh_key_path = ssh_key_path.replace(
+                "~", 
+                os.path.expanduser("~")
+            )
+
+        return ssh_key_path
+
+    def get_smart_plug(self):
+        return self.smart_plug
 
     def get_hostname(self):
         return self.hostname
@@ -95,6 +103,12 @@ class Machine:
             self.username, 
             self.ssh_key_path
         )
+
+    def set_smart_plug(self, smart_plug):
+        if not isinstance(smart_plug, SmartPlug):
+            raise ValueError(f"Smart plug must be a SmartPlug instance: {smart_plug}")
+
+        self.smart_plug = smart_plug
 
     def set_run_output(self, run_output):
         if not isinstance(run_output, list):
