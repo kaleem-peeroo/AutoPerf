@@ -1,5 +1,6 @@
 import sys
 import time
+import asyncio
 
 from src import Timer, ExperimentRunner
 from src.logger import logger
@@ -72,15 +73,26 @@ def main():
 
                     # Are there enough tests to check?
                     if len(have_last_n_experiments_succeeded) >= max_failures:
-                        # If all tests failed, stop the campaign.
+                        # Have all tests failed?
                         if all([has_failed for has_failed in have_last_n_experiments_succeeded]):
-                            logger.info(
-                                "{} Last {} tests failed. Stopping campaign.".format(
-                                    message_header,
-                                    max_failures
+                            
+                            # Try to restart smart plugs.
+                            if experiment.restart_smart_plugs():
+                                logger.info(
+                                    "{} Restarted all plugs.".format(
+                                        message_header
+                                    )
                                 )
-                            )
-                            break
+
+                            else:
+                                # Just stop the campaign.
+                                logger.info(
+                                    "{} Last {} tests failed. Stopping campaign.".format(
+                                        message_header,
+                                        max_failures
+                                    )
+                                )
+                                break
                 
             max_retries = campaign.get_max_retries()
             current_attempt = campaign.get_ran_attempts(experiment) + 1

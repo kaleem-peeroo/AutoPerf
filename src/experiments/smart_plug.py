@@ -49,7 +49,7 @@ class SmartPlug:
                         e
                     )
                 )
-            return
+            raise e
 
         logger.debug(f"Turning off {self.name} smart plug")
         await device.off()

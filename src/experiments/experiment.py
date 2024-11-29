@@ -1,5 +1,5 @@
 import os
-import hashlib
+import asyncio
 
 from typing import List
 from rich.pretty import pprint
@@ -7,6 +7,7 @@ from rich.pretty import pprint
 from .qos import QoS
 from .machine import Machine
 from src.utils import generate_id
+from src.logger import logger
 
 class Experiment:
     def __init__(
@@ -81,6 +82,52 @@ class Experiment:
         return generate_id("|".join([
             self.get_name()
         ]))
+
+    def restart_smart_plugs(self):
+        restart_statuses = []
+
+        for machine in self.get_machines():
+            restart_status = {
+                "hostname": machine.get_hostname(),
+                "was_restart_successful": True
+            }
+
+            try:
+                if machine.get_smart_plug() is None:
+                    logger.error(
+                        f"Machine {machine.get_hostname()} does not have a smart plug to restart."
+                    )
+                    restart_status["was_restart_successful"] = False
+                    restart_statuses.append(restart_status)
+                    continue
+
+                asyncio.run(
+                    machine.get_smart_plug().restart()
+                )
+
+            except Exception as e:
+                logger.error(
+                    "Failed to restart plug on machine {}:\n\t{}".format(
+                        machine.get_hostname(),
+                        e
+                    )
+                )
+                restart_status["was_restart_successful"] = False
+
+            restart_statuses.append(restart_status)
+            
+        if all([status["was_restart_successful"] for status in restart_statuses]):
+            pprint([status["was_restart_successful"] for status in restart_statuses])
+            logger.info("Successfully restarted all plugs.")
+            return True
+
+        else:
+            logger.error(
+                "Failed to restart all plugs. Restart statuses: {}".format(
+                    restart_statuses
+                )
+            )
+            return False
         
     def set_index(self, index):
         if not isinstance(index, int):

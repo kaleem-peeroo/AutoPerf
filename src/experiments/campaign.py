@@ -195,11 +195,10 @@ class Campaign:
                 machine['perftest_path']
             )
 
-            if 'smart_plug_name' in machine and 'smart_plug_ip' not in machine:
+            if 'smart_plug_name' in machine and 'smart_plug_ip' in machine:
                 smart_plug = SmartPlug(
                     machine['smart_plug_name'],
-                    machine['smart_plug_ip'],
-                    new_machine
+                    machine['smart_plug_ip']
                 )
                 new_machine.set_smart_plug(smart_plug)
 
