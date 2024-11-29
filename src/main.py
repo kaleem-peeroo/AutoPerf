@@ -1,6 +1,5 @@
 import sys
-import time
-import asyncio
+import json
 
 from src import Timer, ExperimentRunner
 from src.logger import logger
@@ -98,10 +97,13 @@ def main():
                         "{} [#{}] Errors: {}".format(
                             message_header,
                             current_attempt,
-                            experiment_runner.get_errors()
+                            json.dumps(
+                                experiment_runner.get_errors(),
+                                sort_keys = True,
+                                indent = 4
+                            )
                         )
                     )
-
 
                 campaign.add_results(experiment_runner)
                 campaign.write_results()
