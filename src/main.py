@@ -124,7 +124,7 @@ def main():
                     f"{message_header} [#{current_attempt}] Running..."
                 )
 
-                experiment_runner.fake_run()
+                experiment_runner.run()
                 experiment_runner.download_results()
                 experiment_runner.check_results()
 
