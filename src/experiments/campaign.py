@@ -511,8 +511,12 @@ class Campaign:
     def get_experiment_results_from_ess(self, ess_path):
         logger.debug(f"Getting experiment results from ESS at {ess_path}")
 
-        with gzip.open(ess_path, 'rt', encoding='utf-8') as f:
-            df = pd.read_json(f, lines=True)
+        df = pd.read_json(
+            ess_path, 
+            orient='records',
+            lines=True,
+            compression='gzip'
+        )
 
         logger.debug("Generating experiments from the ESS")
         for index, row in df.iterrows():
@@ -590,8 +594,12 @@ class Campaign:
 
             df = pd.DataFrame(columns=columns)
 
-            with gzip.open(ess_path, 'wt', encoding="utf-8") as f:
-                df.to_json(f, orient='records', lines=True, indent=4)
+            df.to_json(
+                ess_path, 
+                orient='records', 
+                lines=True, 
+                compression='gzip'
+            )
 
             self.ess_path = ess_path
 
@@ -643,8 +651,13 @@ class Campaign:
         if not self.ess_path:
             raise ValueError("ESS path must be set")
 
-        with gzip.open(self.ess_path, 'rt', encoding="utf-8") as f:
-            df = pd.read_json(f, lines=True)
+        df = pd.read_json(
+            self.ess_path, 
+            orient='records',
+            lines=True,
+            compression='gzip'
+        )
+
         
         df_row_count = len(df)
         results_count = len(self.results)
@@ -671,7 +684,12 @@ class Campaign:
                 pd.DataFrame([new_row])
             ], ignore_index=True)
 
-            df.to_json(self.ess_path, orient="records", lines=True, indent=4)
+            df.to_json(
+                self.ess_path, 
+                orient="records", 
+                lines=True, 
+                compression="gzip"
+            )
 
             logger.debug("Latest Experiment written to ESS")
 
