@@ -512,7 +512,7 @@ class Campaign:
         logger.debug(f"Getting experiment results from ESS at {ess_path}")
 
         with gzip.open(ess_path, 'rt', encoding='utf-8') as f:
-            df = pd.read_json(f)
+            df = pd.read_json(f, lines=True)
 
         logger.debug("Generating experiments from the ESS")
         for index, row in df.iterrows():
@@ -644,7 +644,7 @@ class Campaign:
             raise ValueError("ESS path must be set")
 
         with gzip.open(self.ess_path, 'rt', encoding="utf-8") as f:
-            df = pd.read_json(f)
+            df = pd.read_json(f, lines=True)
         
         df_row_count = len(df)
         results_count = len(self.results)
