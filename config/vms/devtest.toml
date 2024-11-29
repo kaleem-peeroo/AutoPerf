@@ -1,10 +1,10 @@
 [[campaigns]]
-campaign_name = "Devtest"
+campaign_name = "Devtest experiment retry"
 gen_type = "pcg"
 total_experiments = 0
-max_failures = 10
+max_failures = 2
 noise_gen = {}
-max_retries = 0
+max_retries = 3
 experiment_names = []
 
     [campaigns.noise_gen]
@@ -12,10 +12,10 @@ experiment_names = []
     bandwidth_rate = "99mbit"
 
     [campaigns.qos_settings]
-    duration_secs = [30]
+    duration_secs = [10]
     datalen_bytes = [100]
-    pub_count = [1]
-    sub_count = [1]
+    pub_count = [1, 10, 20]
+    sub_count = [1, 10, 20]
     use_reliable = [true, false]
     use_multicast = [true, false]
     durability = [0]
