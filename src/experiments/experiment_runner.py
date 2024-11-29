@@ -238,7 +238,7 @@ class ExperimentRunner:
             machine.generate_command()
 
             logger.debug(
-                "[{}/{}] [{}] [{}]Removing artifact files...".format(
+                "[{}/{}] [{}] [{}] Removing artifact files...".format(
                     self.experiment_index + 1,
                     self.total_experiments_count,
                     self.experiment.get_name(),
@@ -252,6 +252,8 @@ class ExperimentRunner:
                 return
 
         self.run_scripts(timeout_secs=self.experiment.get_timeout())
+
+        return len(self.get_erorrs()) == 0
     
     def fake_run(self):
         """

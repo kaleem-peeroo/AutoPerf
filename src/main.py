@@ -53,6 +53,70 @@ def main():
                 message_header,
                 experiment.get_name()
             ))
+                            
+            max_retries = campaign.get_max_retries()
+            current_attempt = campaign.get_ran_attempts(experiment) + 1
+
+            if experiment_already_ran(experiment, campaign):
+                successful_statuses = campaign.get_ran_statuses(experiment, "success")
+                if any(successful_statuses):
+                    logger.info(
+                        "{} [#{}] Already ran successfully. Skipping.".format(
+                            message_header,
+                            current_attempt
+                        )
+                    )
+                    continue
+
+            if current_attempt > max_retries:
+                logger.info(f"Reached max retries ({max_retries}). Skipping.")
+                continue
+
+            while current_attempt <= max_retries:
+                experiment_runner = ExperimentRunner(
+                    experiment, 
+                    experiment.get_index(),
+                    len(experiments),
+                    current_attempt
+                )
+                            
+                logger.info(
+                    f"{message_header} [#{current_attempt}] Running..."
+                )
+
+                if experiment_runner.run():
+                    experiment_runner.download_results()
+                    experiment_runner.check_results()
+                else:
+                    logger.info(
+                        "{} [#{}] Failed.".format(
+                            message_header,
+                            current_attempt
+                        )
+                    )
+                    logger.info(
+                        "{} [#{}] Errors: {}".format(
+                            message_header,
+                            current_attempt,
+                            experiment_runner.get_errors()
+                        )
+                    )
+
+
+                campaign.add_results(experiment_runner)
+                campaign.write_results()
+
+                if len(experiment_runner.get_errors()) == 0:
+                    logger.info(
+                        "{} [#{}] Experiment {} succeeded.".format(
+                            message_header,
+                            current_attempt,
+                            experiment.get_name()
+                        )
+                    )
+                    break
+
+                current_attempt += 1
 
             max_failures = campaign.get_max_failures()
             if max_failures > 0:
@@ -93,55 +157,6 @@ def main():
                                     )
                                 )
                                 break
-                
-            max_retries = campaign.get_max_retries()
-            current_attempt = campaign.get_ran_attempts(experiment) + 1
-
-            if experiment_already_ran(experiment, campaign):
-                successful_statuses = campaign.get_ran_statuses(experiment, "success")
-                if any(successful_statuses):
-                    logger.info(
-                        "{} [#{}] Already ran successfully. Skipping.".format(
-                            message_header,
-                            current_attempt
-                        )
-                    )
-                    continue
-
-            if current_attempt > max_retries:
-                logger.info(f"Reached max retries ({max_retries}). Skipping.")
-                continue
-
-            while current_attempt <= max_retries:
-                experiment_runner = ExperimentRunner(
-                    experiment, 
-                    experiment.get_index(),
-                    len(experiments),
-                    current_attempt
-                )
-                            
-                logger.info(
-                    f"{message_header} [#{current_attempt}] Running..."
-                )
-
-                experiment_runner.run()
-                experiment_runner.download_results()
-                experiment_runner.check_results()
-
-                campaign.add_results(experiment_runner)
-                campaign.write_results()
-
-                if len(experiment_runner.get_errors()) == 0:
-                    logger.info(
-                        "{} [#{}] Experiment {} succeeded.".format(
-                            message_header,
-                            current_attempt,
-                            experiment.get_name()
-                        )
-                    )
-                    break
-
-                current_attempt += 1
 
             print()
 

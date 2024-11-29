@@ -230,7 +230,12 @@ class Machine:
                 raise ValueError(f"Invalid connection type: {type}")
 
             try:
-                result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+                result = subprocess.run(
+                    command, 
+                    capture_output=True, 
+                    text=True, 
+                    timeout=timeout
+                )
 
                 if result.returncode != 0:
                     error = f"Return code: {result.returncode}.\nstderr: {result.stderr}"
@@ -238,12 +243,13 @@ class Machine:
                 else:
 
                     logger.debug(
-                        "[{} {}/{}] {} ({}) Succeeded.".format(
+                        "[{} {}/{}] {} ({}) {} succeeded.".format(
                             type.upper(),
                             4 - attempts,
                             total_attempts,
                             self.hostname,
-                            self.ip
+                            self.ip,
+                            type
                         )
                     )
 
@@ -256,12 +262,13 @@ class Machine:
                 error = str(e)
                 
             logger.warning(
-                "[{} {}/{}] {} ({}) Failed.".format(
+                "[{} {}/{}] {} ({}) {} failed.".format(
                     type.upper(),
                     4 - attempts,
                     total_attempts,
                     self.hostname,
-                    self.ip
+                    self.ip,
+                    type
                 )
             )
 
@@ -302,27 +309,43 @@ class Machine:
             "sudo reboot"
         ]
 
+        has_failed = False
         try:
-            result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+            result = subprocess.run(
+                command, 
+                capture_output=True, 
+                text=True, 
+                timeout=timeout
+            )
 
             if result.returncode != 0:
-                error = f"Return code: {result.returncode}.\nstderr: {result.stderr}"
+                if result.returncode == 255:
+                    if "closed by remote host" not in result.stderr:
+                        has_failed = True
 
-            else:
-                return True, None
+                else:
+                    has_failed = True
+
+                if has_failed:
+                    error = f"Return code: {result.returncode}.\nstderr: {result.stderr}"
 
         except subprocess.TimeoutExpired:
+            has_failed = True
             error = "Restart timeout after 10 seconds."
 
         except Exception as e:
+            has_failed = True
             error = str(e)
 
-        return False, [{
-            "hostname": self.hostname,
-            "ip": self.ip,
-            "command": " ".join(command),
-            "error": error,
-        }]
+        if has_failed:
+            return False, [{
+                "hostname": self.hostname,
+                "ip": self.ip,
+                "command": " ".join(command),
+                "error": error,
+            }]
+        else:
+            return True, None
 
     def set_scripts(self, scripts):
         if not isinstance(scripts, list):
