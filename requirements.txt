@@ -2,4 +2,3 @@ pandas
 rich
 paramiko
 toml
-pyarrow
