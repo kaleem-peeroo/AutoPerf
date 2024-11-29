@@ -560,7 +560,7 @@ class Campaign:
 
     def get_ess(self):
         ess_name = self.get_name().replace(" ", "_")
-        ess_path = os.path.join("./output/ess", f"{ess_name}.json.gz") 
+        ess_path = os.path.join("./output/ess", f"{ess_name}.jsonl.gz") 
 
         if os.path.exists(ess_path):
             logger.info(f"Resuming campaign: {self.get_name()}...")
@@ -591,7 +591,7 @@ class Campaign:
             df = pd.DataFrame(columns=columns)
 
             with gzip.open(ess_path, 'wt', encoding="utf-8") as f:
-                df.to_json(f, orient='records', lines=False, indent=4)
+                df.to_json(f, orient='records', lines=True, indent=4)
 
             self.ess_path = ess_path
 
@@ -671,7 +671,7 @@ class Campaign:
                 pd.DataFrame([new_row])
             ], ignore_index=True)
 
-            df.to_json(self.ess_path)
+            df.to_json(self.ess_path, orient="records", lines=True, indent=4)
 
             logger.debug("Latest Experiment written to ESS")
 
