@@ -253,7 +253,7 @@ class ExperimentRunner:
 
         self.run_scripts(timeout_secs=self.experiment.get_timeout())
 
-        return len(self.get_erorrs()) == 0
+        return len(self.get_errors()) == 0
     
     def fake_run(self):
         """
