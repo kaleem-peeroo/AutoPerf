@@ -511,8 +511,10 @@ class Campaign:
     def get_experiment_results_from_ess(self, ess_path):
         logger.debug(f"Getting experiment results from ESS at {ess_path}")
 
-        df = pd.read_json(ess_path)
+        with gzip.open(ess_path, 'rt', encoding='utf-8') as f:
+            df = pd.read_json(f)
 
+        logger.debug("Generating experiments from the ESS")
         for index, row in df.iterrows():
             cols = list(row.keys())
 
@@ -521,7 +523,6 @@ class Campaign:
 
             if 'machines' not in cols:
                 raise ValueError(f"machines not found in ESS. cols: {cols}")
-
 
             experiment = Experiment(
                 index,
@@ -539,7 +540,7 @@ class Campaign:
 
             experiment_runner = ExperimentRunner( 
                 experiment,
-                row['attempt'],
+                index,
                 self.expected_total_experiments,
                 row['attempt']
             )
@@ -549,6 +550,12 @@ class Campaign:
             experiment_runner.set_start_time(row['start_time'])
             experiment_runner.set_end_time(row['end_time'])
 
+            logger.debug(
+                "Read #{} {}".format(
+                    row['attempt'],
+                    row['experiment_name']
+                )
+            )
             self.add_results(experiment_runner)
 
     def get_ess(self):
