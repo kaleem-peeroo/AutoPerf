@@ -53,6 +53,35 @@ def main():
                 experiment.get_name()
             ))
 
+            max_failures = campaign.get_max_failures()
+            if max_failures > 0:
+                logger.debug("max_failures = {}. Checking if last {} experiments failed.".format(
+                    max_failures,
+                    max_failures
+                ))
+                
+                # Get last n statuses as list of booleans. True = success, False = failure.
+                have_last_n_experiments_succeeded = campaign.have_last_n_experiments_failed(max_failures)
+                if have_last_n_experiments_succeeded != []:
+                    logger.debug(
+                        "Failed tests for last {} experiments: {}".format(
+                            max_failures,
+                            have_last_n_experiments_succeeded
+                        )
+                    )
+
+                    # Are there enough tests to check?
+                    if len(have_last_n_experiments_succeeded) >= max_failures:
+                        # If all tests failed, stop the campaign.
+                        if all([has_failed for has_failed in have_last_n_experiments_succeeded]):
+                            logger.info(
+                                "{} Last {} tests failed. Stopping campaign.".format(
+                                    message_header,
+                                    max_failures
+                                )
+                            )
+                            break
+                
             max_retries = campaign.get_max_retries()
             current_attempt = campaign.get_ran_attempts(experiment) + 1
 

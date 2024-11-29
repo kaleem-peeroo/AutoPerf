@@ -466,6 +466,21 @@ class Campaign:
 
         self.expected_total_experiments = expected_total_experiments
 
+    def have_last_n_experiments_failed(self, n):
+        if n < 0:
+            raise ValueError(f"n must be >= 0: {n}")
+
+        if n == 0:
+            return []
+
+        if not self.results:
+            return []
+
+        if len(self.results) < n:
+            return [len(runner.get_errors()) > 0 for runner in self.results]
+
+        return [len(runner.get_errors()) > 0 for runner in self.results[-n:]]
+
     def get_ran_statuses(self, experiment=None, type="fail"):
         if type not in ["fail", "success"]:
             raise ValueError(f"Type must be 'fail' or 'success': {type}")

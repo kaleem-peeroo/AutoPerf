@@ -1,6 +1,7 @@
 import concurrent.futures
 import os
 import time
+import random
 
 from src.logger import logger
 from .experiment import Experiment
@@ -283,6 +284,11 @@ class ExperimentRunner:
                     self.experiment.get_name()
                 )
             )
+
+        # Randomly add error
+        if random.randint(0, 1) == 1:
+            self.add_error({"error": "fake error"})
+        self.add_error({"error": "fake error"})
 
         self.status = "completed"
         self.end_time = datetime.now()
