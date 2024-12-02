@@ -12,27 +12,28 @@ from src.logger import logger
 class Experiment:
     def __init__(
         self,
-        index: int,
-        name: str,
-        qos: QoS,
-        machines: List[Machine],
-        noise_gen: dict = {}
+        index:      int,
+        name:       str,
+        qos:        QoS,
+        machines:   List[Machine],
+        bw_rate:    str = ""
     ):
-        self.index = index
-        self.name = name
-        self.qos = qos
-        self.machines = machines
-        self.noise_gen = noise_gen
+        self.index          = index
+        self.name           = name
+        self.qos            = qos
+        self.machines       = machines
+        self.bw_rate        = bw_rate
         self.output_dirpath = ""
-        self.id = self.set_id()
+        self.id             = self.set_id()
 
     def __rich_repr__(self):
-        yield "index", self.index
-        yield "name", self.name
-        yield "qos", self.qos
-        yield "machines", self.machines
-        yield "noise_gen", self.noise_gen
+        yield "index",          self.index
+        yield "name",           self.name
+        yield "qos",            self.qos
+        yield "machines",       self.machines
+        yield "bw_rate",        self.bw_rate
         yield "output_dirpath", self.output_dirpath
+        yield "id",             self.id
 
     def get_id(self):
         return self.id
@@ -49,8 +50,8 @@ class Experiment:
     def get_machines(self):
         return self.machines
 
-    def get_noise_gen(self):
-        return self.noise_gen
+    def get_bw_rate(self):
+        return self.bw_rate
 
     def get_timeout(self):
         return self.qos.duration_secs + 120
@@ -167,11 +168,11 @@ class Experiment:
 
         self.machines = machines
 
-    def set_noise_gen(self, noise_gen):
-        if not isinstance(noise_gen, dict):
-            raise ValueError(f"Noise gen must be a dict: {noise_gen}")
+    def set_bw_rate(self, bw_rate):
+        if not isinstance(bw_rate, str):
+            raise ValueError(f"Bandwidth Rate (bw_rate) must be a str: {bw_rate}")
 
-        self.noise_gen = noise_gen
+        self.bw_rate = bw_rate
 
     def set_output_dirpath(self, output_dirpath):
         if not isinstance(output_dirpath, str):

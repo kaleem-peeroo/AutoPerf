@@ -28,7 +28,7 @@ class Campaign:
         self.max_retries                    = 0
         self.machines                       = []
         self.qos_config                     = None
-        self.noise_gen                      = {}
+        self.bw_rate                        = ""
         self.start_time                     = None
         self.end_time                       = None
         self.experiments                    = []
@@ -46,7 +46,7 @@ class Campaign:
         yield "max_retries",                self.max_retries
         yield "machines",                   self.machines
         yield "qos_config",                 self.qos_config
-        yield "noise_gen",                  self.noise_gen
+        yield "bw_rate",                    self.bw_rate
         yield "start_time",                 self.start_time
         yield "end_time",                   self.end_time
         yield "experiments",                self.experiments
@@ -82,8 +82,8 @@ class Campaign:
     def get_qos_config(self):
         return self.qos_config
 
-    def get_noise_gen(self):
-        return self.noise_gen
+    def get_bw_rate(self):
+        return self.bw_rate
 
     def get_experiment_names(self):
         return self.experiment_names
@@ -256,7 +256,7 @@ class Campaign:
                     experiment_name, 
                     qos,
                     self.machines,
-                    self.noise_gen
+                    self.bw_rate
                 )
 
                 experiment_dirname = experiment_name.replace(" ", "_")
@@ -311,7 +311,7 @@ class Campaign:
                 qos.get_qos_name(),
                 qos,
                 self.machines,
-                self.noise_gen
+                self.bw_rate
             )
 
             experiment_dirname = qos.get_qos_name().replace(" ", "_")
@@ -388,7 +388,7 @@ class Campaign:
                 qos.get_qos_name(),
                 qos,
                 self.machines,
-                self.noise_gen
+                self.bw_rate
             )
 
             experiment_dirname = qos.get_qos_name().replace(" ", "_")
@@ -431,11 +431,15 @@ class Campaign:
 
         self.qos_config = qos_config
 
-    def set_noise_gen(self, noise_gen):
-        if not isinstance(noise_gen, dict):
-            raise ValueError(f"Noise gen must be a dict: {noise_gen}")
+    def set_bw_rate(self, bw_rate):
+        if bw_rate is None:
+            self.bw_rate = ""
+            return
 
-        self.noise_gen = noise_gen
+        if not isinstance(bw_rate, str):
+            raise ValueError(f"Bandwidth Rate (bw_rate) must be a str: {bw_rate}")
+
+        self.bw_rate = bw_rate
 
     def set_experiment_names(self, experiment_names):
         if not isinstance(experiment_names, list):
@@ -533,7 +537,7 @@ class Campaign:
                 row['experiment_name'],
                 get_qos_from_experiment_name(row['experiment_name']), 
                 row['machines'],
-                self.noise_gen,
+                self.bw_rate,
             )
             experiment.set_output_dirpath(
                 os.path.join(

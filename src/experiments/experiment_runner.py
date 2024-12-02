@@ -366,34 +366,34 @@ class ExperimentRunner:
                 
     def generate_noise_scripts(self):
         logger.debug(
-            "[{}/{}] [{}] Generating noise generation scripts...".format(
+            "[{}/{}] [{}] Generating bandwidth limitting scripts...".format(
                 self.experiment_index + 1,
                 self.total_experiments_count,
                 self.experiment.get_name()
             )
         )
 
-        if self.experiment.get_noise_gen() is None:
+        if self.experiment.get_bw_rate() is None:
             return
 
-        noise_gen = self.experiment.get_noise_gen()
-        if noise_gen == {}:
+        bw_rate = self.experiment.get_bw_rate()
+        if bw_rate == "":
             return
 
         machines = self.experiment.get_machines()
         for machine in machines:
             qdisc_script = "sudo tc qdisc add dev eth0"
             netem_script = "root netem"
-            bw_rate_script = f"rate {noise_gen['bandwidth_rate']}"
+            bw_rate_script = f"rate {bw_rate}"
 
-            noise_gen_script = "{} {} {}".format(
+            bw_rate_script = "{} {} {}".format(
                 qdisc_script,
                 netem_script,
                 bw_rate_script
             )
 
             machine.set_command(
-                f"{machine.get_command()} {noise_gen_script};"
+                f"{machine.get_command()} {bw_rate_script};"
             )
 
     def generate_and_allocate_qos_scripts(self):

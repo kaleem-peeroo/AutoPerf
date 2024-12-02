@@ -18,7 +18,7 @@ class Config:
 
     OPTIONAL_SETTINGS = [
         "total_experiments",
-        "noise_gen",
+        "bw_rate",
         "experiment_names"
     ]
 
@@ -34,14 +34,14 @@ class Config:
     ]
 
     def __init__(self, filename):
-        self.filename = filename
-        self.config = self.parse()
-        self.campaigns = []
+        self.filename   = filename
+        self.config     = self.parse()
+        self.campaigns  = []
 
     def __rich_repr__(self):
-        yield "filename", self.filename
-        yield "config", self.config
-        yield "campaigns", self.campaigns
+        yield "filename",   self.filename
+        yield "config",     self.config
+        yield "campaigns",  self.campaigns
 
     def parse(self):
         logger.debug(f"Parsing config file: {self.filename}...")
@@ -152,9 +152,9 @@ class Config:
                     logger.debug("total_experiments not in keys. Setting total_experiments to 0.")
                     campaign["total_experiments"] = 0
 
-                if "noise_gen" not in keys:
-                    logger.debug("noise_gen not in keys. Setting noise_gen to empty dictionary.")
-                    campaign["noise_gen"] = {}
+                if "bw_rate" not in keys:
+                    logger.debug("bw_rate not in keys. Setting bw_rate to nothing.")
+                    campaign["bw_rate"] = ""
 
                 if "experiment_names" not in keys:
                     logger.debug("experiment_names not in keys. Setting experiment_names to empty list.")
@@ -169,7 +169,7 @@ class Config:
                 new_campaign.set_max_retries(campaign["max_retries"])
                 new_campaign.set_machines(campaign["slave_machines"])
                 new_campaign.set_qos_config(campaign["qos_settings"])
-                new_campaign.set_noise_gen(campaign["noise_gen"])
+                new_campaign.set_bw_rate(campaign["bw_rate"])
                 new_campaign.set_experiment_names(campaign["experiment_names"])
                 new_campaign.set_expected_total_experiments(
                     self.calculate_expected_total_experiments(campaign)
@@ -188,7 +188,7 @@ class Config:
 
         self.campaigns = campaigns
 
-    def validate_noise_gen(self, campaign):
+    def validate_bw_rate(self, campaign):
         REQUIRED_KEYS = [
             'delay',
             'bandwidth_rate'
@@ -200,44 +200,44 @@ class Config:
             'packet_duplication',
         ]
 
-        noise_gen = campaign["noise_gen"]
-        if noise_gen == {}:
+        bw_rate = campaign["bw_rate"]
+        if bw_rate == {}:
             return
 
-        if not noise_gen:
+        if not bw_rate:
             return
 
-        if len(noise_gen.keys()) == 0:
+        if len(bw_rate.keys()) == 0:
             return
 
-        keys = list(noise_gen.keys())
+        keys = list(bw_rate.keys())
 
         for key in REQUIRED_KEYS:
             if key not in keys:
                 logger.error(
-                    f"Setting {key} not found in noise_gen in {self.filename}"
+                    f"Setting {key} not found in bw_rate in {self.filename}"
                 )
                 raise ValueError
 
             if key == 'delay':
-                if not isinstance(noise_gen[key], dict):
+                if not isinstance(bw_rate[key], dict):
                     logger.error(
-                        f"delay must be a dictionary in noise_gen in {self.filename}"
+                        f"delay must be a dictionary in bw_rate in {self.filename}"
                     )
                     raise ValueError
 
             else:
-                if not isinstance(noise_gen[key], str):
+                if not isinstance(bw_rate[key], str):
                     logger.error(
-                        f"{key} must be a string in noise_gen in {self.filename}"
+                        f"{key} must be a string in bw_rate in {self.filename}"
                     )
                     raise ValueError
 
         for key in OPTIONAL_KEYS:
             if key in keys:
-                if not isinstance(noise_gen[key], str):
+                if not isinstance(bw_rate[key], str):
                     logger.error(
-                        f"{key} must be a string in noise_gen in {self.filename}"
+                        f"{key} must be a string in bw_rate in {self.filename}"
                     )
                     raise ValueError
                     
@@ -294,7 +294,7 @@ class Config:
             )
             raise ValueError
         
-        self.validate_noise_gen(campaign)
+        self.validate_bw_rate(campaign)
         self.validate_qos_settings(campaign)
 
         return campaign
