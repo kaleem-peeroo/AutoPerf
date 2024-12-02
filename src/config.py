@@ -189,58 +189,25 @@ class Config:
         self.campaigns = campaigns
 
     def validate_bw_rate(self, campaign):
-        REQUIRED_KEYS = [
-            'delay',
-            'bandwidth_rate'
-        ]
-
-        OPTIONAL_KEYS = [
-            'packet_loss',
-            'packet_corruption',
-            'packet_duplication',
-        ]
-
         bw_rate = campaign["bw_rate"]
-        if bw_rate == {}:
-            return
-
         if not bw_rate:
             return
 
-        if len(bw_rate.keys()) == 0:
+        if bw_rate == "":
             return
 
-        keys = list(bw_rate.keys())
+        if not isinstance(bw_rate, str):
+            logger.error(
+                f"bw_rate must be a string in {self.filename}"
+            )
+            raise ValueError
 
-        for key in REQUIRED_KEYS:
-            if key not in keys:
-                logger.error(
-                    f"Setting {key} not found in bw_rate in {self.filename}"
-                )
-                raise ValueError
-
-            if key == 'delay':
-                if not isinstance(bw_rate[key], dict):
-                    logger.error(
-                        f"delay must be a dictionary in bw_rate in {self.filename}"
-                    )
-                    raise ValueError
-
-            else:
-                if not isinstance(bw_rate[key], str):
-                    logger.error(
-                        f"{key} must be a string in bw_rate in {self.filename}"
-                    )
-                    raise ValueError
-
-        for key in OPTIONAL_KEYS:
-            if key in keys:
-                if not isinstance(bw_rate[key], str):
-                    logger.error(
-                        f"{key} must be a string in bw_rate in {self.filename}"
-                    )
-                    raise ValueError
-                    
+        if not bw_rate.endswith("bit"):
+            logger.error(
+                f"bw_rate must end with 'bit' in {self.filename}"
+            )
+            raise ValueError
+                            
     def validate_qos_settings(self, campaign):
         qos_settings = campaign["qos_settings"]
         keys = list(qos_settings.keys())
