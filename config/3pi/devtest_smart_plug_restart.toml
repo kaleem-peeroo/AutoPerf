@@ -5,11 +5,8 @@ total_experiments = 0
 max_failures = 3
 noise_gen = {}
 max_retries = 3
+bw_rate = ""
 experiment_names = []
-
-    [campaigns.noise_gen]
-    delay = {}
-    bandwidth_rate = "99mbit"
 
     [campaigns.qos_settings]
     duration_secs = [120]
