@@ -54,7 +54,7 @@ class Experiment:
         return self.bw_rate
 
     def get_timeout(self):
-        return self.qos.duration_secs + 120
+        return self.qos.duration_secs + 300
         
     def get_output_dirpath(self):
         return self.output_dirpath
