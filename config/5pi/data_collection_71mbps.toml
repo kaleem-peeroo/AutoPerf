@@ -1,5 +1,5 @@
 [[campaigns]]
-campaign_name = "Machine Learning Data Collection 24Mbps"
+campaign_name = "Machine Learning Data Collection 71Mbps"
 gen_type = "pcg"
 total_experiments = 0
 max_failures = 10
