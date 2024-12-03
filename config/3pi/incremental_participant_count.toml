@@ -2,14 +2,14 @@
 campaign_name = "Incremental Participant Count"
 gen_type = "pcg"
 total_experiments = 0
-max_failures = 1000
+max_failures = 10
 max_retries = 5
 experiment_names = []
 bw_rate = "99mbit"
 
     [campaigns.qos_settings]
     duration_secs = [ 600 ]
-    datalen_bytes = [ 512, 1000 ]
+    datalen_bytes = [ 1000 ]
     pub_count = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     sub_count = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     use_reliable = [ false ]
