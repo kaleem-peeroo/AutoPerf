@@ -2,7 +2,7 @@ import os
 import warnings
 import random
 import pandas as pd
-import gzip
+import sys
 
 from typing import List
 from .machine import Machine
@@ -478,6 +478,52 @@ class Campaign:
 
         self.expected_total_experiments = expected_total_experiments
 
+    def get_last_n_experiment_names(self, n):
+        if n < 0:
+            raise ValueError(f"n must be >= 0: {n}")
+
+        if n == 0:
+            return []
+
+        if not self.results:
+            return []
+
+        returned_experiment_names = []
+        for runner in self.results:
+            exp_name = runner.get_experiment().get_name()
+            if exp_name not in returned_experiment_names:
+                returned_experiment_names.append(exp_name)
+
+        return returned_experiment_names[-n:]
+
+    def get_last_n_experiments(self, n):
+        if n < 0:
+            raise ValueError(f"n must be >= 0: {n}")
+
+        if n == 0:
+            return []
+
+        if not self.results:
+            return []
+
+        exp_names = self.get_last_n_experiment_names(n)
+        return [runner for runner in self.results if runner.get_experiment().get_name() in exp_names]
+
+    def get_true_failed_experiment_names(self, experiments):
+        if not experiments:
+            return []
+
+        exp_names = [runner.get_experiment().get_name() for runner in experiments]
+
+        failed_experiment_names = []
+        for exp_name in exp_names:
+            exp_runners = [runner for runner in experiments if runner.get_experiment().get_name() == exp_name]
+            have_errors = [len(runner.get_errors()) > 0 for runner in exp_runners]
+            if all(have_errors):
+                failed_experiment_names.append(exp_name)
+
+        return failed_experiment_names
+
     def have_last_n_experiments_failed(self, n):
         if n < 0:
             raise ValueError(f"n must be >= 0: {n}")
@@ -488,10 +534,13 @@ class Campaign:
         if not self.results:
             return []
 
-        if len(self.results) < n:
-            return [len(runner.get_errors()) > 0 for runner in self.results]
+        experiments = self.get_last_n_experiments(n)
+        true_failed_exp_names = self.get_true_failed_experiment_names(experiments)
 
-        return [len(runner.get_errors()) > 0 for runner in self.results[-n:]]
+        if len(true_failed_exp_names) == 0:
+            return False
+
+        return True
 
     def get_ran_statuses(self, experiment=None, type="fail"):
         if type not in ["fail", "success"]:

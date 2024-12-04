@@ -4,7 +4,6 @@ import json
 from src import Timer, ExperimentRunner
 from src.logger import logger
 from .config import Config
-from src.experiments import Campaign
 from src.utils import experiment_already_ran
 
 from rich.console import Console
@@ -83,7 +82,7 @@ def main():
                     f"{message_header} [#{current_attempt}] Running..."
                 )
 
-                if experiment_runner.run():
+                if experiment_runner.fake_run():
                     experiment_runner.download_results()
                     experiment_runner.check_results()
                 else:
@@ -122,43 +121,28 @@ def main():
 
             max_failures = campaign.get_max_failures()
             if max_failures > 0:
-                logger.debug("max_failures = {}. Checking if last {} experiments failed.".format(
-                    max_failures,
-                    max_failures
-                ))
-                
-                # Get last n statuses as list of booleans. True = success, False = failure.
-                have_last_n_experiments_succeeded = campaign.have_last_n_experiments_failed(max_failures)
-                if have_last_n_experiments_succeeded != []:
-                    logger.debug(
-                        "Failed tests for last {} experiments: {}".format(
-                            max_failures,
-                            have_last_n_experiments_succeeded
-                        )
+                if campaign.have_last_n_experiments_failed(max_failures):
+                    logger.info(
+                        f"Last {max_failures} experiments have failed on all of their attempts."
                     )
 
-                    # Are there enough tests to check?
-                    if len(have_last_n_experiments_succeeded) >= max_failures:
-                        # Have all tests failed?
-                        if all([has_failed for has_failed in have_last_n_experiments_succeeded]):
-                            
-                            # Try to restart smart plugs.
-                            if experiment.restart_smart_plugs():
-                                logger.info(
-                                    "{} Restarted all plugs.".format(
-                                        message_header
-                                    )
-                                )
+                    # Try to restart smart plugs.
+                    if experiment.restart_smart_plugs():
+                        logger.info(
+                            "{} Restarted all plugs.".format(
+                                message_header
+                            )
+                        )
 
-                            else:
-                                # Just stop the campaign.
-                                logger.info(
-                                    "{} Last {} tests failed. Stopping campaign.".format(
-                                        message_header,
-                                        max_failures
-                                    )
-                                )
-                                break
+                    else:
+                        # Just stop the campaign.
+                        logger.info(
+                            "{} Last {} experiments failed. Stopping campaign.".format(
+                                message_header,
+                                max_failures
+                            )
+                        )
+                        break
 
             print()
 

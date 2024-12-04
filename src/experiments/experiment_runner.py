@@ -287,6 +287,7 @@ class ExperimentRunner:
 
         # Randomly add error
         if random.randint(0, 1) == 1:
+            time.sleep(1)
             self.add_error({"error": "fake error"})
 
         self.status = "completed"
