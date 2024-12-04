@@ -26,6 +26,8 @@ class Campaign:
         self.gen_type                       = ""
         self.max_failures                   = 0
         self.max_retries                    = 0
+        self.ping_attempts                  = 0
+        self.ssh_attempts                   = 0
         self.machines                       = []
         self.qos_config                     = None
         self.bw_rate                        = ""
@@ -44,6 +46,8 @@ class Campaign:
         yield "gen_type",                   self.gen_type
         yield "max_failures",               self.max_failures
         yield "max_retries",                self.max_retries
+        yield "ping_attempts",              self.ping_attempts
+        yield "ssh_attempts",               self.ssh_attempts
         yield "machines",                   self.machines
         yield "qos_config",                 self.qos_config
         yield "bw_rate",                    self.bw_rate
@@ -66,6 +70,12 @@ class Campaign:
 
     def get_max_retries(self):
         return self.max_retries
+
+    def get_ping_attempts(self):
+        return self.ping_attempts
+
+    def get_ssh_attempts(self):
+        return self.ssh_attempts
 
     def get_machines(self):
         return self.machines
@@ -156,6 +166,24 @@ class Campaign:
 
         self.max_failures = max_failures
 
+    def set_ping_attempts(self, ping_attempts):
+        if not isinstance(ping_attempts, int):
+            raise ValueError(f"Ping attempts must be an int: {ping_attempts}")
+
+        if ping_attempts < 0:
+            raise ValueError(f"Ping attempts must be >= 0: {ping_attempts}")
+
+        self.ping_attempts = ping_attempts
+
+    def set_ssh_attempts(self, ssh_attempts):
+        if not isinstance(ssh_attempts, int):
+            raise ValueError(f"SSH attempts must be an int: {ssh_attempts}")
+
+        if ssh_attempts < 0:
+            raise ValueError(f"SSH attempts must be >= 0: {ssh_attempts}")
+
+        self.ssh_attempts = ssh_attempts
+
     def set_max_retries(self, max_retries):
         if not isinstance(max_retries, int):
             raise ValueError(f"Max retries must be an int: {max_retries}")
@@ -192,7 +220,9 @@ class Campaign:
                 machine['ip'],
                 machine['ssh_key_path'],
                 machine['username'],
-                machine['perftest_path']
+                machine['perftest_path'],
+                self.ping_attempts,
+                self.ssh_attempts
             )
 
             if 'smart_plug_name' in machine and 'smart_plug_ip' in machine:

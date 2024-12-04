@@ -19,7 +19,9 @@ class Machine:
         ip: str,
         ssh_key_path: str,
         username: str,
-        perftest_path: str
+        perftest_path: str,
+        ping_attempts: int = 3,
+        ssh_attempts: int = 3,
     ):
         self.hostname           = hostname
         self.participant_type   = participant_type
@@ -31,6 +33,8 @@ class Machine:
         self.command            = ""
         self.run_output         = []
         self.smart_plug         = None
+        self.ping_attempts      = ping_attempts
+        self.ssh_attempts       = ssh_attempts
         
     def __rich_repr__(self):
         yield "hostname",           self.hostname
@@ -43,6 +47,8 @@ class Machine:
         yield "command",            self.command
         yield "run_output",         self.run_output
         yield "smart_plug",         self.smart_plug
+        yield "ping_attempts",      self.ping_attempts
+        yield "ssh_attempts",       self.ssh_attempts
 
     def to_str(self):
         return {
@@ -55,7 +61,9 @@ class Machine:
             "scripts": "\n".join(self.scripts),
             "command": self.command,
             "run_output": "\n".join(self.run_output),
-            "smart_plug": self.smart_plug
+            "smart_plug": self.smart_plug,
+            "ping_attempts": self.ping_attempts,
+            "ssh_attempts": self.ssh_attempts
         }.__str__()
 
     def validate_ssh_key_path(self, ssh_key_path):
@@ -189,6 +197,18 @@ class Machine:
         total_attempts=3,
         timeout=10
     ) -> Tuple[bool, Optional[ List[str] ]]:
+        if type not in ["ping", "ssh"]:
+            raise ValueError(f"Invalid connection type: {type}")
+
+        if type == "ping":
+            total_attempts = self.ping_attempts
+
+        elif type == "ssh":
+            total_attempts = self.ssh_attempts
+
+        else:
+            raise ValueError(f"Invalid connection type: {type}")
+
         logger.debug(
             "{}ing {} ({}) {} times (timeout={})...".format(
                 type.capitalize(),
@@ -206,7 +226,7 @@ class Machine:
             logger.debug(
                 "[{} {}/{}] Attempting to {} {} ({})...".format(
                     type.upper(),
-                    4 - attempts,
+                    total_attempts + 1 - attempts,
                     total_attempts,
                     type,
                     self.hostname,
@@ -245,7 +265,7 @@ class Machine:
                     logger.debug(
                         "[{} {}/{}] {} ({}) {} succeeded.".format(
                             type.upper(),
-                            4 - attempts,
+                            total_attempts + 1 - attempts,
                             total_attempts,
                             self.hostname,
                             self.ip,
@@ -264,7 +284,7 @@ class Machine:
             logger.warning(
                 "[{} {}/{}] {} ({}) {} failed.".format(
                     type.upper(),
-                    4 - attempts,
+                    total_attempts + 1 - attempts,
                     total_attempts,
                     self.hostname,
                     self.ip,
@@ -275,7 +295,7 @@ class Machine:
             errors.append({
                 "hostname": self.hostname,
                 "ip": self.ip,
-                "attempt": 4 - attempts,
+                "attempt": total_attempts + 1 - attempts,
                 "command": " ".join(command),
                 "error": error,
             })

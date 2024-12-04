@@ -12,11 +12,11 @@ from src.logger import logger
 class Experiment:
     def __init__(
         self,
-        index:      int,
-        name:       str,
-        qos:        QoS,
-        machines:   List[Machine],
-        bw_rate:    str = ""
+        index           :int,
+        name            :str,
+        qos             :QoS,
+        machines        :List[Machine],
+        bw_rate         :str = "",
     ):
         self.index          = index
         self.name           = name
