@@ -564,6 +564,9 @@ class Campaign:
         if not self.results:
             return []
 
+        if len(self.results) < n:
+            return False
+
         experiments = self.get_last_n_experiments(n)
         true_failed_exp_names = self.get_true_failed_experiment_names(experiments)
 
