@@ -4,6 +4,8 @@ gen_type = "pcg"
 total_experiments = 0
 max_failures = 10
 max_retries = 5
+ping_attempts = 10
+ssh_attempts = 10
 experiment_names = []
 bw_rate = "99mbit"
 
