@@ -2,6 +2,7 @@ import os
 import warnings
 import random
 import pandas as pd
+import time
 import sys
 
 from typing import List
@@ -568,13 +569,35 @@ class Campaign:
             return False
 
         experiments = self.get_last_n_experiments(n)
-        true_failed_exp_names = self.get_true_failed_experiment_names(experiments)
+        
+        experiment_statuses = []
+        for exp in experiments:
+            exp_name = exp.get_experiment().get_name()
 
-        if len(true_failed_exp_names) == 0:
+            exp_runners = [runner for runner in experiments if runner.get_experiment().get_name() == exp_name]
+            have_errors = [len(runner.get_errors()) > 0 for runner in exp_runners]
+
+            if exp_name not in [status['experiment_name'] for status in experiment_statuses]:
+                if all(have_errors):
+                    experiment_statuses.append({
+                        'experiment_name': exp_name,
+                        'has_failed': True
+                    })
+                else:
+                    experiment_statuses.append({
+                        'experiment_name': exp_name,
+                        'has_failed': False
+                    })
+
+        last_n_statuses = [status['has_failed'] for status in experiment_statuses]
+
+        logger.debug(f"Last {n} statuses: {last_n_statuses}")
+
+        if all(last_n_statuses):
+            return True 
+        else:
             return False
-
-        return True
-
+        
     def get_ran_statuses(self, experiment=None, type="fail"):
         if type not in ["fail", "success"]:
             raise ValueError(f"Type must be 'fail' or 'success': {type}")
