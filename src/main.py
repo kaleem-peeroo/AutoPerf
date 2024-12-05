@@ -121,6 +121,7 @@ def main():
 
             max_failures = campaign.get_max_failures()
             if max_failures > 0 and experiment.get_index() >= max_failures:
+                logger.debug(f"Checking if last {max_failures} experiments have failed.")
                 if campaign.have_last_n_experiments_failed(max_failures):
                     logger.info(
                         f"Last {max_failures} experiments have failed on all of their attempts."
