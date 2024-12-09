@@ -495,7 +495,6 @@ class ExperimentRunner:
 
             if execute_errors:
                 for execute_error in execute_errors:
-                    execute_error["action"] = action
                     self.errors.append(execute_error)
 
             if not was_executed:

@@ -276,13 +276,14 @@ class Machine:
                 )
             )
 
-            errors.append({
-                "hostname": self.hostname,
-                "ip": self.ip,
-                "attempt": total_attempts + 1 - attempts,
-                "command": " ".join(command),
-                "error": error,
-            })
+            if attempts == 1:
+                errors.append({
+                    "hostname": self.hostname,
+                    "ip": self.ip,
+                    "attempt": total_attempts + 1 - attempts,
+                    "command": " ".join(command),
+                    "error": error,
+                })
 
             attempts -= 1
 
