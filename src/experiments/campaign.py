@@ -724,49 +724,24 @@ class Campaign:
         self.set_output_dirpath(dirpath)
 
     def add_results(self, experiment_runner):
+        if not isinstance(experiment_runner, ExperimentRunner):
+            raise ValueError(f"ExperimentRunner must be an ExperimentRunner: {experiment_runner}")
+
+        logger.debug("Adding results to campaign...")
         self.results.append(experiment_runner)
 
+    @profile
     def write_results(self):
-        """
-        Data that we have per ExperimentRunner (which is what is in self.results):
-            - experiment
-                - name
-                - qos
-                    - qos_name
-                - machines
-                    - hostname
-                    - command
-                    - run_output
-                - output_dirpath
-            - status
-            - errors
-            - attempt
-            - start_time
-            - end_time
-
-        We can flatten into:
-            - attempt
-            - experiment_name
-            - machine
-                - dictionary string:
-                    - hostname
-                    - command
-                    - run_output
-            - status
-            - errors
-            - start_time
-            - end_time
-        """
         if not self.ess_path:
             raise ValueError("ESS path must be set")
 
+        logger.debug("Reading ESS...")
         df = pd.read_json(
             self.ess_path, 
             orient='records',
             lines=True,
             compression='gzip'
         )
-
         
         df_row_count = len(df)
         results_count = len(self.results)
@@ -779,9 +754,7 @@ class Campaign:
         new_row = {
             'experiment_name': latest_result.experiment.get_name(),
             'attempt': latest_result.attempt,
-            # 'machine': [machine.to_str() for machine in latest_result.experiment.get_machines()],
             'machines': latest_result.experiment.get_machines(),
-            'status': latest_result.status,
             'errors': latest_result.errors,
             'start_time': latest_result.start_time,
             'end_time': latest_result.end_time
