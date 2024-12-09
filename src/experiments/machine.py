@@ -49,23 +49,7 @@ class Machine:
         yield "smart_plug",         self.smart_plug
         yield "ping_attempts",      self.ping_attempts
         yield "ssh_attempts",       self.ssh_attempts
-
-    def to_str(self):
-        return {
-            "hostname": self.hostname,
-            "participant_type": self.participant_type,
-            "ip": self.ip,
-            "ssh_key_path": self.ssh_key_path,
-            "username": self.username,
-            "perftest_path": self.perftest_path,
-            "scripts": "\n".join(self.scripts),
-            "command": self.command,
-            "run_output": "\n".join(self.run_output),
-            "smart_plug": self.smart_plug,
-            "ping_attempts": self.ping_attempts,
-            "ssh_attempts": self.ssh_attempts
-        }.__str__()
-
+    
     def validate_ssh_key_path(self, ssh_key_path):
         if "~" in ssh_key_path:
             ssh_key_path = ssh_key_path.replace(
