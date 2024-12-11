@@ -730,7 +730,6 @@ class Campaign:
         logger.debug("Adding results to campaign...")
         self.results.append(experiment_runner)
 
-    @profile
     def write_results(self):
         if not self.ess_path:
             raise ValueError("ESS path must be set")
