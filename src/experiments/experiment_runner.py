@@ -164,6 +164,65 @@ class ExperimentRunner:
 
         self.errors.append(error)
 
+    def run_without_restart(self):
+        """
+        4. Get QoS configuration.
+        5. Generate test scripts from QoS config.
+        6. Allocate scripts per machine.
+        7. Delete any artifact csv files.
+        8. Generate noise genertion scripts if needed and add to existing scripts. 
+        9. Run scripts.
+        10. Check for and download results.
+        11. Confirm all files are downloaded.
+        12. Updated ESS.
+        13. Return ESS.
+        """
+        self.start_time = datetime.now()
+
+        if not self.ping_machines():
+            self.errors.append({"error": "failed to ping machines"})
+            self.end_time = datetime.now()
+            return
+        
+        if not self.ssh_machines():
+            self.errors.append({"error": "failed to ssh to machines"})
+            self.end_time = datetime.now()
+            return
+        
+        for machine in self.experiment.get_machines():
+            perftest_path = machine.get_perftest_path()
+            perftest_dir = os.path.dirname(perftest_path)
+
+            machine.set_command(f"source ~/.bashrc; cd {perftest_dir};")
+
+        self.generate_noise_scripts()
+        self.generate_and_allocate_qos_scripts()
+
+        for machine in self.experiment.get_machines():
+            machine.generate_command()
+
+            logger.debug(
+                "[{}/{}] [{}] [{}] Removing artifact files...".format(
+                    self.experiment_index + 1,
+                    self.total_experiments_count,
+                    self.experiment.get_name(),
+                    machine.get_hostname()
+                )
+            )
+
+            if not machine.remove_artifact_files():
+                self.errors.append({
+                    "hostname": machine.get_hostname(),
+                    "ip": machine.get_ip(),
+                    "error": "failed to remove artifact files",
+                })
+                self.end_time = datetime.now()
+                return
+
+        self.run_scripts(timeout_secs=self.experiment.get_timeout())
+
+        return len(self.get_errors()) == 0
+
     def run(self):
         """
         1. Check connections to machines (ping + ssh).
