@@ -3,8 +3,9 @@ campaign_name = "Devtest Smart Plug Restart"
 gen_type = "pcg"
 total_experiments = 0
 max_failures = 3
-noise_gen = {}
 max_retries = 3
+ping_attempts = 10
+ssh_attempts = 10
 bw_rate = ""
 experiment_names = []
 
