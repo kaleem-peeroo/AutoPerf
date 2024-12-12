@@ -28,7 +28,6 @@ class ExperimentRunner:
         self.attempt                    = attempt
         self.start_time                 = datetime.min
         self.end_time                   = datetime.min
-        self.status                     = "pending"
         self.errors                     = []
         self.data_files                 = []
         self.id                         = self.set_id()
@@ -46,7 +45,6 @@ class ExperimentRunner:
             self.end_time, 
             "%Y-%m-%d %H:%M:%S"
         )
-        yield "status", self.status
         yield "errors", self.errors
 
     def get_id(self):
@@ -72,9 +70,6 @@ class ExperimentRunner:
 
     def get_end_time(self):
         return self.end_time
-
-    def get_status(self):
-        return self.status
 
     def get_errors(self):
         return self.errors
@@ -157,12 +152,6 @@ class ExperimentRunner:
 
         self.end_time = end_time
 
-    def set_status(self, status):
-        if not isinstance(status, str):
-            raise ValueError("Status must be a string.")
-
-        self.status = status
-
     def set_errors(self, errors):
         if not isinstance(errors, list):
             raise ValueError("Errors must be a list.")
@@ -195,17 +184,17 @@ class ExperimentRunner:
         self.start_time = datetime.now()
 
         if not self.ping_machines():
-            self.status = "failed to ping machines"
+            self.errors.append({"error": "failed to ping machines"})
             self.end_time = datetime.now()
             return
         
         if not self.ssh_machines():
-            self.status = "failed to ssh to machines"
+            self.errors.append({"error": "failed to ssh to machines"})
             self.end_time = datetime.now()
             return
         
         if not self.restart_machines():
-            self.status = "failed to restart machines"
+            self.errors.append({"error": "failed to restart machines"})
             self.end_time = datetime.now()
             return
         
@@ -215,13 +204,13 @@ class ExperimentRunner:
         
         # Longer timeout to wait for machines to restart
         if not self.ping_machines(attempts=3, timeout=20):
-            self.status = "failed to ping machines after restart"
+            self.errors.append({"error": "failed to ping machines after restart"})
             self.end_time = datetime.now()
             return
 
         # Longer timeout to wait for machines to restart
         if not self.ssh_machines(attempts=3, timeout=20):
-            self.status = "failed to ssh to machines after restart"
+            self.errors.append({"error": "failed to ssh to machines after restart"})
             self.end_time = datetime.now()
             return
 
@@ -247,7 +236,11 @@ class ExperimentRunner:
             )
 
             if not machine.remove_artifact_files():
-                self.status = f"failed to remove artifact files on {machine.get_hostname()}"
+                self.errors.append({
+                    "hostname": machine.get_hostname(),
+                    "ip": machine.get_ip(),
+                    "error": "failed to remove artifact files",
+                })
                 self.end_time = datetime.now()
                 return
 
@@ -290,7 +283,6 @@ class ExperimentRunner:
             time.sleep(1)
             self.add_error({"error": "fake error"})
 
-        self.status = "completed"
         self.end_time = datetime.now()
 
     def run_scripts(self, timeout_secs: int = 600):
@@ -342,7 +334,6 @@ class ExperimentRunner:
                         "ip": machines[index].get_ip(),
                         "command": machines[index].get_command(),
                         "error": f"{process.name} timed out after {timeout_secs} seconds.",
-                        "action": "run_scripts"
                     })
 
                     process.terminate()
@@ -358,11 +349,14 @@ class ExperimentRunner:
             
         for machine in machines: 
             if "timed out" in machine.get_run_output():
-                self.status = "timed out"
+                self.errors.append({
+                    "hostname": machine.get_hostname(),
+                    "ip": machine.get_ip(),
+                    "error": f"timed out after {timeout_secs} seconds",
+                })
                 self.end_time = datetime.now()
                 return
 
-        self.status = "completed"
         self.end_time = datetime.now()
                 
     def generate_noise_scripts(self):
@@ -557,7 +551,6 @@ class ExperimentRunner:
                 "error": f"Expected {expected_file_count} csv files, but found {len(csv_files)}",
                 "expected_file_count": expected_file_count,
                 "actual_file_count": len(csv_files),
-                "action": "check_results"
             })
             return
 
@@ -589,11 +582,8 @@ class ExperimentRunner:
 
                 self.add_error({
                     "error": f"Data file {data_file.get_filename()} is not valid: {error}",
-                    "action": "check_results"
                 })
                 continue
-
-        self.status = "checked results"
 
     def download_results(self):
         machines = self.experiment.get_machines()
@@ -603,14 +593,10 @@ class ExperimentRunner:
                     "hostname": machine.get_hostname(),
                     "ip": machine.get_ip(),
                     "error": "failed to download results",
-                    "action": "download_results"
                 })
                 continue
 
-        self.status = "downloaded results"
-    
 def run_script_on_machine(machine, timeout_secs: int = 600, shared_dict: Dict = {}):
     output = machine.run(timeout_secs)
     hostname = machine.get_hostname()
     shared_dict[hostname] = output
-
