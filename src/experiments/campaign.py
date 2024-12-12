@@ -658,7 +658,6 @@ class Campaign:
                 row['attempt']
             )
 
-            experiment_runner.set_status(row['status'])
             experiment_runner.set_errors(list(row['errors']))
             experiment_runner.set_start_time(row['start_time'])
             experiment_runner.set_end_time(row['end_time'])
@@ -695,7 +694,6 @@ class Campaign:
                 'experiment_name',
                 'attempt',
                 'machines',
-                'status',
                 'errors',
                 'start_time',
                 'end_time'
