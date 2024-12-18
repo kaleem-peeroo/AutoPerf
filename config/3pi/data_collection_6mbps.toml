@@ -4,6 +4,7 @@ gen_type = "pcg"
 total_experiments = 0
 max_failures = 100
 max_retries = 5
+restart_after_retries = 3
 experiment_names = []
 bw_rate = "6mbit"
 

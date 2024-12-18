@@ -4,6 +4,7 @@ gen_type = "pcg"
 total_experiments = 0
 max_failures = 3
 max_retries = 3
+restart_after_retries = 3
 ping_attempts = 10
 ssh_attempts = 10
 experiment_names = [ 
