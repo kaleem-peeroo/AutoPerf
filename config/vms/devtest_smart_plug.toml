@@ -1,23 +1,22 @@
 [[campaigns]]
-campaign_name = "Devtest experiment retry"
+campaign_name = "Devtest Smart Plug"
 gen_type = "pcg"
 total_experiments = 0
-max_failures = 2
-noise_gen = {}
-max_retries = 3
+max_failures = 3
+max_retries = 10
+restart_after_retries = 3
+ping_attempts = 2
+ssh_attempts = 2
 experiment_names = []
-
-    [campaigns.noise_gen]
-    delay = {}
-    bandwidth_rate = "99mbit"
+bw_rate = ""
 
     [campaigns.qos_settings]
-    duration_secs = [10]
+    duration_secs = [3]
     datalen_bytes = [100]
-    pub_count = [1, 10, 20]
-    sub_count = [1, 10, 20]
-    use_reliable = [true, false]
-    use_multicast = [true, false]
+    pub_count = [1, 2]
+    sub_count = [1, 2]
+    use_reliable = [true]
+    use_multicast = [true]
     durability = [0]
     latency_count = [100]
 
@@ -28,8 +27,6 @@ experiment_names = []
     ssh_key_path = "~/.ssh/id_rsa"
     username = "ubuntu"
     perftest_path = "~/rtiperftest/perftest_cpp"
-    smart_plug_name = "vm1"
-    smart_plug_ip = "192.168.64.7"
 
     [[campaigns.slave_machines]]
     hostname = "vm2" 
@@ -38,5 +35,3 @@ experiment_names = []
     ssh_key_path = "~/.ssh/id_rsa"
     username = "ubuntu"
     perftest_path = "~/rtiperftest/perftest_cpp"
-    smart_plug_name = "vm2"
-    smart_plug_ip = "192.168.64.9"
