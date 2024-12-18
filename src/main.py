@@ -117,6 +117,29 @@ def main():
                     )
                     break
 
+                if current_attempt == campaign.get_restart_after_retries():
+                    logger.debug(
+                        "{} [#{}] Restarting smart plugs.".format(
+                            message_header,
+                            current_attempt
+                        )
+                    )
+
+                    # Try to restart smart plugs.
+                    if experiment.restart_smart_plugs():
+                        logger.info(
+                            "{} Restarted all plugs.".format(
+                                message_header
+                            )
+                        )
+
+                    else:
+                        logger.info(
+                            "{} Could not restart plugs.".format(
+                                message_header
+                            )
+                        )
+
                 current_attempt += 1
 
             max_failures = campaign.get_max_failures()

@@ -12,10 +12,11 @@ class Config:
         "gen_type",
         "max_failures",
         "max_retries",
+        "restart_after_retries",
         "slave_machines",
         "qos_settings",
         "ping_attempts",
-        "ssh_attempts"
+        "ssh_attempts",
     ]
 
     OPTIONAL_SETTINGS = [
@@ -169,6 +170,7 @@ class Config:
                 new_campaign.set_gen_type(campaign["gen_type"])
                 new_campaign.set_max_failures(campaign["max_failures"])
                 new_campaign.set_max_retries(campaign["max_retries"])
+                new_campaign.set_restart_after_retries(campaign["restart_after_retries"])
                 new_campaign.set_ping_attempts(campaign["ping_attempts"])
                 new_campaign.set_ssh_attempts(campaign["ssh_attempts"])
                 new_campaign.set_machines(campaign["slave_machines"])

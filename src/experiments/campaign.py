@@ -27,6 +27,7 @@ class Campaign:
         self.gen_type                       = ""
         self.max_failures                   = 0
         self.max_retries                    = 0
+        self.restart_after_retries          = 0
         self.ping_attempts                  = 0
         self.ssh_attempts                   = 0
         self.machines                       = []
@@ -47,6 +48,7 @@ class Campaign:
         yield "gen_type",                   self.gen_type
         yield "max_failures",               self.max_failures
         yield "max_retries",                self.max_retries
+        yield "restart_after_retries",      self.restart_after_retries
         yield "ping_attempts",              self.ping_attempts
         yield "ssh_attempts",               self.ssh_attempts
         yield "machines",                   self.machines
@@ -71,6 +73,9 @@ class Campaign:
 
     def get_max_retries(self):
         return self.max_retries
+
+    def get_restart_after_retries(self):
+        return self.restart_after_retries
 
     def get_ping_attempts(self):
         return self.ping_attempts
@@ -193,6 +198,21 @@ class Campaign:
             raise ValueError(f"Max retries must be >= 0: {max_retries}")
 
         self.max_retries = max_retries
+
+    def set_restart_after_retries(self, restart_after_retries):
+        if not isinstance(restart_after_retries, int):
+            raise ValueError(f"Restart after retries must be an int: {restart_after_retries}")
+
+        if restart_after_retries < 0:
+            raise ValueError(f"Restart after retries must be >= 0: {restart_after_retries}")
+
+        if not self.max_retries:
+            raise ValueError("Max retries must be set before setting restart after retries")
+
+        if restart_after_retries > self.max_retries:
+            raise ValueError(f"Restart after retries must be <= max retries: {restart_after_retries}")
+
+        self.restart_after_retries = restart_after_retries
     
     def set_machines(self, machines):
         if not isinstance(machines, list):
