@@ -255,7 +255,9 @@ class Config:
                 logger.error(
                     f"Setting {setting} not found in {self.filename}"
                 )
-                raise ValueError
+                raise ValueError(
+                    f"Setting {setting} not found in {self.filename}"
+                )
 
         for setting in self.OPTIONAL_SETTINGS:
             if setting not in keys:
