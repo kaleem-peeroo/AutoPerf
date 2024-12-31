@@ -8,7 +8,7 @@ restart_after_retries = 3
 ping_attempts = 5
 ssh_attempts = 5
 experiment_names = []
-bw_rate = "100mbit"
+bw_rate = ""
 
     [campaigns.qos_settings]
     duration_secs = [ 600 ]
