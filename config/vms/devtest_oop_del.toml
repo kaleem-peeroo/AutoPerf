@@ -2,8 +2,8 @@
 campaign_name = "Devtest OOP Object Deletion"
 gen_type = "pcg"
 total_experiments = 0
-max_failures = 10
-max_retries = 3
+max_failures = 100
+max_retries = 5
 restart_after_retries = 0
 ping_attempts = 3
 ssh_attempts = 3
