@@ -200,15 +200,7 @@ def main():
         ending_memory,
         ending_memory - starting_memory
     ))
-
-    with open("logs/memory_usage.log", "a") as f:
-        f.write("{}: {:,.2f}MB -> {:,.2f}MB: {:,.2f}MB\n".format(
-            "del exp + exp_runner + campaign. added __del__ to campaign",
-            starting_memory,
-            ending_memory,
-            ending_memory - starting_memory
-        ))
-
+    
 if __name__ == "__main__":
     with Timer():
         main()
