@@ -1,6 +1,9 @@
 import itertools
-import json
+import gc
+import psutil
 import hashlib
+import objgraph
+import time
 
 from src.logger import logger
 
@@ -198,3 +201,34 @@ def get_setting_help(setting_name):
 
     if setting_name == "restart_after_retries":
         return "Number of times to retry an experiment before restarting the smart plugs."
+
+def mem_usage(unit="mb"):
+    process = psutil.Process()
+    mem = process.memory_info().rss
+
+    if unit == "kb":
+        return mem / 1024
+    elif unit == "mb":
+        return mem / 1024 / 1024
+    elif unit == "gb":
+        return mem / 1024 / 1024 / 1024
+
+    return mem
+
+def del_object(obj, obj_name):
+    # Create ID from current time
+    # id = generate_id(str(time.time()))
+    #
+    # timestamp = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+    #
+    # objgraph.show_backrefs(
+    #     [obj], 
+    #     filename=f"logs/plots/{timestamp}_{obj_name}_{id}.png"
+    # )
+
+    mem_before = mem_usage("b")
+    del obj
+    gc.collect()
+    mem_after = mem_usage("b")
+    mem_diff = mem_after - mem_before
+    logger.debug(f"Freed {mem_diff:,}B after deleting {obj_name}.")

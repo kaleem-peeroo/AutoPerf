@@ -3,7 +3,7 @@ import datetime
 
 from tapo import ApiClient
 
-from my_secrets import TAPO_USERNAME, TAPO_PASSWORD
+from src.my_secrets import TAPO_USERNAME, TAPO_PASSWORD
 from src.logger import logger
 
 class SmartPlug:

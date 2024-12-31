@@ -31,6 +31,10 @@ class ExperimentRunner:
         self.errors                     = []
         self.data_files                 = []
         self.id                         = self.set_id()
+
+    def __del__(self):
+        # logger.debug(f"ExperimentRunner {self.get_id()} deleted.")
+        self.experiment = None
         
     def __rich_repr__(self):
         yield "experiment_index", self.experiment_index
@@ -339,7 +343,10 @@ class ExperimentRunner:
 
         # Randomly add error
         if random.randint(0, 1) == 1:
-            time.sleep(1)
+
+            # Sleep for random milliseconds between 0 and 1000
+            # time.sleep(random.randint(0, 1000) / 1000)
+
             self.add_error({"error": "fake error"})
 
         self.end_time = datetime.now()

@@ -41,6 +41,12 @@ class Campaign:
         self.results                        = []        # List of ExperimentRunners
         self.expected_total_experiments     = 0
 
+    def __del__(self):
+        self.machines = []
+        self.qos_config = None
+        self.experiments = []
+        self.results = []
+
     def __rich_repr__(self):
         yield "name",                       self.name
         yield "output_dirpath",             self.output_dirpath

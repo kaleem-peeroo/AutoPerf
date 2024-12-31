@@ -1,10 +1,13 @@
 import sys
+import gc
 import json
+import objgraph
+import psutil
 
 from src import Timer, ExperimentRunner
 from src.logger import logger
 from .config import Config
-from src.utils import experiment_already_ran
+from src.utils import experiment_already_ran, mem_usage, del_object
 
 from rich.console import Console
 from rich.pretty import pprint
@@ -19,6 +22,8 @@ def main():
             style="bold red"
         )
         sys.exit(1)
+
+    starting_memory = mem_usage()
 
     config_file = sys.argv[1]
 
@@ -39,6 +44,8 @@ def main():
         campaign.generate_experiments()
         experiments = campaign.get_experiments()
 
+        objgraph.show_growth()
+        mem_usage()
         for experiment in experiments:
             message_header = "[{}/{}] [{}/{}]".format(
                 campaign_index + 1,
@@ -47,7 +54,7 @@ def main():
                 len(experiments)
             )
 
-            logger.info("\n{} {}".format(
+            logger.info("{} {}".format(
                 message_header,
                 experiment.get_name()
             ))
@@ -64,10 +71,14 @@ def main():
                             current_attempt
                         )
                     )
+
+                    del_object(experiment, "experiment")
                     continue
 
             if current_attempt > max_retries:
                 logger.info(f"Reached max retries ({max_retries}). Skipping.")
+                
+                del_object(experiment, "experiment")
                 continue
 
             while current_attempt <= max_retries:
@@ -82,9 +93,10 @@ def main():
                     f"{message_header} [#{current_attempt}] Running..."
                 )
 
-                if experiment_runner.run():
+                if experiment_runner.fake_run():
                     experiment_runner.download_results()
                     experiment_runner.check_results()
+
                 else:
                     logger.info(
                         "{} [#{}] Failed.".format(
@@ -115,6 +127,8 @@ def main():
                             experiment.get_name()
                         )
                     )
+
+                    del_object(experiment_runner, "experiment_runner")
                     break
 
                 if current_attempt == campaign.get_restart_after_retries():
@@ -140,14 +154,19 @@ def main():
                             )
                         )
 
+                del_object(experiment_runner, "experiment_runner")
                 current_attempt += 1
 
             max_failures = campaign.get_max_failures()
             if max_failures > 0 and experiment.get_index() >= max_failures:
-                logger.debug(f"Checking if last {max_failures} experiments have failed.")
+                logger.debug(
+                    f"Checking if last {max_failures} experiments have failed."
+                )
                 if campaign.have_last_n_experiments_failed(max_failures):
                     logger.info(
-                        f"Last {max_failures} experiments have failed on all of their attempts."
+                        "Last {} experiments have failed on all of their attempts.".format(
+                            max_failures
+                        )
                     )
 
                     # Try to restart smart plugs.
@@ -168,9 +187,27 @@ def main():
                         )
                         break
 
-            print()
+            del_object(experiment, "experiment")
 
         campaign.set_end_time(datetime.now())
+
+        del_object(campaign, "campaign")
+
+    ending_memory = mem_usage()
+
+    logger.debug("Memory usage: {:,.2f}MB -> {:,.2f}MB: {:,.2f}MB".format(
+        starting_memory,
+        ending_memory,
+        ending_memory - starting_memory
+    ))
+
+    with open("logs/memory_usage.log", "a") as f:
+        f.write("{}: {:,.2f}MB -> {:,.2f}MB: {:,.2f}MB\n".format(
+            "del exp + exp_runner + campaign. added __del__ to campaign",
+            starting_memory,
+            ending_memory,
+            ending_memory - starting_memory
+        ))
 
 if __name__ == "__main__":
     with Timer():

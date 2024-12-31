@@ -26,6 +26,10 @@ class Experiment:
         self.output_dirpath = ""
         self.id             = self.set_id()
 
+    def __del__(self):
+        # logger.debug(f"Experiment {self.get_name()} deleted.")
+        pass
+
     def __rich_repr__(self):
         yield "index",          self.index
         yield "name",           self.name
