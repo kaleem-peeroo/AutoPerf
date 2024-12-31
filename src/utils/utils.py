@@ -188,3 +188,13 @@ def generate_id(info_string):
         raise ValueError("info_string must not be empty")
 
     return hashlib.sha256(info_string.encode()).hexdigest()
+
+def get_setting_help(setting_name):
+    if setting_name == "":
+        raise ValueError("setting_name must not be empty")
+
+    if not isinstance(setting_name, str):
+        raise ValueError(f"setting_name must be a string: {setting_name}")
+
+    if setting_name == "restart_after_retries":
+        return "Number of times to retry an experiment before restarting the smart plugs."

@@ -5,5 +5,6 @@ from .utils import machine_params_from_str
 from .utils import experiment_already_ran
 from .utils import has_experiment_succeeded
 from .utils import generate_id
+from .utils import get_setting_help
 
 __all__ = ["Timer"]

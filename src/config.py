@@ -2,7 +2,7 @@ import toml
 
 from src.logger import logger
 from src.experiments import Campaign, Machine
-from src.utils import generate_qos_permutations
+from src.utils import generate_qos_permutations, get_setting_help
 
 from rich.pretty import pprint
 
@@ -253,10 +253,18 @@ class Config:
         for setting in self.REQUIRED_SETTINGS:
             if setting not in keys:
                 logger.error(
-                    f"Setting {setting} not found in {self.filename}"
+                    "Setting {} not found in {}: {}".format(
+                        setting,
+                        self.filename,
+                        get_setting_help(setting)
+                        )
                 )
                 raise ValueError(
-                    f"Setting {setting} not found in {self.filename}"
+                    "Setting {} not found in {}: {}".format(
+                        setting,
+                        self.filename,
+                        get_setting_help(setting)
+                    )
                 )
 
         for setting in self.OPTIONAL_SETTINGS:
