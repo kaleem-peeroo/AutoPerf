@@ -187,6 +187,10 @@ def main():
                         )
                         break
 
+            mem_used_mb = mem_usage()
+            logger.debug(
+                "Memory usage: {:,.2f}MB".format(mem_used_mb)
+            )
             del_object(experiment, "experiment")
 
         campaign.set_end_time(datetime.now())
