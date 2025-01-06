@@ -1,5 +1,6 @@
 import concurrent.futures
 import os
+import sys
 import time
 import random
 
@@ -203,7 +204,6 @@ class ExperimentRunner:
         self.generate_and_allocate_qos_scripts()
 
         for machine in self.experiment.get_machines():
-            machine.generate_command()
 
             logger.debug(
                 "[{}/{}] [{}] [{}] Removing artifact files...".format(
@@ -287,7 +287,6 @@ class ExperimentRunner:
         self.generate_and_allocate_qos_scripts()
 
         for machine in self.experiment.get_machines():
-            machine.generate_command()
 
             logger.debug(
                 "[{}/{}] [{}] [{}] Removing artifact files...".format(
