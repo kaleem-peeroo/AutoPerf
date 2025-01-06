@@ -12,10 +12,10 @@ bw_rate = ""
 
     [campaigns.qos_settings]
     duration_secs = [ 600 ]
-    # 64K, 256K, 512K, 1M, 32M, 64M, 128M, 256M, 512M, 1G
-    datalen_bytes = [ 64000, 256000, 512000, 1000000, 32000000, 64000000, 128000000, 256000000, 512000000, 1000000000 ]
-    pub_count = [1]
-    sub_count = [1]
+    # 64K, 256K, 512K, 1M, 64M, 512M, 1G
+    datalen_bytes = [ 64000, 256000, 512000, 1000000, 64000000, 512000000, 1000000000 ]
+    pub_count = [1, 5, 10, 15, 20]
+    sub_count = [1, 5, 10, 15, 20]
     use_reliable = [ true, false ]
     use_multicast = [ false ]
     durability = [ 0 ]
