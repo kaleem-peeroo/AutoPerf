@@ -249,17 +249,17 @@ class ExperimentRunner:
         if not self.ping_machines():
             self.errors.append({"error": "failed to ping machines"})
             self.end_time = datetime.now()
-            return
+            return False
         
         if not self.ssh_machines():
             self.errors.append({"error": "failed to ssh to machines"})
             self.end_time = datetime.now()
-            return
+            return False
         
         if not self.restart_machines():
             self.errors.append({"error": "failed to restart machines"})
             self.end_time = datetime.now()
-            return
+            return False
         
         # Wait 10 seconds for restart
         logger.debug("Waiting 5 seconds for machines to restart...")
@@ -269,13 +269,13 @@ class ExperimentRunner:
         if not self.ping_machines(attempts=3, timeout=20):
             self.errors.append({"error": "failed to ping machines after restart"})
             self.end_time = datetime.now()
-            return
+            return False
 
         # Longer timeout to wait for machines to restart
         if not self.ssh_machines(attempts=3, timeout=20):
             self.errors.append({"error": "failed to ssh to machines after restart"})
             self.end_time = datetime.now()
-            return
+            return False
 
         for machine in self.experiment.get_machines():
             perftest_path = machine.get_perftest_path()
@@ -287,7 +287,6 @@ class ExperimentRunner:
         self.generate_and_allocate_qos_scripts()
 
         for machine in self.experiment.get_machines():
-
             logger.debug(
                 "[{}/{}] [{}] [{}] Removing artifact files...".format(
                     self.experiment_index + 1,
@@ -304,7 +303,7 @@ class ExperimentRunner:
                     "error": "failed to remove artifact files",
                 })
                 self.end_time = datetime.now()
-                return
+                return False
 
         self.run_scripts(timeout_secs=self.experiment.get_timeout())
 
@@ -328,17 +327,15 @@ class ExperimentRunner:
         13. Return ESS.
         """
         self.start_time = datetime.now()
-
+        
         for machine in self.experiment.get_machines():
-            machine.generate_command()
+                perftest_path = machine.get_perftest_path()
+                perftest_dir = os.path.dirname(perftest_path)
 
-            logger.debug(
-                "[{}/{}] [{}] Removing artifact files...".format(
-                    self.experiment_index + 1,
-                    self.total_experiments_count,
-                    self.experiment.get_name()
-                )
-            )
+                machine.set_command(f"source ~/.bashrc; cd {perftest_dir};")
+
+        self.generate_noise_scripts()
+        self.generate_and_allocate_qos_scripts()
 
         # Randomly add error
         if random.randint(0, 1) == 1:
@@ -465,6 +462,11 @@ class ExperimentRunner:
             )
         )
 
+        # Reset all scripst and commands in the machines
+        for machine in self.experiment.get_machines():
+            machine.set_scripts([])
+            machine.set_command("")
+
         qos = self.experiment.get_qos()
         qos_scripts = qos.generate_scripts()
 
@@ -496,8 +498,10 @@ class ExperimentRunner:
             for pub_machine_i, pub_machine in enumerate(pub_machines):
                 for script_i, script in enumerate(pub_scripts):
                     if script_i % pub_machine_count == pub_machine_i:
-                        pub_machine.add_script(script)
+                        if script not in pub_machine.get_scripts():
+                            pub_machine.add_script(script)
 
+            for pub_machine in pub_machines:
                 pub_machine.generate_command()
 
         if sub_machine_count > 1:
@@ -505,10 +509,12 @@ class ExperimentRunner:
             for sub_machine_i, sub_machine in enumerate(sub_machines):
                 for script_i, script in enumerate(sub_scripts):
                     if (1 - (script_i % sub_machine_count )) == sub_machine_i:
-                        sub_machine.add_script(script)
+                        if script not in sub_machine.get_scripts():
+                            sub_machine.add_script(script)
 
+            for sub_machine in sub_machines:
                 sub_machine.generate_command()
-    
+         
     def execute_on_machines(
         self, 
         action: str = "",

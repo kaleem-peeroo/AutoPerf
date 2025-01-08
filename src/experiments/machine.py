@@ -423,9 +423,6 @@ class Machine:
         if not isinstance(scripts, list):
             raise ValueError(f"Scripts must be a list: {scripts}")
 
-        if len(scripts) == 0:
-            raise ValueError("Scripts must not be empty")
-
         self.scripts = scripts
 
     def set_command(self, command):
