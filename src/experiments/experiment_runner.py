@@ -170,18 +170,6 @@ class ExperimentRunner:
         self.errors.append(error)
 
     def run_without_restart(self):
-        """
-        4. Get QoS configuration.
-        5. Generate test scripts from QoS config.
-        6. Allocate scripts per machine.
-        7. Delete any artifact csv files.
-        8. Generate noise genertion scripts if needed and add to existing scripts. 
-        9. Run scripts.
-        10. Check for and download results.
-        11. Confirm all files are downloaded.
-        12. Updated ESS.
-        13. Return ESS.
-        """
         self.start_time = datetime.now()
 
         if not self.ping_machines():
@@ -195,6 +183,10 @@ class ExperimentRunner:
             return
         
         for machine in self.experiment.get_machines():
+            # Reset all scripst and commands in the machines
+            machine.set_scripts([])
+            machine.set_command("")
+
             perftest_path = machine.get_perftest_path()
             perftest_dir = os.path.dirname(perftest_path)
 
@@ -310,22 +302,6 @@ class ExperimentRunner:
         return len(self.get_errors()) == 0
     
     def fake_run(self):
-        """
-        1. Check connections to machines (ping + ssh).
-        2. Restart machines.
-        3. Check connections to machines (ping + ssh).
-
-        4. Get QoS configuration.
-        5. Generate test scripts from QoS config.
-        6. Allocate scripts per machine.
-        7. Delete any artifact csv files.
-        8. Generate noise genertion scripts if needed and add to existing scripts. 
-        9. Run scripts.
-        10. Check for and download results.
-        11. Confirm all files are downloaded.
-        12. Updated ESS.
-        13. Return ESS.
-        """
         self.start_time = datetime.now()
         
         for machine in self.experiment.get_machines():
@@ -404,11 +380,11 @@ class ExperimentRunner:
 
                 else:
                     process.close()
-                
+
                 run_outputs = shared_dict.get(machines[index].get_hostname(), "")
                 for run_output in run_outputs:
                     machines[index].add_run_output(run_output)
-            
+                                
         for machine in machines: 
             if "timed out" in machine.get_run_output():
                 self.errors.append({
@@ -420,6 +396,7 @@ class ExperimentRunner:
                 return
 
         self.end_time = datetime.now()
+        return
                 
     def generate_noise_scripts(self):
         logger.debug(
@@ -462,11 +439,7 @@ class ExperimentRunner:
             )
         )
 
-        # Reset all scripst and commands in the machines
-        for machine in self.experiment.get_machines():
-            machine.set_scripts([])
-            machine.set_command("")
-
+        
         qos = self.experiment.get_qos()
         qos_scripts = qos.generate_scripts()
 

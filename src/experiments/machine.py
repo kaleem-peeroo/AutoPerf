@@ -493,6 +493,9 @@ class Machine:
 
             run_output.append(f"Timeout after {timeout_secs} seconds.")
 
+        except Exception as e:
+            raise e
+
         run_output.append(f"stdout: {stdout}")
         run_output.append(f"stderr: {stderr}")
 
