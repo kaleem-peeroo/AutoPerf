@@ -1,0 +1,37 @@
+[[campaigns]]
+campaign_name = "Devtest Duplicate Commands"
+gen_type = "pcg"
+total_experiments = 0
+max_failures = 200
+max_retries = 1
+restart_after_retries = 0
+ping_attempts = 5
+ssh_attempts = 5
+experiment_names = []
+bw_rate = ""
+
+    [campaigns.qos_settings]
+    duration_secs = [10]
+    datalen_bytes = [ 256000 ]
+    pub_count = [1, 5]
+    sub_count = [1, 5]
+    use_reliable = [ false ]
+    use_multicast = [ false ]
+    durability = [ 0 ]
+    latency_count = [ 100 ]
+
+    [[campaigns.slave_machines]]
+    hostname = "vm1"
+    participant_type = "pub"
+    ip = "192.168.64.7"
+    ssh_key_path = "~/.ssh/id_rsa"
+    username = "ubuntu"
+    perftest_path = "~/rtiperftest/perftest_cpp"
+
+    [[campaigns.slave_machines]]
+    hostname = "vm2" 
+    participant_type = "sub"
+    ip = "192.168.64.9"
+    ssh_key_path = "~/.ssh/id_rsa"
+    username = "ubuntu"
+    perftest_path = "~/rtiperftest/perftest_cpp"
