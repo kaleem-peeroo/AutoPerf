@@ -169,34 +169,25 @@ class ExperimentRunner:
 
         self.errors.append(error)
 
-    def run_without_restart(self):
-        self.start_time = datetime.now()
+    def reset_machine_scripts(self):
+        logger.debug(
+            "[{}/{}] [{}] Resetting machine scripts and commands...".format(
+                self.experiment_index + 1,
+                self.total_experiments_count,
+                self.experiment.get_name()
+            )
+        )
 
-        if not self.ping_machines():
-            self.errors.append({"error": "failed to ping machines"})
-            self.end_time = datetime.now()
-            return
-        
-        if not self.ssh_machines():
-            self.errors.append({"error": "failed to ssh to machines"})
-            self.end_time = datetime.now()
-            return
-        
         for machine in self.experiment.get_machines():
-            # Reset all scripst and commands in the machines
+            perftest_path = machine.get_perftest_path()
             machine.set_scripts([])
             machine.set_command("")
 
-            perftest_path = machine.get_perftest_path()
             perftest_dir = os.path.dirname(perftest_path)
-
             machine.set_command(f"source ~/.bashrc; cd {perftest_dir};")
 
-        self.generate_noise_scripts()
-        self.generate_and_allocate_qos_scripts()
-
+    def delete_artifact_files(self):
         for machine in self.experiment.get_machines():
-
             logger.debug(
                 "[{}/{}] [{}] [{}] Removing artifact files...".format(
                     self.experiment_index + 1,
@@ -207,19 +198,14 @@ class ExperimentRunner:
             )
 
             if not machine.remove_artifact_files():
-                self.errors.append({
-                    "hostname": machine.get_hostname(),
-                    "ip": machine.get_ip(),
-                    "error": "failed to remove artifact files",
-                })
-                self.end_time = datetime.now()
-                return
+                return False
 
-        self.run_scripts(timeout_secs=self.experiment.get_timeout())
+        return True
 
-        return len(self.get_errors()) == 0
-
-    def run(self):
+    def run(
+        self, 
+        restart=True
+    ):
         """
         1. Check connections to machines (ping + ssh).
         2. Restart machines.
@@ -248,58 +234,46 @@ class ExperimentRunner:
             self.end_time = datetime.now()
             return False
         
-        if not self.restart_machines():
-            self.errors.append({"error": "failed to restart machines"})
-            self.end_time = datetime.now()
-            return False
+        if restart:
+            if not self.restart_machines():
+                self.errors.append({"error": "failed to restart machines"})
+                self.end_time = datetime.now()
+                return False
         
-        # Wait 10 seconds for restart
-        logger.debug("Waiting 5 seconds for machines to restart...")
-        time.sleep(5)
+            # Wait 10 seconds for restart
+            logger.debug("Waiting 5 seconds for machines to restart...")
+            time.sleep(5)
         
-        # Longer timeout to wait for machines to restart
-        if not self.ping_machines(attempts=3, timeout=20):
-            self.errors.append({"error": "failed to ping machines after restart"})
-            self.end_time = datetime.now()
-            return False
-
-        # Longer timeout to wait for machines to restart
-        if not self.ssh_machines(attempts=3, timeout=20):
-            self.errors.append({"error": "failed to ssh to machines after restart"})
-            self.end_time = datetime.now()
-            return False
-
-        for machine in self.experiment.get_machines():
-            perftest_path = machine.get_perftest_path()
-            perftest_dir = os.path.dirname(perftest_path)
-
-            machine.set_command(f"source ~/.bashrc; cd {perftest_dir};")
-
-        self.generate_noise_scripts()
-        self.generate_and_allocate_qos_scripts()
-
-        for machine in self.experiment.get_machines():
-            logger.debug(
-                "[{}/{}] [{}] [{}] Removing artifact files...".format(
-                    self.experiment_index + 1,
-                    self.total_experiments_count,
-                    self.experiment.get_name(),
-                    machine.get_hostname()
-                )
-            )
-
-            if not machine.remove_artifact_files():
-                self.errors.append({
-                    "hostname": machine.get_hostname(),
-                    "ip": machine.get_ip(),
-                    "error": "failed to remove artifact files",
-                })
+            # Longer timeout to wait for machines to restart
+            if not self.ping_machines(attempts=3, timeout=20):
+                self.errors.append({"error": "failed to ping machines after restart"})
                 self.end_time = datetime.now()
                 return False
 
-        self.run_scripts(timeout_secs=self.experiment.get_timeout())
+            # Longer timeout to wait for machines to restart
+            if not self.ssh_machines(attempts=3, timeout=20):
+                self.errors.append({"error": "failed to ssh to machines after restart"})
+                self.end_time = datetime.now()
+                return False
 
-        return len(self.get_errors()) == 0
+        self.reset_machine_scripts()
+        self.generate_noise_scripts()
+        self.generate_and_allocate_qos_scripts()
+        if not self.delete_artifact_files():
+            self.errors.append({
+                "hostname": machine.get_hostname(),
+                "ip": machine.get_ip(),
+                "error": "failed to remove artifact files",
+            })
+            self.end_time = datetime.now()
+            return False
+
+        if not self.run_scripts(timeout_secs=self.experiment.get_timeout()):
+            self.end_time = datetime.now()
+            return False
+
+        self.end_time = datetime.now()
+        return True
     
     def fake_run(self):
         self.start_time = datetime.now()
@@ -392,11 +366,9 @@ class ExperimentRunner:
                     "ip": machine.get_ip(),
                     "error": f"timed out after {timeout_secs} seconds",
                 })
-                self.end_time = datetime.now()
-                return
+                return False
 
-        self.end_time = datetime.now()
-        return
+        return True
                 
     def generate_noise_scripts(self):
         logger.debug(
@@ -438,7 +410,6 @@ class ExperimentRunner:
                 self.experiment.get_name()
             )
         )
-
         
         qos = self.experiment.get_qos()
         qos_scripts = qos.generate_scripts()
@@ -460,13 +431,7 @@ class ExperimentRunner:
         
         if pub_machine_count == 1:
             pub_machines[0].set_scripts([script for script in qos_scripts if "-pub" in script])
-            pub_machines[0].generate_command()
-
-        if sub_machine_count == 1:
-            sub_machines[0].set_scripts([script for script in qos_scripts if "-sub" in script])
-            sub_machines[0].generate_command()
-
-        if pub_machine_count > 1:
+        else:
             pub_scripts = [script for script in qos_scripts if "-pub" in script]
             for pub_machine_i, pub_machine in enumerate(pub_machines):
                 for script_i, script in enumerate(pub_scripts):
@@ -474,10 +439,10 @@ class ExperimentRunner:
                         if script not in pub_machine.get_scripts():
                             pub_machine.add_script(script)
 
-            for pub_machine in pub_machines:
-                pub_machine.generate_command()
+        if sub_machine_count == 1:
+            sub_machines[0].set_scripts([script for script in qos_scripts if "-sub" in script])
 
-        if sub_machine_count > 1:
+        else:
             sub_scripts = [script for script in qos_scripts if "-sub" in script]
             for sub_machine_i, sub_machine in enumerate(sub_machines):
                 for script_i, script in enumerate(sub_scripts):
@@ -485,9 +450,9 @@ class ExperimentRunner:
                         if script not in sub_machine.get_scripts():
                             sub_machine.add_script(script)
 
-            for sub_machine in sub_machines:
-                sub_machine.generate_command()
-         
+        for machine in self.experiment.get_machines():
+            machine.generate_command()
+
     def execute_on_machines(
         self, 
         action: str = "",
