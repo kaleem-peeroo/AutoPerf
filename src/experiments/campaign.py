@@ -765,15 +765,18 @@ class Campaign:
             lines=True,
             compression='gzip'
         )
+
         
         df_row_count = len(df)
         results_count = len(self.results)
+        logger.debug(f"Read {df_row_count} rows.")
 
         if df_row_count > 0:
             if df_row_count + 1 != results_count:
                 raise ValueError(f"Dataframe row count {df_row_count} + 1 != results count {results_count}")
 
         latest_result = self.results[-1]
+        logger.debug("Creating new row for ESS")
         new_row = {
             'experiment_name': latest_result.experiment.get_name(),
             'attempt': latest_result.attempt,
@@ -783,6 +786,7 @@ class Campaign:
             'end_time': latest_result.end_time
         }
 
+        logger.debug("Writing new row to ESS")
         try:
             df = pd.concat([
                 df, 
