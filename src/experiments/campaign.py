@@ -766,7 +766,6 @@ class Campaign:
             compression='gzip'
         )
 
-        
         df_row_count = len(df)
         results_count = len(self.results)
         logger.debug(f"Read {df_row_count} rows.")
@@ -786,13 +785,14 @@ class Campaign:
             'end_time': latest_result.end_time
         }
 
-        logger.debug("Writing new row to ESS")
         try:
+            logger.debug("Writing new row to ESS df")
             df = pd.concat([
                 df, 
                 pd.DataFrame([new_row])
             ], ignore_index=True)
 
+            logger.debug("Writing new ESS df to file")
             df.to_json(
                 self.ess_path, 
                 orient="records", 
@@ -804,4 +804,5 @@ class Campaign:
 
         except Exception as e:
             pprint(new_row)
+            logger.error(e)
             raise e
