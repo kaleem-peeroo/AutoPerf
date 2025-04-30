@@ -1,5 +1,5 @@
 [[campaigns]]
-campaign_name = "QoS Capture 1P 3S"
+campaign_name = "Increasing Load 1P2S"
 gen_type = "pcg"
 total_experiments = 0
 max_failures = 100
@@ -11,12 +11,12 @@ bw_rate = ""
 
 [campaigns.qos_settings]
 duration_secs = [ 600,]
-datalen_bytes = [100]
-pub_count = [ 1, 5, 10, 25]
-sub_count = [ 1, 5, 10, 25]
+datalen_bytes = [100, 1000]
+pub_count = [1, 5, 10, 25]
+sub_count = [5, 10, 25]
 use_reliable = [ true, false]
 use_multicast = [ true, false,]
-durability = [ 0, 1, 2, 3]
+durability = [ 0 ]
 latency_count = [ 100]
 
     [[campaigns.slave_machines]]
@@ -48,13 +48,3 @@ latency_count = [ 100]
     perftest_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
     smart_plug_name = "k4"
     smart_plug_ip = "192.168.1.54"
-
-    [[campaigns.slave_machines]]
-    hostname = "k5"
-    participant_type = "sub"
-    ip = "169.254.251.24"
-    ssh_key_path = "~/.ssh/id_rsa"
-    username = "acwh025"
-    perftest_path = "~/Documents/rtiperftest/srcCpp/objs/armv7Linux4gcc7.5.0/perftest_publisher"
-    smart_plug_name = "k5"
-    smart_plug_ip = "192.168.1.55"

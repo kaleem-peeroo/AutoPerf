@@ -1,5 +1,5 @@
 [[campaigns]]
-campaign_name = "QoS Capture 1P 3S"
+campaign_name = "Reliability Impact"
 gen_type = "pcg"
 total_experiments = 0
 max_failures = 100
@@ -10,13 +10,13 @@ experiment_names = []
 bw_rate = ""
 
 [campaigns.qos_settings]
-duration_secs = [ 600,]
+duration_secs = [300]
 datalen_bytes = [100]
-pub_count = [ 1, 5, 10, 25]
-sub_count = [ 1, 5, 10, 25]
+pub_count = [1, 5, 10, 15, 20]
+sub_count = [1, 5, 10, 15, 20]
 use_reliable = [ true, false]
-use_multicast = [ true, false,]
-durability = [ 0, 1, 2, 3]
+use_multicast = [false]
+durability = [0]
 latency_count = [ 100]
 
     [[campaigns.slave_machines]]
@@ -31,7 +31,7 @@ latency_count = [ 100]
 
     [[campaigns.slave_machines]]
     hostname = "k3"
-    participant_type = "sub"
+    participant_type = "pub"
     ip = "169.254.251.22"
     ssh_key_path = "~/.ssh/id_rsa"
     username = "acwh025"
